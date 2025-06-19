@@ -29,6 +29,7 @@ const LobbyPage: React.FC = () => {
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState('');
   const [showLeaderSelect, setShowLeaderSelect] = useState(false);
+  const [myPlayerName, setMyPlayerName] = useState('');
 
   useEffect(() => {
     const newSocket = io(process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
@@ -51,8 +52,16 @@ const LobbyPage: React.FC = () => {
   useEffect(() => {
     // Auto-generate player name and join
     if (socket && !isJoined && slug) {
-      const generatedName = `Player ${Math.floor(Math.random() * 1000)}`;
-      socket.emit('join-lobby', { slug, playerName: generatedName });
+      // Try to get existing name for this lobby, or create new one
+      let playerName = sessionStorage.getItem(`player-name-${slug}`);
+      if (!playerName) {
+        playerName = `Player ${Math.floor(Math.random() * 1000)}`;
+        sessionStorage.setItem(`player-name-${slug}`, playerName);
+      }
+      
+      setMyPlayerName(playerName);
+      console.log('LobbyPage: Joining as', playerName);
+      socket.emit('join-lobby', { slug, playerName });
       setIsJoined(true);
     }
   }, [socket, isJoined, slug]);
@@ -66,6 +75,10 @@ const LobbyPage: React.FC = () => {
 
   const handleNameSubmit = () => {
     if (socket && tempName.trim()) {
+      // Update sessionStorage with new name
+      sessionStorage.setItem(`player-name-${slug}`, tempName.trim());
+      setMyPlayerName(tempName.trim());
+      
       socket.emit('update-player-name', { slug, newName: tempName.trim() });
       setEditingName(false);
     }
@@ -206,7 +219,7 @@ const LobbyPage: React.FC = () => {
                     {player.id === lobby.leaderId && (
                       <span className="text-yellow-400" title="Lobby Leader">👑</span>
                     )}
-                    {player.id === socket?.id ? (
+                    {player.name === myPlayerName ? (
                       editingName ? (
                         <div className="flex space-x-1">
                           <input
@@ -317,6 +330,7 @@ const LobbyPage: React.FC = () => {
               <p><strong>Players:</strong> {lobby.players.length}</p>
               <p><strong>Game:</strong> {lobby.gameType}</p>
               <p><strong>Leader:</strong> {lobby.players.find(p => p.id === lobby.leaderId)?.name}</p>
+              <p><strong>You are:</strong> {myPlayerName}</p>
             </div>
             
             <div className="mt-8 p-4 bg-blue-900 rounded-lg">
