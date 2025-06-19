@@ -23,7 +23,6 @@ const LobbyPage: React.FC = () => {
   const navigate = useNavigate();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [lobby, setLobby] = useState<LobbyState | null>(null);
-  const [playerName, setPlayerName] = useState('');
   const [isJoined, setIsJoined] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
@@ -104,7 +103,6 @@ const LobbyPage: React.FC = () => {
   };
 
   const isLeader = lobby && socket && lobby.leaderId === socket.id;
-  const currentPlayer = lobby?.players.find(p => p.id === socket?.id);
 
   if (!lobby) {
     return (
