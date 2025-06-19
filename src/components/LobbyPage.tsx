@@ -52,7 +52,6 @@ const LobbyPage: React.FC = () => {
     // Auto-generate player name and join
     if (socket && !isJoined && slug) {
       const generatedName = `Player ${Math.floor(Math.random() * 1000)}`;
-      setPlayerName(generatedName);
       socket.emit('join-lobby', { slug, playerName: generatedName });
       setIsJoined(true);
     }
@@ -68,7 +67,6 @@ const LobbyPage: React.FC = () => {
   const handleNameSubmit = () => {
     if (socket && tempName.trim()) {
       socket.emit('update-player-name', { slug, newName: tempName.trim() });
-      setPlayerName(tempName.trim());
       setEditingName(false);
     }
   };
