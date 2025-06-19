@@ -208,6 +208,29 @@ io.on('connection', (socket) => {
       });
     }
   });
+
+  socket.on('update-game-type', (data) => {
+    const { slug, gameType } = data;
+    const lobby = lobbies.get(slug);
+    
+    if (!lobby || lobby.leaderId !== socket.id) {
+      return; // Only leader can update game type
+    }
+    
+    lobby.gameType = gameType;
+    lobby.lastActivity = Date.now();
+    
+    io.to(slug).emit('lobby-updated', {
+      slug: lobby.slug,
+      title: lobby.title,
+      players: lobby.players,
+      leaderId: lobby.leaderId,
+      gameType: lobby.gameType,
+      gameOptions: lobby.gameOptions
+    });
+    
+    console.log(`Lobby ${slug} game type changed to ${gameType}`);
+  });
   
   socket.on('change-leader', (data) => {
     const { slug, newLeaderId } = data;

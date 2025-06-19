@@ -6,7 +6,6 @@ interface GameInfo {
   name: string;
   players: string;
   duration: string;
-  difficulty: string;
   description: string;
   rules: string[];
   status: 'available' | 'coming-soon';
@@ -21,7 +20,6 @@ const ExplorePage: React.FC = () => {
       name: 'War',
       players: '2-8 players',
       duration: '5-10 minutes',
-      difficulty: 'Easy',
       description: 'A simple card game where the highest card wins the round.',
       rules: [
         'Each player receives one card from a standard deck',
@@ -38,7 +36,6 @@ const ExplorePage: React.FC = () => {
       name: 'Dice Factory',
       players: '3-5 players',
       duration: '45-60 minutes',
-      difficulty: 'Hard',
       description: 'Manage your dice production facility to score points through clever combinations before the factory collapses.',
       rules: [
         'Start with 4 four-sided dice (d4)',
@@ -70,15 +67,6 @@ const ExplorePage: React.FC = () => {
     const slug = generateLobbySlug();
     // In a full implementation, you'd pass the game type to the lobby
     navigate(`/lobby/${slug}?game=${gameId}`);
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
-      case 'easy': return 'text-green-400';
-      case 'medium': return 'text-yellow-400';
-      case 'hard': return 'text-red-400';
-      default: return 'text-gray-400';
-    }
   };
 
   return (
@@ -129,12 +117,6 @@ const ExplorePage: React.FC = () => {
                 <div>
                   <span className="text-gray-400">Duration:</span>
                   <div className="font-semibold">{game.duration}</div>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-gray-400">Difficulty:</span>
-                  <div className={`font-semibold ${getDifficultyColor(game.difficulty)}`}>
-                    {game.difficulty}
-                  </div>
                 </div>
               </div>
 

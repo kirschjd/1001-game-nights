@@ -23,7 +23,6 @@ const LobbyPage: React.FC = () => {
   const navigate = useNavigate();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [lobby, setLobby] = useState<LobbyState | null>(null);
-  const [playerName, setPlayerName] = useState('');
   const [isJoined, setIsJoined] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
@@ -53,7 +52,6 @@ const LobbyPage: React.FC = () => {
     // Auto-generate player name and join
     if (socket && !isJoined && slug) {
       const generatedName = `Player ${Math.floor(Math.random() * 1000)}`;
-      setPlayerName(generatedName);
       socket.emit('join-lobby', { slug, playerName: generatedName });
       setIsJoined(true);
     }
@@ -69,8 +67,13 @@ const LobbyPage: React.FC = () => {
   const handleNameSubmit = () => {
     if (socket && tempName.trim()) {
       socket.emit('update-player-name', { slug, newName: tempName.trim() });
-      setPlayerName(tempName.trim());
       setEditingName(false);
+    }
+  };
+
+  const handleGameTypeChange = (newGameType: string) => {
+    if (socket && isLeader) {
+      socket.emit('update-game-type', { slug, gameType: newGameType });
     }
   };
 
@@ -104,7 +107,6 @@ const LobbyPage: React.FC = () => {
   };
 
   const isLeader = lobby && socket && lobby.leaderId === socket.id;
-  const currentPlayer = lobby?.players.find(p => p.id === socket?.id);
 
   if (!lobby) {
     return (
@@ -265,12 +267,7 @@ const LobbyPage: React.FC = () => {
               </label>
               <select
                 value={lobby.gameType}
-                onChange={(e) => {
-                  if (socket && isLeader) {
-                    // TODO: Emit game type change
-                    console.log('Game type changed to:', e.target.value);
-                  }
-                }}
+                onChange={(e) => handleGameTypeChange(e.target.value)}
                 disabled={!isLeader}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white disabled:opacity-50"
               >
