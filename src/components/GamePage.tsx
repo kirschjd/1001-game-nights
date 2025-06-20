@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
 import WarGame from './games/WarGame';
+import DiceFactoryGame from './games/DiceFactoryGame';
 
 interface WarGameState {
   type: string;
@@ -17,26 +18,27 @@ interface WarGameState {
   currentPlayer?: any;
 }
 
-interface GameState {
+interface DiceFactoryGameState {
   type: string;
-  phase: string;
+  phase: 'rolling' | 'playing' | 'revealing' | 'complete';
   round: number;
-  winner?: string | null;
+  turnCounter: number;
+  currentPlayerIndex: number;
+  collapseStarted: boolean;
+  collapseDice: number[];
+  activeEffects: any[];
+  winner: string | null;
   players: any[];
-  roundResults?: {
-    message: string;
-    winner: string | null;
-    highCard: number | null;
-  } | null;
   currentPlayer?: any;
-  [key: string]: any;
 }
+
+type GameState = WarGameState | DiceFactoryGameState;
 
 const GamePage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [gameState, setGameState] = useState<WarGameState | null>(null);
+  const [gameState, setGameState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLeader, setIsLeader] = useState(false);
   const [hasJoinedLobby, setHasJoinedLobby] = useState(false);
@@ -48,14 +50,23 @@ const GamePage: React.FC = () => {
     // Listen for game state updates
     newSocket.on('game-started', (state: GameState) => {
       console.log('Game started:', state);
-      setGameState(state as WarGameState);
+      setGameState(state);
       setLoading(false);
     });
 
     newSocket.on('game-state-updated', (state: GameState) => {
       console.log('Game state updated:', state);
-      setGameState(state as WarGameState);
+      setGameState(state);
       setLoading(false);
+    });
+
+    // Listen for dice factory specific events
+    newSocket.on('dice-factory-error', (data) => {
+      alert(`Error: ${data.error}`);
+    });
+
+    newSocket.on('dice-factory-scored', (data) => {
+      alert(`Scored ${data.type} for ${data.points} points!`);
     });
 
     // Listen for lobby updates to determine leadership
@@ -135,10 +146,11 @@ const GamePage: React.FC = () => {
       <header className="p-4 border-b border-gray-700 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">
-            🎮 Playing: {gameState.type === 'war' ? 'War' : gameState.type}
+            🎮 Playing: {gameState.type === 'war' ? 'War' : gameState.type === 'dice-factory' ? 'Dice Factory' : gameState.type}
           </h1>
           <p className="text-gray-300">
-            {gameState.type === 'war' ? `Round ${gameState.round}` : `Phase: ${gameState.phase}`}
+            {gameState.type === 'war' && `Round ${gameState.round}`}
+            {gameState.type === 'dice-factory' && `Round ${gameState.round} | Phase: ${gameState.phase}`}
           </p>
           <p className="text-sm text-gray-400">Playing as: {playerName}</p>
           {currentPlayer && (
@@ -159,41 +171,29 @@ const GamePage: React.FC = () => {
       <div className="p-6">
         {gameState.type === 'war' && (
           <WarGame 
-            gameState={gameState} 
+            gameState={gameState as WarGameState} 
             socket={socket} 
             isLeader={isLeader}
           />
         )}
         
         {gameState.type === 'dice-factory' && (
-          <DiceFactoryPlaceholder gameState={gameState} />
+          <DiceFactoryGame 
+            gameState={gameState as DiceFactoryGameState} 
+            socket={socket} 
+            isLeader={isLeader}
+          />
         )}
-      </div>
-    </div>
-  );
-};
 
-// Placeholder for Dice Factory
-const DiceFactoryPlaceholder: React.FC<{ gameState: GameState }> = ({ gameState }) => {
-  return (
-    <div className="text-center">
-      <div className="bg-gray-800 rounded-xl p-8 max-w-2xl mx-auto">
-        <h2 className="text-3xl font-bold mb-6">🎲 Dice Factory</h2>
-        <p className="text-gray-300 mb-6">
-          Dice Factory implementation coming soon! This will feature:
-        </p>
-        <ul className="text-left text-gray-300 space-y-2 mb-8">
-          <li>• Individual dice pools for each player</li>
-          <li>• Dice promotion and recruitment systems</li>
-          <li>• Trick scoring (straights and sets)</li>
-          <li>• Factory collapse mechanics</li>
-          <li>• Real-time turn synchronization</li>
-        </ul>
-        <div className="bg-purple-900 p-4 rounded-lg">
-          <p className="text-sm">
-            <strong>Current Game State:</strong> {JSON.stringify(gameState, null, 2)}
-          </p>
-        </div>
+        {/* Debug info - remove this once working */}
+        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && (
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Unknown Game Type: {gameState.type}</h2>
+            <pre className="text-left bg-gray-800 p-4 rounded">
+              {JSON.stringify(gameState, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   );

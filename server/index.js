@@ -9,6 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 
 // Import game modules
 const WarGame = require('./games/war');
+const DiceFactoryGame = require('./games/dice-factory');
 
 const app = express();
 const server = http.createServer(app);
@@ -319,9 +320,8 @@ io.on('connection', (socket) => {
       game = new WarGame(lobby.players.filter(p => p.isConnected));
       game.dealCards(); // Start first round
     } else if (lobby.gameType === 'dice-factory') {
-      // TODO: Initialize Dice Factory game
-      console.log('Dice Factory not implemented yet');
-      return;
+      game = new DiceFactoryGame(lobby.players.filter(p => p.isConnected));
+      game.startRound(); // Start first round
     }
     
     if (game) {
@@ -390,6 +390,101 @@ io.on('connection', (socket) => {
       });
     }
   });
+
+  // Dice Factory game specific events
+  socket.on('dice-factory-roll', () => {
+    const game = games.get(socket.lobbySlug);
+    
+    if (!game || game.state.type !== 'dice-factory') {
+      return;
+    }
+    
+    const result = game.rollDice(socket.id);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(socket.lobbySlug, game);
+    }
+  });
+
+  socket.on('dice-factory-promote', (data) => {
+    const game = games.get(socket.lobbySlug);
+    
+    if (!game || game.state.type !== 'dice-factory') {
+      return;
+    }
+    
+    const result = game.promoteDice(socket.id, data);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(socket.lobbySlug, game);
+    } else {
+      socket.emit('dice-factory-error', { error: result.error });
+    }
+  });
+
+  socket.on('dice-factory-recruit', (data) => {
+    const game = games.get(socket.lobbySlug);
+    
+    if (!game || game.state.type !== 'dice-factory') {
+      return;
+    }
+    
+    const result = game.recruitDice(socket.id, data.recruitingDieId);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(socket.lobbySlug, game);
+    } else {
+      socket.emit('dice-factory-error', { error: result.error });
+    }
+  });
+
+  socket.on('dice-factory-score-straight', (data) => {
+    const game = games.get(socket.lobbySlug);
+    
+    if (!game || game.state.type !== 'dice-factory') {
+      return;
+    }
+    
+    const result = game.scoreStright(socket.id, data.diceIds);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(socket.lobbySlug, game);
+      socket.emit('dice-factory-scored', { 
+        type: 'straight', 
+        points: result.points 
+      });
+    } else {
+      socket.emit('dice-factory-error', { error: result.error });
+    }
+  });
+
+  socket.on('dice-factory-score-set', (data) => {
+    const game = games.get(socket.lobbySlug);
+    
+    if (!game || game.state.type !== 'dice-factory') {
+      return;
+    }
+    
+    const result = game.scoreSet(socket.id, data.diceIds);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(socket.lobbySlug, game);
+      socket.emit('dice-factory-scored', { 
+        type: 'set', 
+        points: result.points 
+      });
+    } else {
+      socket.emit('dice-factory-error', { error: result.error });
+    }
+  });
+
+  socket.on('dice-factory-end-turn', () => {
+    const game = games.get(socket.lobbySlug);
+    
+    if (!game || game.state.type !== 'dice-factory') {
+      return;
+    }
+    
+    const result = game.endTurn(socket.id);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(socket.lobbySlug, game);
+    }
+  });
   
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
@@ -426,6 +521,19 @@ io.on('connection', (socket) => {
     }
   });
 });
+
+// Helper function to broadcast dice factory updates
+function broadcastDiceFactoryUpdate(slug, game) {
+  const lobby = lobbies.get(slug);
+  if (lobby) {
+    lobby.players.forEach(player => {
+      if (player.isConnected) {
+        const playerView = game.getPlayerView(player.id);
+        io.to(player.id).emit('game-state-updated', playerView);
+      }
+    });
+  }
+}
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
