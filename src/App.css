@@ -134,3 +134,45 @@ select:focus {
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
+
+/* Subtle texture patterns */
+.subtle-texture {
+  position: relative;
+}
+
+.subtle-texture::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.4;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+.subtle-texture-fine {
+  position: relative;
+}
+
+.subtle-texture-fine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.3;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0);
+  background-size: 15px 15px;
+}
+
+/* Background texture for payne theme */
+.payne-bg-textured {
+  background-color: #4A4C5A; /* payne-grey-dark */
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
+  background-size: 20px 20px;
+}

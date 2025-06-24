@@ -1,15 +1,12 @@
-import React, { useState } from 'react';
+// 1001 Game Nights - Dice Factory Game Component
+// Version: 1.3.0 - Refactored dice rendering and improved layout
+// Updated: December 2024
+
+import React, { useState, useEffect } from 'react';
 import { Socket } from 'socket.io-client';
+import DiceRenderer, { Die } from './DiceRenderer';
 
-interface Die {
-  sides: number;
-  value: number | null;
-  shiny: boolean;
-  rainbow: boolean;
-  id: string;
-}
-
-interface DiceFactoryPlayer {
+interface Player {
   id: string;
   name: string;
   dicePool: Die[];
@@ -17,12 +14,16 @@ interface DiceFactoryPlayer {
   freePips: number;
   score: number;
   hasFled: boolean;
-  hasActed: boolean;
+  isReady: boolean;
+  currentTurnActions?: any[];
 }
 
-interface FactoryEffect {
-  name: string;
-  description: string;
+interface GameLogEntry {
+  timestamp: string;
+  player: string;
+  message: string;
+  actionType: 'info' | 'action' | 'score' | 'system' | 'error';
+  round: number;
 }
 
 interface DiceFactoryGameState {
@@ -30,13 +31,16 @@ interface DiceFactoryGameState {
   phase: 'rolling' | 'playing' | 'revealing' | 'complete';
   round: number;
   turnCounter: number;
-  currentPlayerIndex: number;
   collapseStarted: boolean;
   collapseDice: number[];
-  activeEffects: FactoryEffect[];
+  activeEffects: any[];
   winner: string | null;
-  players: DiceFactoryPlayer[];
-  currentPlayer?: DiceFactoryPlayer;
+  lastCollapseRoll: string | null;
+  gameLog: GameLogEntry[];
+  allPlayersReady: boolean;
+  players: Player[];
+  currentPlayer?: Player;
+  exhaustedDice?: string[];
 }
 
 interface DiceFactoryGameProps {
@@ -47,235 +51,323 @@ interface DiceFactoryGameProps {
 
 const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({ gameState, socket, isLeader }) => {
   const [selectedDice, setSelectedDice] = useState<string[]>([]);
-  const [actionMode, setActionMode] = useState<'promote' | 'straight' | 'set' | 'recruit'>('promote');
-  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
+  const [actionMode, setActionMode] = useState<'promote' | 'recruit' | 'straight' | 'set' | 'pips' | null>(null);
+  const [message, setMessage] = useState<string>('');
+  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
 
-  const { phase, round, turnCounter, collapseStarted, players, currentPlayer, activeEffects } = gameState;
+  const { currentPlayer, players, phase, collapseStarted, activeEffects, winner } = gameState;
 
-  // Recruitment table
-  const recruitTable: { [key: number]: { [key: number]: number } } = {
-    4: { 1: 4 },
-    6: { 1: 6, 2: 4 },
-    8: { 1: 8, 2: 6, 3: 4 },
-    10: { 1: 10, 2: 8, 3: 6, 4: 4 },
-    12: { 1: 12, 2: 10, 3: 8, 4: 6, 5: 4 }
+  // Clear message after 3 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
+  // Clear selections when action mode changes
+  useEffect(() => {
+    setSelectedDice([]);
+  }, [actionMode]);
+
+  const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setMessage(text);
+    setMessageType(type);
   };
 
-  const canRecruit = (die: Die): number | null => {
-    if (!die.value) return null;
-    return recruitTable[die.sides]?.[die.value] || null;
+  const canTakeActions = () => {
+    return currentPlayer && !currentPlayer.hasFled && !currentPlayer.isReady && phase === 'playing';
   };
 
-  const handleDieClick = (dieId: string) => {
+  const isExhausted = (dieId: string) => {
+    return gameState.exhaustedDice?.includes(dieId) || false;
+  };
+
+  const isDieSelectable = (die: Die): boolean => {
+    if (!canTakeActions() || isExhausted(die.id) || die.value === null) return false;
+
+    switch (actionMode) {
+      case 'recruit':
+        // Only dice that can recruit
+        const recruitTable: Record<number, number[]> = {
+          4: [1],
+          6: [1, 2],
+          8: [1, 2, 3],
+          10: [1, 2, 3, 4],
+          12: [1, 2, 3, 4, 5]
+        };
+        return recruitTable[die.sides]?.includes(die.value!) || false;
+      
+      case 'promote':
+      case 'straight':
+      case 'set':
+      case 'pips':
+        return true;
+      
+      default:
+        return false;
+    }
+  };
+
+  const handleDieClick = (die: Die) => {
+    if (!isDieSelectable(die)) return;
+
     if (actionMode === 'recruit') {
-      // Handle recruitment
-      const die = currentPlayer?.dicePool.find(d => d.id === dieId);
-      if (die && canRecruit(die)) {
-        handleRecruitDice(dieId);
-      }
+      // Immediate recruitment - no selection needed
+      handleRecruitDice(die.id);
       return;
     }
-    
-    // Handle selection for other modes
+
+    if (actionMode === 'pips' && selectedDice.length > 0) {
+      // Only one die for pip actions
+      setSelectedDice([die.id]);
+      return;
+    }
+
+    // Toggle selection for other modes
     setSelectedDice(prev => 
-      prev.includes(dieId) 
-        ? prev.filter(id => id !== dieId)
-        : [...prev, dieId]
+      prev.includes(die.id) 
+        ? prev.filter(id => id !== die.id)
+        : [...prev, die.id]
     );
   };
 
+  const renderDie = (die: Die, selectable: boolean = false, highlighted: boolean = false): JSX.Element => {
+    const isSelected = selectedDice.includes(die.id);
+    const exhausted = isExhausted(die.id);
+    const canSelect = selectable && isDieSelectable(die);
+
+    return (
+      <DiceRenderer
+        key={die.id}
+        die={die}
+        isSelected={isSelected}
+        isExhausted={exhausted}
+        canSelect={canSelect}
+        highlighted={highlighted}
+        onClick={() => handleDieClick(die)}
+      />
+    );
+  };
+
+  // Action handlers
   const handleRollDice = () => {
-    if (socket && currentPlayer) {
-      socket.emit('dice-factory-roll', {});
+    if (socket) {
+      socket.emit('dice-factory-roll');
+    }
+  };
+
+  const handleUndo = () => {
+    if (socket) {
+      socket.emit('dice-factory-undo');
+    }
+  };
+
+  const handleEndTurn = () => {
+    if (socket) {
+      socket.emit('dice-factory-end-turn');
+    }
+  };
+
+  const handleFlee = () => {
+    if (socket && window.confirm('Are you sure you want to flee the factory? Your points will be locked in.')) {
+      socket.emit('dice-factory-flee');
+    }
+  };
+
+  const handleNewGame = () => {
+    if (socket && window.confirm('Start a new game with the same players?')) {
+      socket.emit('dice-factory-new-game');
     }
   };
 
   const handlePromoteDice = () => {
-    if (socket && selectedDice.length >= 1) {
-      const targetDieId = selectedDice[0];
-      const helperDieIds = selectedDice.slice(1);
-      
-      socket.emit('dice-factory-promote', {
-        targetDieId,
-        helperDieIds
-      });
-      
+    if (selectedDice.length === 0) {
+      showMessage('Select at least one die to promote', 'error');
+      return;
+    }
+
+    if (socket) {
+      const [targetDieId, ...helperDieIds] = selectedDice;
+      socket.emit('dice-factory-promote', { targetDieId, helperDieIds });
       setSelectedDice([]);
     }
   };
 
-  const handleRecruitDice = (dieId: string) => {
+  const handleRecruitDice = (recruitingDieId: string) => {
     if (socket) {
-      socket.emit('dice-factory-recruit', { recruitingDieId: dieId });
+      socket.emit('dice-factory-recruit', { recruitingDieId });
     }
   };
 
   const handleScoreStraight = () => {
-    if (socket && selectedDice.length >= 2) {
+    if (selectedDice.length < 2) {
+      showMessage('Select at least 2-3 dice for straight', 'error');
+      return;
+    }
+
+    if (socket) {
       socket.emit('dice-factory-score-straight', { diceIds: selectedDice });
       setSelectedDice([]);
     }
   };
 
   const handleScoreSet = () => {
-    if (socket && selectedDice.length >= 3) {
+    if (selectedDice.length < 3) {
+      showMessage('Select at least 3-4 dice for set', 'error');
+      return;
+    }
+
+    if (socket) {
       socket.emit('dice-factory-score-set', { diceIds: selectedDice });
       setSelectedDice([]);
     }
   };
 
-  const handleEndTurn = () => {
+  const handleModifyDie = (change: number) => {
+    if (selectedDice.length !== 1) {
+      showMessage('Select exactly one die to modify', 'error');
+      return;
+    }
+
     if (socket) {
-      socket.emit('dice-factory-end-turn', {});
+      socket.emit('dice-factory-modify-die', { dieId: selectedDice[0], change });
       setSelectedDice([]);
     }
   };
 
-  const getDieColor = (die: Die) => {
-    const colors: { [key: number]: string } = {
-      4: 'bg-red-500 border-red-400',
-      6: 'bg-blue-500 border-blue-400', 
-      8: 'bg-green-500 border-green-400',
-      10: 'bg-purple-500 border-purple-400',
-      12: 'bg-yellow-500 border-yellow-400'
-    };
-    return colors[die.sides] || 'bg-gray-500 border-gray-400';
+  const handleRerollDie = () => {
+    if (selectedDice.length !== 1) {
+      showMessage('Select exactly one die to reroll', 'error');
+      return;
+    }
+
+    if (socket) {
+      socket.emit('dice-factory-reroll-die', { dieId: selectedDice[0] });
+      setSelectedDice([]);
+    }
   };
 
-  const renderDie = (die: Die, canClick: boolean = true, showRecruitInfo: boolean = false) => {
-    const isSelected = selectedDice.includes(die.id);
-    const color = getDieColor(die);
-    const recruitSize = canRecruit(die);
-    const canRecruitThis = actionMode === 'recruit' && recruitSize;
-    
+  if (!currentPlayer) {
     return (
-      <div
-        key={die.id}
-        onClick={() => canClick && handleDieClick(die.id)}
-        className={`
-          relative w-16 h-16 ${color} rounded-lg border-2 
-          flex flex-col items-center justify-center text-white font-bold
-          cursor-pointer transition-all duration-200 hover:scale-105
-          ${isSelected ? 'ring-4 ring-white scale-110' : ''}
-          ${canRecruitThis ? 'ring-2 ring-yellow-400 animate-pulse' : ''}
-          ${!canClick ? 'opacity-50 cursor-not-allowed' : ''}
-        `}
-      >
-        <div className="text-lg">{die.value || '?'}</div>
-        <div className="text-xs">d{die.sides}</div>
-        
-        {die.shiny && <span className="absolute -top-1 -right-1 text-xs">✨</span>}
-        {die.rainbow && <span className="absolute -top-1 -left-1 text-xs">🌈</span>}
-        
-        {/* Show recruitment info */}
-        {showRecruitInfo && recruitSize && (
-          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-xs px-1 rounded">
-            →d{recruitSize}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderPlayerDicePool = (player: DiceFactoryPlayer, isExpanded: boolean) => {
-    if (!isExpanded) return null;
-    
-    return (
-      <div className="mt-3 p-3 bg-gray-900 rounded-lg">
-        <div className="flex flex-wrap gap-2 mb-2">
-          {player.dicePool.map(die => renderDie(die, false))}
-        </div>
-        <div className="text-sm text-gray-400">
-          Free Pips: {player.freePips} | Dice Floor: {player.diceFloor}
-          {player.hasFled && <span className="text-red-400 ml-2">(FLED)</span>}
-          {player.hasActed && <span className="text-green-400 ml-2">(Turn Complete)</span>}
-        </div>
-      </div>
-    );
-  };
-
-  if (phase === 'complete') {
-    const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-    
-    return (
-      <div className="text-center">
-        <div className="bg-gray-800 rounded-xl p-8 max-w-2xl mx-auto">
-          <h2 className="text-4xl font-bold mb-6 text-green-400">🎲 Factory Shutdown! 🎲</h2>
-          
-          <div className="bg-gray-700 rounded-lg p-6 mb-6">
-            <h3 className="text-xl font-semibold mb-4">Final Scores</h3>
-            <div className="space-y-2">
-              {sortedPlayers.map((player, index) => (
-                <div
-                  key={player.id}
-                  className={`flex justify-between items-center p-3 rounded ${
-                    index === 0 ? 'bg-yellow-600' : 'bg-gray-600'
-                  }`}
-                >
-                  <span className="font-semibold">
-                    {index === 0 ? '👑 ' : `${index + 1}. `}
-                    {player.name} {player.hasFled ? '(Escaped)' : '(Crushed)'}
-                  </span>
-                  <span className="text-xl font-bold">{player.score}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      <div className="text-center p-8">
+        <p className="text-xl text-red-400">Unable to load player data</p>
+        <p className="text-gray-400 mt-2">Please try refreshing the page or returning to the lobby</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Game Header */}
-      <div className="bg-gray-800 rounded-lg p-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">🏭 Dice Factory - Round {round}</h2>
-            <p className="text-gray-300">
-              Turn Counter: {turnCounter} 
-              {collapseStarted && <span className="text-red-400 ml-2">⚠️ COLLAPSING!</span>}
-            </p>
+      {/* Message Display */}
+      {message && (
+        <div className={`p-3 rounded-lg text-center font-semibold ${
+          messageType === 'success' ? 'bg-green-600' :
+          messageType === 'error' ? 'bg-red-600' : 'bg-uranian-blue/80 text-gray-900'
+        }`}>
+          {message}
+        </div>
+      )}
+
+      {/* Game Complete Screen */}
+      {phase === 'complete' && (
+        <div className="text-center p-8 bg-payne-grey/50 rounded-lg border-2 border-lion">
+          <h2 className="text-4xl font-bold mb-4 text-lion">🏆 Game Complete!</h2>
+          <p className="text-2xl mb-6">
+            Winner: <span className="text-lion-light font-bold">{winner}</span>
+          </p>
+          
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold mb-3 text-uranian-blue">Final Scores:</h3>
+            <div className="space-y-2">
+              {players.map(player => (
+                <div key={player.id} className={`flex justify-between items-center p-2 rounded ${
+                  player.name === winner ? 'bg-lion/30 border border-lion' : 'bg-payne-grey/20 border border-payne-grey'
+                }`}>
+                  <span>{player.name}</span>
+                  <span className="font-bold">{player.score} points</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-400">Collapse Dice:</div>
-            <div>{gameState.collapseDice.map(d => `d${d}`).join(' + ')}</div>
+
+          {isLeader && (
+            <button
+              onClick={handleNewGame}
+              className="bg-lion hover:bg-lion-dark px-8 py-4 rounded-lg font-bold text-xl transition-colors text-white"
+            >
+              🎮 New Game (Same Players)
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Game Status */}
+      {phase !== 'complete' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+          <div className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/30">
+            <div className="text-2xl font-bold text-uranian-blue">{gameState.round}</div>
+            <div className="text-sm text-gray-400">Round</div>
+          </div>
+          <div className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/30">
+            <div className="text-2xl font-bold text-lion">{gameState.turnCounter}</div>
+            <div className="text-sm text-gray-400">Turn Counter</div>
+          </div>
+          <div className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/30">
+            <div className={`text-2xl font-bold ${collapseStarted ? 'text-red-400' : 'text-green-400'}`}>
+              {collapseStarted ? 'COLLAPSING!' : 'STABLE'}
+            </div>
+            <div className="text-sm text-gray-400">Factory Status</div>
+          </div>
+          <div className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/30">
+            <div className="text-2xl font-bold text-yellow-400">
+              {gameState.lastCollapseRoll || 'None'}
+            </div>
+            <div className="text-sm text-gray-400">Last Roll</div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Factory Effects */}
-      <div className="bg-gray-800 rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-3">🔧 Factory Effects</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {activeEffects.map((effect, index) => (
-            <div key={index} className="bg-gray-700 p-3 rounded-lg">
-              <div className="font-semibold text-blue-400">{effect.name}</div>
-              <div className="text-sm text-gray-300">{effect.description}</div>
-            </div>
-          ))}
+      {activeEffects.length > 0 && (
+        <div className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/30">
+          <h3 className="text-lg font-semibold mb-3 text-uranian-blue">🏭 Active Factory Effects</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {activeEffects.map((effect, index) => (
+              <div key={index} className="bg-payne-grey/70 p-3 rounded border border-uranian-blue/20">
+                <div className="font-semibold text-lion">{effect.name}</div>
+                <div className="text-sm text-gray-300">{effect.description}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Current Player's Area */}
-      {currentPlayer && (
-        <div className="bg-gray-800 rounded-lg p-6">
+      {/* Current Player Section */}
+      {phase !== 'complete' && (
+        <div className={`bg-payne-grey/50 p-6 rounded-lg border border-uranian-blue/30 ${currentPlayer.isReady ? 'ring-2 ring-green-400' : ''}`}>
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">Your Factory</h3>
+            <h3 className="text-xl font-semibold text-uranian-blue">
+              Your Factory 
+              {currentPlayer.isReady && <span className="text-green-400 ml-2">(Ready - Waiting for others)</span>}
+              {currentPlayer.hasFled && <span className="text-red-400 ml-2">(Fled)</span>}
+            </h3>
             <div className="flex space-x-4 text-sm">
-              <span>Score: <strong className="text-green-400">{currentPlayer.score}</strong></span>
-              <span>Free Pips: <strong className="text-blue-400">{currentPlayer.freePips}</strong></span>
+              <span>Score: <strong className="text-lion">{currentPlayer.score}</strong></span>
+              <span>Free Pips: <strong className="text-uranian-blue">{currentPlayer.freePips}</strong></span>
               <span>Dice Floor: <strong className="text-purple-400">{currentPlayer.diceFloor}</strong></span>
+              {currentPlayer.currentTurnActions && (
+                <span>Actions: <strong className="text-yellow-400">{currentPlayer.currentTurnActions.length}</strong></span>
+              )}
             </div>
           </div>
 
           {/* Dice Pool */}
           <div className="mb-6">
-            <h4 className="text-lg font-semibold mb-3">Your Dice Pool</h4>
-            <div className="flex flex-wrap gap-3 p-4 bg-gray-900 rounded-lg min-h-24 relative">
+            <h4 className="text-lg font-semibold mb-3 text-uranian-blue">Your Dice Pool</h4>
+            <div className="flex flex-wrap gap-3 p-4 bg-payne-grey/70 rounded-lg min-h-24 relative border border-uranian-blue/20">
               {currentPlayer.dicePool.map(die => 
-                renderDie(die, phase === 'playing' && !currentPlayer.hasActed, actionMode === 'recruit')
+                renderDie(die, canTakeActions(), actionMode === 'recruit')
               )}
               {currentPlayer.dicePool.length === 0 && (
                 <div className="text-gray-500 italic">No dice in pool</div>
@@ -283,39 +375,61 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({ gameState, socket, is
             </div>
           </div>
 
-          {/* Action Buttons */}
-          {phase === 'playing' && !currentPlayer.hasActed && (
+          {/* Action Controls */}
+          {canTakeActions() && (
             <div className="space-y-4">
-              {/* Mode Selection */}
+              {/* Primary Controls */}
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => setActionMode('promote')}
-                  className={`px-4 py-2 rounded transition-colors ${
-                    actionMode === 'promote' ? 'bg-purple-600 text-white' : 'bg-gray-600 hover:bg-gray-500'
-                  }`}
+                  onClick={handleRollDice}
+                  className="bg-uranian-blue hover:bg-uranian-blue/80 px-6 py-2 rounded transition-colors font-semibold text-gray-900"
                 >
-                  ⬆️ Promote Dice
+                  🎲 Roll All Dice
                 </button>
+                
                 <button
-                  onClick={() => setActionMode('recruit')}
-                  className={`px-4 py-2 rounded transition-colors ${
-                    actionMode === 'recruit' ? 'bg-orange-600 text-white' : 'bg-gray-600 hover:bg-gray-500'
+                  onClick={() => setActionMode(actionMode === 'recruit' ? null : 'recruit')}
+                  className={`px-4 py-2 rounded transition-colors font-semibold ${
+                    actionMode === 'recruit' ? 'bg-lion text-white' : 'bg-payne-grey hover:bg-payne-grey-light text-white border border-uranian-blue/30'
                   }`}
                 >
                   👥 Recruit Dice
                 </button>
+
                 <button
-                  onClick={() => setActionMode('straight')}
-                  className={`px-4 py-2 rounded transition-colors ${
-                    actionMode === 'straight' ? 'bg-green-600 text-white' : 'bg-gray-600 hover:bg-gray-500'
+                  onClick={() => setActionMode(actionMode === 'promote' ? null : 'promote')}
+                  className={`px-4 py-2 rounded transition-colors font-semibold ${
+                    actionMode === 'promote' ? 'bg-lion text-white' : 'bg-payne-grey hover:bg-payne-grey-light text-white border border-uranian-blue/30'
+                  }`}
+                >
+                  ⬆️ Promote Dice
+                </button>
+
+                <button
+                  onClick={() => setActionMode(actionMode === 'pips' ? null : 'pips')}
+                  className={`px-4 py-2 rounded transition-colors font-semibold ${
+                    actionMode === 'pips' ? 'bg-lion text-white' : 'bg-payne-grey hover:bg-payne-grey-light text-white border border-uranian-blue/30'
+                  }`}
+                >
+                  💎 Use Free Pips
+                </button>
+              </div>
+
+              {/* Scoring Controls */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setActionMode(actionMode === 'straight' ? null : 'straight')}
+                  className={`px-4 py-2 rounded transition-colors font-semibold ${
+                    actionMode === 'straight' ? 'bg-lion text-white' : 'bg-payne-grey hover:bg-payne-grey-light text-white border border-uranian-blue/30'
                   }`}
                 >
                   📈 Score Straight
                 </button>
+
                 <button
-                  onClick={() => setActionMode('set')}
-                  className={`px-4 py-2 rounded transition-colors ${
-                    actionMode === 'set' ? 'bg-yellow-600 text-white' : 'bg-gray-600 hover:bg-gray-500'
+                  onClick={() => setActionMode(actionMode === 'set' ? null : 'set')}
+                  className={`px-4 py-2 rounded transition-colors font-semibold ${
+                    actionMode === 'set' ? 'bg-lion text-white' : 'bg-payne-grey hover:bg-payne-grey-light text-white border border-uranian-blue/30'
                   }`}
                 >
                   🎯 Score Set
@@ -323,122 +437,164 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({ gameState, socket, is
               </div>
 
               {/* Action Instructions */}
-              <div className="bg-gray-700 p-3 rounded text-sm">
+              <div className="bg-payne-grey/70 p-3 rounded text-sm border border-uranian-blue/20">
+                {!actionMode && <span className="text-gray-400">Select an action mode above to interact with your dice</span>}
                 {actionMode === 'promote' && (
-                  <span>Select dice to promote. First die = target, others = helpers. Need enough pips to upgrade.</span>
+                  <span className="text-uranian-blue">Click dice to select: First die = target to promote, additional dice = helpers for pips</span>
                 )}
                 {actionMode === 'recruit' && (
-                  <span>Click dice that show recruiting values (highlighted) to gain new dice!</span>
+                  <span className="text-uranian-blue">Click highlighted dice to recruit new dice! (d4 on 1s, d6 on 1-2s, etc.)</span>
                 )}
                 {actionMode === 'straight' && (
-                  <span>Select 3+ dice with consecutive values (1-2-3, 2-3-4, etc.)</span>
+                  <span className="text-uranian-blue">Select 2+ dice with consecutive values (1-2-3, 2-3-4, etc.)</span>
                 )}
                 {actionMode === 'set' && (
-                  <span>Select 4+ dice with the same value</span>
+                  <span className="text-uranian-blue">Select 3+ dice with the same value</span>
+                )}
+                {actionMode === 'pips' && (
+                  <span className="text-uranian-blue">Select one die to modify (+1 = 4 pips, -1 = +3 pips) or reroll (2 pips)</span>
                 )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={handleRollDice}
-                  className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded transition-colors"
-                >
-                  🎲 Roll All Dice
-                </button>
-                
-                {actionMode === 'promote' && (
-                  <button
-                    onClick={handlePromoteDice}
-                    disabled={selectedDice.length < 1}
-                    className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors"
-                  >
-                    ⬆️ Promote ({selectedDice.length} selected)
-                  </button>
-                )}
-                
-                {actionMode === 'straight' && (
-                  <button
-                    onClick={handleScoreStraight}
-                    disabled={selectedDice.length < 2}
-                    className="bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors"
-                  >
-                    📈 Score Straight ({selectedDice.length} selected)
-                  </button>
-                )}
-                
-                {actionMode === 'set' && (
-                  <button
-                    onClick={handleScoreSet}
-                    disabled={selectedDice.length < 3}
-                    className="bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors"
-                  >
-                    🎯 Score Set ({selectedDice.length} selected)
-                  </button>
-                )}
-                
-                <button
-                  onClick={handleEndTurn}
-                  className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded transition-colors"
-                >
-                  ✅ End Turn
-                </button>
-              </div>
+              {/* Action Execution Buttons */}
+              {actionMode && (
+                <div className="flex flex-wrap gap-2">
+                  {actionMode === 'promote' && (
+                    <button
+                      onClick={handlePromoteDice}
+                      disabled={selectedDice.length < 1}
+                      className="bg-lion hover:bg-lion-dark disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors font-semibold text-white"
+                    >
+                      ⬆️ Promote ({selectedDice.length} selected)
+                    </button>
+                  )}
+                  
+                  {actionMode === 'straight' && (
+                    <button
+                      onClick={handleScoreStraight}
+                      disabled={selectedDice.length < 2}
+                      className="bg-lion hover:bg-lion-dark disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors font-semibold text-white"
+                    >
+                      📈 Score Straight ({selectedDice.length} selected)
+                    </button>
+                  )}
+                  
+                  {actionMode === 'set' && (
+                    <button
+                      onClick={handleScoreSet}
+                      disabled={selectedDice.length < 3}
+                      className="bg-lion hover:bg-lion-dark disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors font-semibold text-white"
+                    >
+                      🎯 Score Set ({selectedDice.length} selected)
+                    </button>
+                  )}
 
-              {/* Selected dice info */}
-              {selectedDice.length > 0 && actionMode !== 'recruit' && (
-                <div className="bg-gray-700 p-3 rounded">
-                  <div className="text-sm">
-                    Selected dice: {selectedDice.length} | 
-                    Values: {selectedDice.map(id => {
-                      const die = currentPlayer.dicePool.find(d => d.id === id);
-                      return die ? `d${die.sides}(${die.value})` : '?';
-                    }).join(', ')}
-                  </div>
+                  {actionMode === 'pips' && selectedDice.length === 1 && (
+                    <>
+                      <button
+                        onClick={() => handleModifyDie(1)}
+                        className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded transition-colors font-semibold text-white"
+                      >
+                        +1 Value (4 pips)
+                      </button>
+                      <button
+                        onClick={() => handleModifyDie(-1)}
+                        className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded transition-colors font-semibold text-white"
+                      >
+                        -1 Value (+3 pips)
+                      </button>
+                      <button
+                        onClick={handleRerollDie}
+                        className="bg-yellow-600 hover:bg-yellow-500 px-4 py-2 rounded transition-colors font-semibold text-white"
+                      >
+                        Reroll (2 pips)
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setActionMode(null);
+                      setSelectedDice([]);
+                    }}
+                    className="bg-payne-grey hover:bg-payne-grey-light px-4 py-2 rounded transition-colors text-white border border-uranian-blue/30"
+                  >
+                    Cancel
+                  </button>
                 </div>
               )}
             </div>
           )}
 
-          {currentPlayer.hasActed && (
-            <div className="bg-green-900 p-4 rounded-lg text-center">
-              <p className="text-green-200">✅ Turn completed! Waiting for other players...</p>
-            </div>
-          )}
+          {/* Turn Control Buttons - Always at bottom */}
+          <div className="flex gap-4 mt-6 pt-4 border-t border-uranian-blue/30">
+            <button
+              onClick={handleUndo}
+              disabled={!canTakeActions() || !currentPlayer.currentTurnActions || currentPlayer.currentTurnActions.length === 0}
+              className="flex-1 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-lg transition-colors font-bold text-white"
+            >
+              ↶ Undo Last ({currentPlayer.currentTurnActions?.length || 0} actions)
+            </button>
+            
+            <button
+              onClick={handleEndTurn}
+              disabled={!canTakeActions()}
+              className="flex-1 bg-lion hover:bg-lion-dark disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-lg transition-colors font-bold text-white"
+            >
+              ✅ End Turn
+            </button>
+
+            {collapseStarted && (
+              <button
+                onClick={handleFlee}
+                disabled={!canTakeActions()}
+                className="bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-lg transition-colors font-bold text-white"
+              >
+                🚪 Flee!
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      {/* All Players Scores with Expandable Details */}
-      <div className="bg-gray-800 rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-3">Player Scores</h3>
+      {/* Other Players - Moved below My Factory */}
+      {phase !== 'complete' && (
         <div className="space-y-3">
-          {players.map((player) => (
-            <div key={player.id} className="bg-gray-700 rounded-lg">
-              <div
-                onClick={() => setExpandedPlayer(expandedPlayer === player.id ? null : player.id)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors hover:bg-gray-600 ${
-                  player.id === currentPlayer?.id
-                    ? 'ring-2 ring-blue-400'
-                    : ''
-                }`}
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="font-semibold">{player.name}</span>
-                    {player.id === currentPlayer?.id && (
-                      <span className="text-blue-200 text-sm ml-2">(You)</span>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <span className="text-2xl font-bold text-green-400">{player.score}</span>
-                    <span className="text-sm text-gray-300">{player.dicePool.length} dice</span>
-                    <span className="text-lg">
-                      {expandedPlayer === player.id ? '▼' : '▶️'}
-                    </span>
+          <h3 className="text-xl font-semibold text-uranian-blue">Other Players</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {players.filter(p => p.id !== currentPlayer.id).map(player => (
+              <div key={player.id} className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/20">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-semibold text-white">{player.name}</h4>
+                  <div className="text-sm space-x-2">
+                    {player.isReady && <span className="text-green-400">✓ Ready</span>}
+                    {player.hasFled && <span className="text-red-400">🚪 Fled</span>}
                   </div>
                 </div>
+                <div className="text-sm text-gray-400 space-y-1">
+                  <div>Score: <span className="text-lion font-semibold">{player.score}</span></div>
+                  <div>Free Pips: <span className="text-uranian-blue">{player.freePips}</span></div>
+                  <div>Dice: <span className="text-purple-400">{player.dicePool.length}</span></div>
+                </div>
               </div>
-              {renderPlayerDicePool(player, expandedPlayer === player.id)}
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Game Log */}
+      <div className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/30">
+        <h3 className="text-lg font-semibold mb-3 text-uranian-blue">📜 Game Log</h3>
+        <div className="bg-payne-grey/70 p-3 rounded max-h-64 overflow-y-auto border border-uranian-blue/20">
+          {gameState.gameLog.slice(-20).map((entry, index) => (
+            <div key={index} className={`text-sm mb-1 ${
+              entry.actionType === 'error' ? 'text-red-400' :
+              entry.actionType === 'score' ? 'text-lion' :
+              entry.actionType === 'system' ? 'text-yellow-400' :
+              'text-gray-300'
+            }`}>
+              <span className="text-gray-500">[{entry.timestamp}]</span>
+              <span className="font-semibold"> {entry.player}:</span> {entry.message}
             </div>
           ))}
         </div>

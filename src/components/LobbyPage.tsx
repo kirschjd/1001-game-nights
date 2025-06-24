@@ -121,32 +121,62 @@ const LobbyPage: React.FC = () => {
 
   const isLeader = lobby && socket && lobby.leaderId === socket.id;
 
+  // Get game-specific colors
+  const gameColor = lobby?.gameType === 'war' ? 'tea-rose' : 'uranian-blue';
+  const gameColorClasses = lobby?.gameType === 'war' 
+    ? 'border-tea-rose/30 bg-tea-rose/10' 
+    : 'border-uranian-blue/30 bg-uranian-blue/10';
+
   if (!lobby) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-xl">Loading lobby...</p>
+      <div className="min-h-screen bg-payne-grey-dark text-white flex items-center justify-center relative">
+        {/* Subtle texture overlay */}
+        <div className="absolute inset-0 opacity-40" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
+          backgroundSize: '20px 20px'
+        }}></div>
+        <div className="text-center relative z-10">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-lion mx-auto mb-4"></div>
+          <p className="text-xl text-lion-light">Loading lobby...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white">
+    <div className="min-h-screen bg-payne-grey-dark text-white relative">
+      {/* Subtle texture overlay */}
+      <div className="absolute inset-0 opacity-40" style={{
+        backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
+        backgroundSize: '20px 20px'
+      }}></div>
+
       {/* Header */}
-      <header className="p-4 border-b border-gray-700">
-        <button
-          onClick={() => navigate('/')}
-          className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
-        >
-          ← Back to Home
-        </button>
+      <header className="p-4 border-b border-payne-grey relative z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img 
+              src="/assets/icon-home.jpg" 
+              alt="Home"
+              className="w-10 h-10 rounded border-2 border-lion"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-lion-light">🎯 Game Lobby</h1>
+              <p className="text-gray-300">Prepare for {lobby.gameType === 'war' ? 'War' : 'Dice Factory'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/')}
+            className="bg-payne-grey hover:bg-payne-grey-light px-4 py-2 rounded-lg transition-colors border border-payne-grey-light text-white"
+          >
+            ← Back to Home
+          </button>
+        </div>
       </header>
 
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen relative z-10">
         {/* Left Panel */}
-        <div className="w-1/3 p-6 border-r border-gray-700">
+        <div className="w-1/3 p-6 border-r border-payne-grey">
           {/* Lobby Title */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -160,25 +190,25 @@ const LobbyPage: React.FC = () => {
                     value={tempTitle}
                     onChange={(e) => setTempTitle(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleTitleSubmit()}
-                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    className="flex-1 px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
                     autoFocus
                   />
                   <button
                     onClick={handleTitleSubmit}
-                    className="px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg"
+                    className="px-3 py-2 bg-lion hover:bg-lion-dark rounded-lg text-white"
                   >
                     ✓
                   </button>
                   <button
                     onClick={() => setEditingTitle(false)}
-                    className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg"
+                    className="px-3 py-2 bg-payne-grey hover:bg-payne-grey-light rounded-lg text-white"
                   >
                     ✕
                   </button>
                 </div>
               ) : (
                 <>
-                  <div className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg">
+                  <div className="flex-1 px-3 py-2 bg-payne-grey/30 border border-payne-grey rounded-lg text-white">
                     {lobby.title}
                   </div>
                   {isLeader && (
@@ -187,7 +217,7 @@ const LobbyPage: React.FC = () => {
                         setTempTitle(lobby.title);
                         setEditingTitle(true);
                       }}
-                      className="px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg"
+                      className="px-3 py-2 bg-lion hover:bg-lion-dark rounded-lg text-white"
                     >
                       ✏️
                     </button>
@@ -196,7 +226,7 @@ const LobbyPage: React.FC = () => {
               )}
               <button
                 onClick={handleCopyLink}
-                className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg"
+                className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white"
                 title="Copy lobby link"
               >
                 📋
@@ -206,18 +236,20 @@ const LobbyPage: React.FC = () => {
 
           {/* Player List */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Players</h3>
+            <h3 className="text-lg font-semibold mb-3 text-lion-light">Players</h3>
             <div className="space-y-2">
               {lobby.players.map((player) => (
                 <div
                   key={player.id}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    player.isConnected ? 'bg-gray-700' : 'bg-gray-800 opacity-50'
+                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                    player.isConnected 
+                      ? 'bg-payne-grey/30 border-payne-grey' 
+                      : 'bg-payne-grey/10 border-payne-grey/50 opacity-50'
                   }`}
                 >
                   <div className="flex items-center space-x-2">
                     {player.id === lobby.leaderId && (
-                      <span className="text-yellow-400" title="Lobby Leader">👑</span>
+                      <span className="text-lion" title="Lobby Leader">👑</span>
                     )}
                     {player.name === myPlayerName ? (
                       editingName ? (
@@ -227,12 +259,12 @@ const LobbyPage: React.FC = () => {
                             value={tempName}
                             onChange={(e) => setTempName(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleNameSubmit()}
-                            className="px-2 py-1 bg-gray-600 border border-gray-500 rounded text-sm"
+                            className="px-2 py-1 bg-payne-grey border border-payne-grey-light rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-lion"
                             autoFocus
                           />
                           <button
                             onClick={handleNameSubmit}
-                            className="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs"
+                            className="px-2 py-1 bg-lion hover:bg-lion-dark rounded text-xs text-white"
                           >
                             ✓
                           </button>
@@ -243,13 +275,13 @@ const LobbyPage: React.FC = () => {
                             setTempName(player.name);
                             setEditingName(true);
                           }}
-                          className="text-green-400 hover:text-green-300"
+                          className="text-lion hover:text-lion-light"
                         >
                           {player.name} (You)
                         </button>
                       )
                     ) : (
-                      <span>{player.name}</span>
+                      <span className="text-white">{player.name}</span>
                     )}
                     {!player.isConnected && (
                       <span className="text-red-400 text-sm">(Disconnected)</span>
@@ -259,7 +291,7 @@ const LobbyPage: React.FC = () => {
                   {isLeader && player.id === lobby.leaderId && (
                     <button
                       onClick={() => setShowLeaderSelect(true)}
-                      className="text-xs bg-yellow-600 hover:bg-yellow-500 px-2 py-1 rounded"
+                      className="text-xs bg-lion hover:bg-lion-dark px-2 py-1 rounded text-white"
                     >
                       Change Leader
                     </button>
@@ -271,22 +303,29 @@ const LobbyPage: React.FC = () => {
 
           {/* Game Options */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Game Options</h3>
+            <h3 className="text-lg font-semibold mb-3 text-lion-light">Game Options</h3>
             
             {/* Game Selection */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Game Type
               </label>
-              <select
-                value={lobby.gameType}
-                onChange={(e) => handleGameTypeChange(e.target.value)}
-                disabled={!isLeader}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white disabled:opacity-50"
-              >
-                <option value="war">War</option>
-                <option value="dice-factory">Dice Factory</option>
-              </select>
+              <div className="flex items-center gap-2">
+                <select
+                  value={lobby.gameType}
+                  onChange={(e) => handleGameTypeChange(e.target.value)}
+                  disabled={!isLeader}
+                  className="flex-1 px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-lion"
+                >
+                  <option value="war">War</option>
+                  <option value="dice-factory">Dice Factory</option>
+                </select>
+                <img 
+                  src={`/assets/icon-${lobby.gameType}.jpg`} 
+                  alt={lobby.gameType}
+                  className={`w-8 h-8 rounded border border-${gameColor}`}
+                />
+              </div>
             </div>
 
             {/* Game-specific options placeholder */}
@@ -294,7 +333,7 @@ const LobbyPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Game Options
               </label>
-              <div className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-gray-400 text-sm">
+              <div className={`px-3 py-2 rounded-lg text-gray-400 text-sm border ${gameColorClasses}`}>
                 No options available for {lobby.gameType}
               </div>
             </div>
@@ -304,7 +343,7 @@ const LobbyPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Bots
               </label>
-              <div className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-gray-400 text-sm">
+              <div className="px-3 py-2 bg-payne-grey/20 border border-payne-grey rounded-lg text-gray-400 text-sm">
                 Bot support coming soon
               </div>
             </div>
@@ -314,27 +353,34 @@ const LobbyPage: React.FC = () => {
           {isLeader && (
             <button
               onClick={handleStartGame}
-              className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+              className="w-full bg-lion hover:bg-lion-dark text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-lg"
             >
               🚀 Start Game
             </button>
           )}
         </div>
 
-        {/* Right Panel - Chat/Info (placeholder) */}
+        {/* Right Panel - Chat/Info */}
         <div className="flex-1 p-6">
-          <div className="bg-gray-800 rounded-lg p-6 h-full">
-            <h3 className="text-xl font-semibold mb-4">Lobby Information</h3>
+          <div className="bg-payne-grey/30 rounded-lg p-6 h-full border border-payne-grey/30">
+            <h3 className="text-xl font-semibold mb-4 text-lion-light">Lobby Information</h3>
             <div className="space-y-3 text-gray-300">
-              <p><strong>Lobby Code:</strong> {lobby.slug}</p>
-              <p><strong>Players:</strong> {lobby.players.length}</p>
-              <p><strong>Game:</strong> {lobby.gameType}</p>
-              <p><strong>Leader:</strong> {lobby.players.find(p => p.id === lobby.leaderId)?.name}</p>
-              <p><strong>You are:</strong> {myPlayerName}</p>
+              <p><strong className="text-lion">Lobby Code:</strong> {lobby.slug}</p>
+              <p><strong className="text-lion">Players:</strong> {lobby.players.length}</p>
+              <p><strong className="text-lion">Game:</strong> {lobby.gameType}</p>
+              <p><strong className="text-lion">Leader:</strong> {lobby.players.find(p => p.id === lobby.leaderId)?.name}</p>
+              <p><strong className="text-lion">You are:</strong> {myPlayerName}</p>
             </div>
             
-            <div className="mt-8 p-4 bg-blue-900 rounded-lg">
-              <h4 className="font-semibold mb-2">How to play {lobby.gameType}:</h4>
+            <div className={`mt-8 p-4 rounded-lg border ${gameColorClasses}`}>
+              <div className="flex items-center gap-3 mb-2">
+                <img 
+                  src={`/assets/icon-${lobby.gameType}.jpg`} 
+                  alt={lobby.gameType}
+                  className={`w-6 h-6 rounded border border-${gameColor}`}
+                />
+                <h4 className={`font-semibold text-${gameColor}`}>How to play {lobby.gameType}:</h4>
+              </div>
               {lobby.gameType === 'war' && (
                 <p className="text-sm text-gray-300">
                   Each player gets a card. You can either Play or Fold. 
@@ -349,6 +395,17 @@ const LobbyPage: React.FC = () => {
                 </p>
               )}
             </div>
+
+            {/* Additional game info */}
+            <div className="mt-6 p-4 bg-lion/10 rounded-lg border border-lion/30">
+              <h4 className="font-semibold mb-2 text-lion">Lobby Features:</h4>
+              <ul className="text-sm text-gray-300 space-y-1">
+                <li>• Real-time multiplayer with Socket.io</li>
+                <li>• Player reconnection support</li>
+                <li>• Leader-based game control</li>
+                <li>• Share lobby with 3-word URL</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -356,14 +413,14 @@ const LobbyPage: React.FC = () => {
       {/* Leader Selection Modal */}
       {showLeaderSelect && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-xl max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Select New Leader</h2>
+          <div className="bg-payne-grey p-6 rounded-xl max-w-md w-full mx-4 border border-payne-grey-light">
+            <h2 className="text-xl font-bold mb-4 text-lion-light">Select New Leader</h2>
             <div className="space-y-2 mb-4">
               {lobby.players.filter(p => p.isConnected).map((player) => (
                 <button
                   key={player.id}
                   onClick={() => handleChangeLeader(player.id)}
-                  className="w-full text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                  className="w-full text-left p-3 bg-payne-grey-light hover:bg-lion/20 rounded-lg transition-colors text-white border border-payne-grey-light"
                 >
                   {player.name}
                 </button>
@@ -371,7 +428,7 @@ const LobbyPage: React.FC = () => {
             </div>
             <button
               onClick={() => setShowLeaderSelect(false)}
-              className="w-full bg-gray-600 hover:bg-gray-500 text-white py-2 rounded-lg"
+              className="w-full bg-payne-grey-dark hover:bg-payne-grey text-white py-2 rounded-lg transition-colors"
             >
               Cancel
             </button>
