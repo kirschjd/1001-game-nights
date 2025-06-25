@@ -20,6 +20,12 @@
       "noEmit": true,
       "jsx": "react-jsx"
     },
+    "exclude": [
+    "node_modules",
+    "build",
+    "**/old/**",
+    "**/backup/**"
+    ],
     "include": [
       "src"
     ]

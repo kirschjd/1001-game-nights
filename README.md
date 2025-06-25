@@ -48,6 +48,9 @@ A web application for hosting multiplayer games with dynamic lobby creation and 
 ```
 1001-game-nights/
 ├── server/
+│   ├── games/
+│   │   ├── dice-factory.js    
+│   │   ├── war.js      
 │   └── index.js              # Express server with Socket.io
 ├── src/
 │   ├── components/
@@ -55,10 +58,15 @@ A web application for hosting multiplayer games with dynamic lobby creation and 
 │   │   ├── LobbyPage.tsx      # Lobby management
 │   │   ├── ExplorePage.tsx    # Game catalog
 │   │   └── GamePage.tsx       # Game interface
+│   │   ├── games
+│   │   │   ├── DiceFactoryGame.tsx    
+│   │   │   ├── DiceRenderer.tsx      
+│   │   │   └── WarGame.tsx       
 │   ├── App.tsx               # Main React app
 │   ├── App.css               # Styles
 │   └── index.tsx             # React entry point
 ├── public/
+│   ├── assets/
 │   └── index.html            # HTML template
 ├── package.json              # All dependencies
 ├── tailwind.config.js        # Tailwind configuration

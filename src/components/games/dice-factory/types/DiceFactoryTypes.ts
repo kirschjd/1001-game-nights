@@ -1,0 +1,100 @@
+// 1001 Game Nights - Dice Factory Type Definitions
+// Version: 2.0.1 - Added process to ActionMode
+// Updated: December 2024
+
+import { Socket } from 'socket.io-client';
+
+export interface Die {
+  id: string;
+  sides: number;
+  value: number | null;
+  shiny: boolean;
+  rainbow: boolean;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  dicePool: Die[];
+  diceFloor: number;
+  freePips: number;
+  score: number;
+  hasFled: boolean;
+  isReady: boolean;
+  currentTurnActions?: any[];
+  turnStartState?: any;
+  actionHistory?: any[];
+}
+
+export interface GameLogEntry {
+  timestamp: string;
+  player: string;
+  message: string;
+  actionType: 'info' | 'action' | 'score' | 'system' | 'error';
+  round: number;
+}
+
+export interface FactoryEffect {
+  name: string;
+  description: string;
+  type: 'effect' | 'modification';
+  cost: number;
+}
+
+export interface DiceFactoryGameState {
+  type: string;
+  phase: 'rolling' | 'playing' | 'revealing' | 'complete';
+  round: number;
+  turnCounter: number;
+  collapseStarted: boolean;
+  collapseDice: number[];
+  activeEffects: FactoryEffect[];
+  winner: string | null;
+  lastCollapseRoll: string | null;
+  gameLog: GameLogEntry[];
+  allPlayersReady: boolean;
+  players: Player[];
+  currentPlayer?: Player;
+  exhaustedDice?: string[];
+  firstRecruits?: Set<string>;
+  firstStraight?: boolean;
+  firstSet?: boolean;
+}
+
+export interface DiceFactoryGameProps {
+  gameState: DiceFactoryGameState;
+  socket: Socket | null;
+  isLeader: boolean;
+}
+
+// FIXED: Added 'freepips' and 'score' to ActionMode for proper single-selection
+export type ActionMode = 'promote' | 'recruit' | 'process' | 'freepips' | 'score' | 'straight' | 'set' | 'pips' | null;
+
+export type MessageType = 'success' | 'error' | 'info';
+
+export interface GameAction {
+  type: string;
+  diceIds?: string[];
+  targetValue?: number;
+  actionMode?: ActionMode;
+}
+
+export interface DiceActionHandlers {
+  handlePromoteDice: () => void;
+  handleRecruitDice: () => void;
+  handleScoreStraight: () => void;
+  handleScoreSet: () => void;
+  handleProcessDice: () => void;
+  handlePipAction: (actionType: 'increase' | 'decrease' | 'reroll') => void;
+  handleFactoryAction: (actionType: 'effect' | 'modification') => void;
+  handleEndTurn: () => void;
+  handleUndo: () => void;
+  handleFlee: () => void;
+}
+
+export interface GameStateHelpers {
+  canTakeActions: () => boolean;
+  isExhausted: (dieId: string) => boolean;
+  isDieSelectable: (die: Die, actionMode: ActionMode) => boolean;
+  showMessage: (text: string, type?: MessageType) => void;
+}
