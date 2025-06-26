@@ -1,5 +1,5 @@
 // 1001 Game Nights - Game Header Component
-// Version: 2.0.0 - Modular refactor
+// Version: 2.0.1 - Fixed unused variable warning
 // Updated: December 2024
 
 import React from 'react';
@@ -11,7 +11,7 @@ interface GameHeaderProps {
 
 const GameHeader: React.FC<GameHeaderProps> = ({ gameState }) => {
   const { 
-    round, 
+    // Removed unused 'round' variable
     turnCounter, 
     collapseStarted, 
     lastCollapseRoll, 
@@ -35,7 +35,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({ gameState }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/30">
           <div className="text-2xl font-bold text-uranian-blue">{turnCounter}</div>
-          <div className="text-sm text-gray-400">Round</div>
+          <div className="text-sm text-gray-400">Turn</div>
         </div>
         
         <div className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/30">
