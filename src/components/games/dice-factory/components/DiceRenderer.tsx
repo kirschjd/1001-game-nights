@@ -102,67 +102,70 @@ const DiceRenderer: React.FC<DiceRendererProps> = ({
           </svg>
         );
 
-      case 8: // Octahedron (diamond/hexagon)
+      case 8: // Octahedron viewed from angle showing triangular faces
         return (
-          <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`}>
+          <svg width={svgSize} height={svgSize} viewBox="0 0 56 56">
+            {/* Outer hexagonal shape */}
             <polygon
-              points={`${svgSize/2},${svgSize*0.1} ${svgSize*0.8},${svgSize*0.3} ${svgSize*0.8},${svgSize*0.7} ${svgSize/2},${svgSize*0.9} ${svgSize*0.2},${svgSize*0.7} ${svgSize*0.2},${svgSize*0.3}`}
+              points="28,4 46,16 46,40 28,52 10,40 10,16"
               fill={colors.fill}
               stroke={colors.stroke}
               strokeWidth={strokeWidth}
             />
-            {/* Inner diamond */}
-            <polygon
-              points={`${svgSize/2},${svgSize*0.25} ${svgSize*0.65},${svgSize*0.4} ${svgSize/2},${svgSize*0.75} ${svgSize*0.35},${svgSize*0.4}`}
-              fill="none"
-              stroke={colors.stroke}
-              strokeWidth={strokeWidth}
-            />
+            {/* Central upside-down triangle and surrounding triangles */}
+            <line x1="10" y1="16" x2="46" y2="16" stroke={colors.stroke} strokeWidth={strokeWidth} />
+            <line x1="10" y1="16" x2="28" y2="52" stroke={colors.stroke} strokeWidth={strokeWidth} />
+            <line x1="46" y1="16" x2="28" y2="52" stroke={colors.stroke} strokeWidth={strokeWidth} />
           </svg>
         );
 
-      case 10: // Pentagonal trapezohedron (kite shape)
+      case 10: // Pentagonal bipyramid (d10) - outer shape with kite
         return (
-          <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`}>
+          <svg width={svgSize} height={svgSize} viewBox="0 0 56 56">
+            {/* Outer shape: diamond with small vertical sections on left and right */}
             <polygon
-              points={`${svgSize/2},${svgSize*0.05} ${svgSize*0.75},${svgSize*0.35} ${svgSize*0.9},${svgSize*0.65} ${svgSize/2},${svgSize*0.95} ${svgSize*0.1},${svgSize*0.65} ${svgSize*0.25},${svgSize*0.35}`}
+              points="28,4 49,24 49,32 28,52 7,32 7,24"
               fill={colors.fill}
               stroke={colors.stroke}
               strokeWidth={strokeWidth}
             />
-            {/* Inner kite face */}
+            {/* Inner kite shape */}
             <polygon
-              points={`${svgSize/2},${svgSize*0.25} ${svgSize*0.65},${svgSize*0.45} ${svgSize/2},${svgSize*0.75} ${svgSize*0.35},${svgSize*0.45}`}
+              points="28,4 41,30 28,37 15,30"
               fill="none"
               stroke={colors.stroke}
               strokeWidth={strokeWidth}
             />
+            {/* Three connecting line segments */}
+            <line x1="7" y1="32" x2="15" y2="30" stroke={colors.stroke} strokeWidth={strokeWidth} />
+            <line x1="49" y1="32" x2="41" y2="30" stroke={colors.stroke} strokeWidth={strokeWidth} />
+            <line x1="28" y1="37" x2="28" y2="52" stroke={colors.stroke} strokeWidth={strokeWidth} />
           </svg>
         );
 
-      case 12: // Dodecahedron (pentagon with connecting lines)
+      case 12: // Dodecahedron - central pentagon with 5 outer pentagons
         return (
-          <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`}>
-            {/* Outer dodecagon approximation */}
+          <svg width={svgSize} height={svgSize} viewBox="0 0 56 56">
+            {/* Outer 10-sided shape */}
             <polygon
-              points={`${svgSize/2},${svgSize*0.05} ${svgSize*0.75},${svgSize*0.15} ${svgSize*0.9},${svgSize*0.35} ${svgSize*0.9},${svgSize*0.65} ${svgSize*0.75},${svgSize*0.85} ${svgSize/2},${svgSize*0.95} ${svgSize*0.25},${svgSize*0.85} ${svgSize*0.1},${svgSize*0.65} ${svgSize*0.1},${svgSize*0.35} ${svgSize*0.25},${svgSize*0.15}`}
+              points="28,2 42,8 50,20 50,36 42,48 28,52 14,48 6,36 6,20 14,8"
               fill={colors.fill}
               stroke={colors.stroke}
               strokeWidth={strokeWidth}
             />
-            {/* Central pentagon */}
+            {/* Central pentagon - moved down more */}
             <polygon
-              points={`${svgSize/2},${svgSize*0.25} ${svgSize*0.7},${svgSize*0.4} ${svgSize*0.6},${svgSize*0.7} ${svgSize*0.4},${svgSize*0.7} ${svgSize*0.3},${svgSize*0.4}`}
+              points="28,12 43,24 38,41 18,41 13,24"
               fill="none"
               stroke={colors.stroke}
               strokeWidth={strokeWidth}
             />
-            {/* Connecting lines to pentagon */}
-            <line x1={svgSize/2} y1={svgSize*0.25} x2={svgSize/2} y2={svgSize*0.05} stroke={colors.stroke} strokeWidth={strokeWidth} />
-            <line x1={svgSize*0.7} y1={svgSize*0.4} x2={svgSize*0.9} y2={svgSize*0.35} stroke={colors.stroke} strokeWidth={strokeWidth} />
-            <line x1={svgSize*0.6} y1={svgSize*0.7} x2={svgSize*0.75} y2={svgSize*0.85} stroke={colors.stroke} strokeWidth={strokeWidth} />
-            <line x1={svgSize*0.4} y1={svgSize*0.7} x2={svgSize*0.25} y2={svgSize*0.85} stroke={colors.stroke} strokeWidth={strokeWidth} />
-            <line x1={svgSize*0.3} y1={svgSize*0.4} x2={svgSize*0.1} y2={svgSize*0.35} stroke={colors.stroke} strokeWidth={strokeWidth} />
+            {/* Five specific connecting lines */}
+            <line x1="28" y1="12" x2="28" y2="2" stroke={colors.stroke} strokeWidth={strokeWidth} />
+            <line x1="43" y1="24" x2="50" y2="20" stroke={colors.stroke} strokeWidth={strokeWidth} />
+            <line x1="38" y1="41" x2="42" y2="48" stroke={colors.stroke} strokeWidth={strokeWidth} />
+            <line x1="18" y1="41" x2="14" y2="48" stroke={colors.stroke} strokeWidth={strokeWidth} />
+            <line x1="13" y1="24" x2="6" y2="20" stroke={colors.stroke} strokeWidth={strokeWidth} />
           </svg>
         );
 
@@ -193,11 +196,11 @@ const DiceRenderer: React.FC<DiceRendererProps> = ({
       // 15% higher for tetrahedron
       valuePositioning = "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-2 z-10 flex items-center justify-center";
     } else if (die.sides === 10) {
-      // 10% higher - center on the kite-shaped face
-      valuePositioning = "absolute top-3 left-1/2 transform -translate-x-1/2 z-10 flex items-center justify-center w-8 h-8";
+      // Center on the kite-shaped face (moved down)
+      valuePositioning = "absolute top-5 left-1/2 transform -translate-x-1/2 z-10 flex items-center justify-center w-8 h-8";
     } else if (die.sides === 12) {
-      // 15% higher - center on the inner pentagon
-      valuePositioning = "absolute top-4 left-1/2 transform -translate-x-1/2 z-10 flex items-center justify-center w-8 h-8";
+      // Center on the inner pentagon (moved down)
+      valuePositioning = "absolute top-6 left-1/2 transform -translate-x-1/2 z-10 flex items-center justify-center w-8 h-8";
     }
     
     return (

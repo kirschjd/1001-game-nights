@@ -1,5 +1,5 @@
 // 1001 Game Nights - Dice Factory Game Constants
-// Version: 2.0.0 - Extracted from monolithic file
+// Version: 2.0.1 - Fixed recruitment to single die based on roll value
 // Updated: December 2024
 
 // Recruitment table - what values can recruit what dice
@@ -11,14 +11,28 @@ const RECRUITMENT_TABLE = {
   12: [1, 2, 3, 4, 5] // d12 recruits on rolling 1, 2, 3, 4, or 5
 };
 
-// What dice are recruited when successful
-const RECRUITMENT_REWARDS = {
-  4: [4],           // d4 recruits another d4
-  6: [6, 4],        // d6 recruits d6 and d4
-  8: [8, 6, 4],     // d8 recruits d8, d6, and d4
-  10: [10, 8, 6, 4], // d10 recruits d10, d8, d6, and d4
-  12: [12, 10, 8, 6, 4] // d12 recruits d12, d10, d8, d6, and d4
-};
+// FIXED: Single die recruitment based on roll value
+// Roll value 1: recruit same size, Roll value 2: recruit one size smaller, etc.
+const DICE_PROGRESSION = [4, 6, 8, 10, 12];
+
+/**
+ * Get the recruited die size based on recruiting die and roll value
+ * @param {number} recruitingDieSides - Size of the recruiting die
+ * @param {number} rollValue - The value rolled on the recruiting die
+ * @returns {number} - Size of the die to recruit
+ */
+function getRecruitedDieSize(recruitingDieSides, rollValue) {
+  const recruitingIndex = DICE_PROGRESSION.indexOf(recruitingDieSides);
+  if (recruitingIndex === -1) return 4; // Fallback to d4
+  
+  // Roll value 1 = same size, roll value 2 = one size smaller, etc.
+  const targetIndex = recruitingIndex - (rollValue - 1);
+  
+  // Clamp to valid range (can't go below d4)
+  const clampedIndex = Math.max(0, targetIndex);
+  
+  return DICE_PROGRESSION[clampedIndex];
+}
 
 // Pip action costs
 const PIP_COSTS = {
@@ -63,20 +77,17 @@ const LOG_TYPES = {
   ERROR: 'error'
 };
 
-// Dice sides progression for promotion
-const DICE_PROGRESSION = [4, 6, 8, 10, 12];
-
 // Maximum dice sides
 const MAX_DICE_SIDES = 12;
 
 module.exports = {
   RECRUITMENT_TABLE,
-  RECRUITMENT_REWARDS,
+  DICE_PROGRESSION,
+  getRecruitedDieSize,
   PIP_COSTS,
   GAME_DEFAULTS,
   SCORING,
   PHASES,
   LOG_TYPES,
-  DICE_PROGRESSION,
   MAX_DICE_SIDES
 };

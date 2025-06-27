@@ -1,5 +1,5 @@
 // 1001 Game Nights - Factory System
-// Version: 2.0.0 - Handles factory effects and modifications
+// Version: 2.1.0 - Added bidding/auction system for modifications
 // Updated: December 2024
 
 const { 
@@ -8,10 +8,13 @@ const {
   applyEffect 
 } = require('../data/FactoryEffects');
 const { 
-  getRandomModifications, 
-  canPurchaseModification, 
+  createModificationDeck,
+  drawFromDeck,
+  getModificationById,
+  canPurchaseModification,
   applyModification,
-  getPlayerModifications 
+  getPlayerModifications,
+  getActualModificationCost
 } = require('../data/FactoryModifications');
 const { logFactoryPurchase, logAction } = require('../utils/GameLogger');
 
@@ -23,24 +26,346 @@ class FactorySystem {
   /**
    * Initialize factory effects and modifications for the game
    * @param {number} effectCount - Number of effects to make available
-   * @param {number} modificationCount - Number of modifications to make available
    */
-  initializeFactory(effectCount = 3, modificationCount = 3) {
-    // Get random effects and modifications for this game
+  initializeFactory(effectCount = 3) {
+    // Get random effects for this game (unchanged)
     this.gameState.availableEffects = getRandomEffects(effectCount);
-    this.gameState.availableModifications = getRandomModifications(modificationCount);
+    
+    // Initialize modification deck system
+    this.gameState.modificationDeck = createModificationDeck();
+    this.gameState.availableModifications = []; // Will be drawn each turn
+    this.gameState.currentTurnModifications = []; // 3 cards available for bidding this turn
+    this.gameState.modificationBids = {}; // playerId -> {modificationId: bidAmount}
+    this.gameState.pendingAuctions = []; // Modifications with multiple bidders
+    
+    // Draw initial 3 modifications for turn 1
+    this.drawTurnModifications();
     
     // Ensure arrays are initialized even if empty
     if (!this.gameState.availableEffects) this.gameState.availableEffects = [];
-    if (!this.gameState.availableModifications) this.gameState.availableModifications = [];
     
     // Initialize player factory data
     for (const player of this.gameState.players) {
       if (!player.effects) player.effects = [];
       if (!player.modifications) player.modifications = [];
       if (!player.factoryHand) player.factoryHand = []; // Effects in hand (purchased but not played)
+      if (!player.modificationBids) player.modificationBids = {}; // Current turn bids
     }
   }
+
+  /**
+   * Draw 3 new modifications for the current turn
+   */
+  drawTurnModifications() {
+    const { drawnCards, remainingDeck } = drawFromDeck(this.gameState.modificationDeck, 3);
+    
+    this.gameState.currentTurnModifications = drawnCards.map(modId => ({
+      id: modId,
+      modification: getModificationById(modId),
+      bids: [], // {playerId, amount}
+      winner: null
+    }));
+    
+    this.gameState.modificationDeck = remainingDeck;
+    
+    // Log the new modifications available
+    this.gameState.gameLog = logAction(
+      this.gameState.gameLog,
+      'SYSTEM',
+      `New modifications available: ${drawnCards.map(id => getModificationById(id)?.name || id).join(', ')}`,
+      this.gameState.round
+    );
+  }
+
+  /**
+   * Player places a bid on a modification
+   * @param {string} playerId - Player ID
+   * @param {string} modificationId - Modification ID from current turn
+   * @param {number} bidAmount - Amount to bid in pips
+   * @returns {Object} - {success: boolean, message: string}
+   */
+  placeBid(playerId, modificationId, bidAmount) {
+    const player = this.gameState.players.find(p => p.id === playerId);
+    
+    if (!player) {
+      return { success: false, message: 'Player not found' };
+    }
+
+    // Find the modification in current turn offerings
+    const modCard = this.gameState.currentTurnModifications.find(card => card.id === modificationId);
+    if (!modCard) {
+      return { success: false, message: 'Modification not available for bidding this turn' };
+    }
+
+    const modification = modCard.modification;
+    if (!modification) {
+      return { success: false, message: 'Invalid modification' };
+    }
+
+    // Validate bid amount
+    if (bidAmount < 0) {
+      return { success: false, message: 'Bid amount cannot be negative' };
+    }
+
+    if (player.freePips < bidAmount) {
+      return { success: false, message: 'Not enough pips to place this bid' };
+    }
+
+    // Check if player already has this modification and it's not stackable
+    if (!modification.stackable && player.modifications?.includes(modificationId)) {
+      return { success: false, message: 'Already own this modification and it\'s not stackable' };
+    }
+
+    // Remove any existing bid from this player on this modification
+    modCard.bids = modCard.bids.filter(bid => bid.playerId !== playerId);
+    
+    // Add new bid
+    modCard.bids.push({
+      playerId: playerId,
+      playerName: player.name,
+      amount: bidAmount
+    });
+
+    this.gameState.gameLog = logAction(
+      this.gameState.gameLog,
+      player.name,
+      `placed bid of ${bidAmount} pips on ${modification.name}`,
+      this.gameState.round
+    );
+
+    return { 
+      success: true, 
+      message: `Bid placed on ${modification.name}` 
+    };
+  }
+
+  /**
+   * Purchase random modification from deck
+   * @param {string} playerId - Player ID
+   * @returns {Object} - {success: boolean, message: string, modification?: Object}
+   */
+  purchaseRandomModification(playerId) {
+    const player = this.gameState.players.find(p => p.id === playerId);
+    
+    if (!player) {
+      return { success: false, message: 'Player not found' };
+    }
+
+    if (this.gameState.modificationDeck.length === 0) {
+      return { success: false, message: 'Modification deck is empty' };
+    }
+
+    // Calculate cost (9 pips, reduced by Market Manipulation if player has it)
+    const baseCost = 9;
+    const actualCost = getActualModificationCost(player, 'dummy_mod'); // Uses Market Manipulation check
+
+    if (player.freePips < actualCost) {
+      return { success: false, message: 'Not enough pips' };
+    }
+
+    // Draw from top of deck
+    const { drawnCards, remainingDeck } = drawFromDeck(this.gameState.modificationDeck, 1);
+    const modificationId = drawnCards[0];
+    const modification = getModificationById(modificationId);
+
+    if (!modification) {
+      return { success: false, message: 'Invalid modification drawn' };
+    }
+
+    // Check if player already has this modification and it's not stackable
+    if (!modification.stackable && player.modifications?.includes(modificationId)) {
+      // Put the card back and shuffle
+      this.gameState.modificationDeck = [modificationId, ...remainingDeck];
+      return { success: false, message: 'Drew a modification you already own (not stackable)' };
+    }
+
+    // Purchase successful
+    this.gameState.modificationDeck = remainingDeck;
+    player.freePips -= actualCost;
+    player.modifications.push(modificationId);
+
+    // Apply modification immediately
+    this.applyModification(playerId, modificationId);
+
+    // Log purchase
+    this.gameState.gameLog = logFactoryPurchase(
+      this.gameState.gameLog,
+      player.name,
+      'random modification',
+      modification.name,
+      actualCost,
+      this.gameState.round
+    );
+
+    return { 
+      success: true, 
+      message: `Purchased ${modification.name} from deck`,
+      modification: modification
+    };
+  }
+
+  /**
+   * Resolve auctions at end of turn
+   * @returns {Object} - {success: boolean, auctions: Array}
+   */
+  resolveModificationAuctions() {
+    const auctions = [];
+    
+    for (const modCard of this.gameState.currentTurnModifications) {
+      if (modCard.bids.length === 0) {
+        // No bids - card is discarded
+        continue;
+      } else if (modCard.bids.length === 1) {
+        // Single bid - automatic win
+        const winningBid = modCard.bids[0];
+        const winner = this.gameState.players.find(p => p.id === winningBid.playerId);
+        
+        if (winner) {
+          const actualCost = getActualModificationCost(winner, modCard.id);
+          
+          if (winner.freePips >= winningBid.amount) {
+            winner.freePips -= winningBid.amount;
+            winner.modifications.push(modCard.id);
+            modCard.winner = winningBid.playerId;
+            
+            // Apply modification
+            this.applyModification(winningBid.playerId, modCard.id);
+            
+            this.gameState.gameLog = logFactoryPurchase(
+              this.gameState.gameLog,
+              winner.name,
+              'modification',
+              modCard.modification.name,
+              winningBid.amount,
+              this.gameState.round
+            );
+          }
+        }
+      } else {
+        // Multiple bids - needs auction resolution
+        auctions.push({
+          modificationId: modCard.id,
+          modification: modCard.modification,
+          bidders: modCard.bids
+        });
+      }
+    }
+    
+    return { success: true, auctions };
+  }
+
+  /**
+   * Resolve a specific auction with blind bids
+   * @param {string} modificationId - Modification being auctioned
+   * @param {Object} blindBids - {playerId: bidAmount}
+   * @returns {Object} - {success: boolean, winner?: Object}
+   */
+  resolveBlindAuction(modificationId, blindBids) {
+    const modCard = this.gameState.currentTurnModifications.find(card => card.id === modificationId);
+    if (!modCard) {
+      return { success: false, message: 'Modification not found in current turn' };
+    }
+
+    // Find highest bid
+    let highestBid = -1;
+    let winners = [];
+    
+    Object.entries(blindBids).forEach(([playerId, bidAmount]) => {
+      if (bidAmount > highestBid) {
+        highestBid = bidAmount;
+        winners = [playerId];
+      } else if (bidAmount === highestBid) {
+        winners.push(playerId);
+      }
+    });
+
+    if (winners.length === 0 || highestBid === 0) {
+      // No valid bids
+      this.gameState.gameLog = logAction(
+        this.gameState.gameLog,
+        'SYSTEM',
+        `No valid bids for ${modCard.modification.name} - card discarded`,
+        this.gameState.round
+      );
+      return { success: true, winner: null };
+    }
+
+    if (winners.length > 1) {
+      // Tie - nobody gets it
+      this.gameState.gameLog = logAction(
+        this.gameState.gameLog,
+        'SYSTEM',
+        `Tied bids for ${modCard.modification.name} - card discarded`,
+        this.gameState.round
+      );
+      return { success: true, winner: null };
+    }
+
+    // Single winner
+    const winnerId = winners[0];
+    const winner = this.gameState.players.find(p => p.id === winnerId);
+    
+    if (!winner) {
+      return { success: false, message: 'Winner not found' };
+    }
+
+    // Validate winner can still afford the bid
+    if (winner.freePips < highestBid) {
+      this.gameState.gameLog = logAction(
+        this.gameState.gameLog,
+        'SYSTEM',
+        `${winner.name} cannot afford winning bid for ${modCard.modification.name} - card discarded`,
+        this.gameState.round
+      );
+      return { success: true, winner: null };
+    }
+
+    // Award modification to winner
+    winner.freePips -= highestBid;
+    winner.modifications.push(modificationId);
+    modCard.winner = winnerId;
+
+    // Apply modification
+    this.applyModification(winnerId, modificationId);
+
+    this.gameState.gameLog = logFactoryPurchase(
+      this.gameState.gameLog,
+      winner.name,
+      'modification (auction)',
+      modCard.modification.name,
+      highestBid,
+      this.gameState.round
+    );
+
+    return { 
+      success: true, 
+      winner: {
+        playerId: winnerId,
+        playerName: winner.name,
+        bidAmount: highestBid,
+        modification: modCard.modification
+      }
+    };
+  }
+
+  /**
+   * Start new turn - draw new modifications
+   */
+  startNewTurn() {
+    // Clear previous turn's bidding data
+    this.gameState.currentTurnModifications = [];
+    this.gameState.pendingAuctions = [];
+    
+    // Reset player bids
+    for (const player of this.gameState.players) {
+      player.modificationBids = {};
+    }
+    
+    // Draw new modifications for this turn
+    this.drawTurnModifications();
+  }
+
+  // ===== EXISTING EFFECT METHODS (unchanged) =====
 
   /**
    * Purchase a factory effect (7 pips)
@@ -88,51 +413,15 @@ class FactorySystem {
   }
 
   /**
-   * Purchase a factory modification (9 pips)
+   * Purchase a factory modification (legacy method - 9 pips direct)
    * @param {string} playerId - Player ID
    * @param {string} modificationId - Modification ID to purchase
    * @returns {Object} - {success: boolean, message: string}
    */
   purchaseModification(playerId, modificationId) {
-    const player = this.gameState.players.find(p => p.id === playerId);
-    
-    if (!player) {
-      return { success: false, message: 'Player not found' };
-    }
-
-    // Check if modification is available in this game
-    const modification = this.gameState.availableModifications?.find(m => m.id === modificationId);
-    if (!modification) {
-      return { success: false, message: 'Modification not available in this game' };
-    }
-
-    // Validate purchase
-    const canPurchase = canPurchaseModification(player, modificationId);
-    if (!canPurchase.canPurchase) {
-      return { success: false, message: canPurchase.reason };
-    }
-
-    // Deduct pips and add to player's modifications
-    player.freePips -= modification.cost;
-    player.modifications.push(modificationId);
-
-    // Apply modification immediately (modifications are persistent)
-    const applyResult = this.applyModification(playerId, modificationId);
-
-    // Log purchase
-    this.gameState.gameLog = logFactoryPurchase(
-      this.gameState.gameLog,
-      player.name,
-      'modification',
-      modification.name,
-      modification.cost,
-      this.gameState.round
-    );
-
-    return { 
-      success: true, 
-      message: `Purchased modification: ${modification.name}` 
-    };
+    // This is now deprecated in favor of the bidding system
+    // Kept for compatibility
+    return { success: false, message: 'Direct purchase disabled - use bidding system' };
   }
 
   /**
@@ -186,13 +475,9 @@ class FactorySystem {
    * @returns {Object} - {success: boolean, message: string}
    */
   applyEffect(playerId, effectId) {
-    // This is a placeholder for the actual effect application
-    // The real implementation will depend on the specific effects designed
-    
     const result = applyEffect(this.gameState, playerId, effectId);
     
     if (result.newState) {
-      // Update game state with any changes from the effect
       Object.assign(this.gameState, result.newState);
     }
     
@@ -206,13 +491,9 @@ class FactorySystem {
    * @returns {Object} - {success: boolean, message: string}
    */
   applyModification(playerId, modificationId) {
-    // This is a placeholder for the actual modification application
-    // The real implementation will depend on the specific modifications designed
-    
     const result = applyModification(this.gameState, playerId, modificationId);
     
     if (result.newState) {
-      // Update game state with any changes from the modification
       Object.assign(this.gameState, result.newState);
     }
     
@@ -239,34 +520,40 @@ class FactorySystem {
   }
 
   /**
-   * Check if a player has a specific effect or modification
-   * @param {string} playerId - Player ID
-   * @param {string} itemId - Effect or modification ID
-   * @returns {Object} - {hasEffect: boolean, hasModification: boolean, inHand: boolean}
+   * Get current turn modification bidding status
+   * @returns {Object} - Current turn modifications with bid info
    */
-  playerHasFactoryItem(playerId, itemId) {
-    const player = this.gameState.players.find(p => p.id === playerId);
-    
-    if (!player) {
-      return { hasEffect: false, hasModification: false, inHand: false };
-    }
+  getCurrentTurnModifications() {
+    return this.gameState.currentTurnModifications || [];
+  }
 
+  /**
+   * Get modification deck status
+   * @returns {Object} - {cardsRemaining: number, totalCards: number}
+   */
+  getDeckStatus() {
     return {
-      hasEffect: player.effects?.includes(itemId) || false,
-      hasModification: player.modifications?.includes(itemId) || false,
-      inHand: player.factoryHand?.includes(itemId) || false
+      cardsRemaining: this.gameState.modificationDeck?.length || 0,
+      totalCards: 44 // Total cards in full deck
     };
   }
 
   /**
-   * Get available factory items for purchase
-   * @returns {Object} - {effects: Array, modifications: Array}
+   * Reset factory items for new game
    */
-  getAvailableFactoryItems() {
-    return {
-      effects: this.gameState.availableEffects || [],
-      modifications: this.gameState.availableModifications || []
-    };
+  resetFactory() {
+    this.gameState.availableEffects = [];
+    this.gameState.modificationDeck = createModificationDeck();
+    this.gameState.currentTurnModifications = [];
+    this.gameState.modificationBids = {};
+    this.gameState.pendingAuctions = [];
+    
+    for (const player of this.gameState.players) {
+      player.effects = [];
+      player.modifications = [];
+      player.factoryHand = [];
+      player.modificationBids = {};
+    }
   }
 
   /**
@@ -295,38 +582,7 @@ class FactorySystem {
       }
     }
 
-    // Process modifications that might trigger
-    for (const player of this.gameState.players) {
-      for (const modId of player.modifications || []) {
-        const modification = this.gameState.availableModifications?.find(m => m.id === modId);
-        if (modification && modification.trigger === trigger) {
-          const result = this.applyModification(player.id, modId);
-          if (result.success) {
-            triggeredEffects.push({
-              playerId: player.id,
-              modificationId: modId,
-              result
-            });
-          }
-        }
-      }
-    }
-
     return triggeredEffects;
-  }
-
-  /**
-   * Reset factory items for new game
-   */
-  resetFactory() {
-    this.gameState.availableEffects = [];
-    this.gameState.availableModifications = [];
-    
-    for (const player of this.gameState.players) {
-      player.effects = [];
-      player.modifications = [];
-      player.factoryHand = [];
-    }
   }
 
   /**
@@ -338,6 +594,7 @@ class FactorySystem {
       totalEffectsPurchased: 0,
       totalModificationsPurchased: 0,
       totalPipsCost: 0,
+      deckCardsRemaining: this.gameState.modificationDeck?.length || 0,
       playerStats: {}
     };
 

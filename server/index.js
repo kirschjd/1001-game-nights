@@ -1,5 +1,5 @@
 // 1001 Game Nights Server
-// Version: 2.0.0 - Modular server architecture
+// Version: 2.0.0 - Modular server architecture with Bot System
 // Updated: December 2024
 
 const express = require('express');
@@ -13,6 +13,10 @@ const rateLimit = require('express-rate-limit');
 // Import modular components
 const apiRoutes = require('./routes/api');
 const { initializeSocketHandlers } = require('./socket/socketHandler');
+
+// Import bot system and enhanced war game
+const { initializeBotSystem } = require('./games/bots');
+const setupWarEvents = require('./games/war/events');
 
 const app = express();
 const server = http.createServer(app);
@@ -60,6 +64,10 @@ app.locals.games = games;
 // API Routes
 app.use('/api', apiRoutes);
 
+// Initialize bot system
+console.log('Initializing bot system...');
+initializeBotSystem();
+
 // Initialize socket event handlers
 initializeSocketHandlers(io, lobbies, games);
 
@@ -75,5 +83,16 @@ const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('🎲 1001 Game Nights - Modular Architecture v2.0');
+  console.log('🎲 1001 Game Nights - Modular Architecture v2.0 with Bot System');
+});
+
+// Cleanup on server shutdown
+process.on('SIGTERM', () => {
+  console.log('Server shutting down, cleaning up bots...');
+  const { botSystem } = require('./games/bots');
+  botSystem.bots.clear();
+  botSystem.gameTimers.forEach(timers => {
+    timers.forEach(timer => clearTimeout(timer));
+  });
+  botSystem.gameTimers.clear();
 });

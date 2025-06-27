@@ -1,69 +1,11 @@
-// 1001 Game Nights - Dice Factory Validation Rules
-// Version: 2.0.0 - Extracted validation logic
+// 1001 Game Nights - Game Validation Rules
+// Version: 2.0.1 - Fixed recruitment validation for single die
 // Updated: December 2024
 
-const { RECRUITMENT_TABLE, SCORING, DICE_PROGRESSION, MAX_DICE_SIDES } = require('./GameConstants');
+const { RECRUITMENT_TABLE, getRecruitedDieSize, DICE_PROGRESSION, MAX_DICE_SIDES, SCORING } = require('./GameConstants');
 
 /**
- * Validate if dice can form a straight
- * @param {Array} dice - Array of dice objects
- * @returns {Object} - {isValid: boolean, reason: string, points?: number}
- */
-function validateStraight(dice) {
-  if (dice.length < SCORING.MIN_STRAIGHT_LENGTH) {
-    return { isValid: false, reason: `Need at least ${SCORING.MIN_STRAIGHT_LENGTH} dice for straight` };
-  }
-  
-  // Get values and sort them
-  const values = dice.map(die => die.value).filter(val => val !== null).sort((a, b) => a - b);
-  
-  if (values.length !== dice.length) {
-    return { isValid: false, reason: 'All dice must have values' };
-  }
-  
-  // Check for consecutive values
-  for (let i = 1; i < values.length; i++) {
-    if (values[i] !== values[i - 1] + 1) {
-      return { isValid: false, reason: 'Dice values must be consecutive' };
-    }
-  }
-  
-  // Calculate points: highest value * number of dice
-  const points = Math.max(...values) * values.length;
-  
-  return { isValid: true, reason: '', points };
-}
-
-/**
- * Validate if dice can form a set
- * @param {Array} dice - Array of dice objects
- * @returns {Object} - {isValid: boolean, reason: string, points?: number}
- */
-function validateSet(dice) {
-  if (dice.length < SCORING.MIN_SET_SIZE) {
-    return { isValid: false, reason: `Need at least ${SCORING.MIN_SET_SIZE} dice for set` };
-  }
-  
-  const values = dice.map(die => die.value).filter(val => val !== null);
-  
-  if (values.length !== dice.length) {
-    return { isValid: false, reason: 'All dice must have values' };
-  }
-  
-  // Check if all values are the same
-  const firstValue = values[0];
-  if (!values.every(val => val === firstValue)) {
-    return { isValid: false, reason: 'All dice must have the same value' };
-  }
-  
-  // Calculate points: value * (number of dice + 1)
-  const points = firstValue * (values.length + 1);
-  
-  return { isValid: true, reason: '', points };
-}
-
-/**
- * Validate if dice can be recruited
+ * FIXED: Validate if dice can recruit (single die per recruiting die)
  * @param {Array} dice - Array of dice objects
  * @returns {Object} - {isValid: boolean, reason: string, recruited?: Array}
  */
@@ -87,24 +29,11 @@ function validateRecruitment(dice) {
       };
     }
     
-    // Add recruited dice based on die sides
-    switch (die.sides) {
-      case 4:
-        recruited.push({ sides: 4 });
-        break;
-      case 6:
-        recruited.push({ sides: 6 }, { sides: 4 });
-        break;
-      case 8:
-        recruited.push({ sides: 8 }, { sides: 6 }, { sides: 4 });
-        break;
-      case 10:
-        recruited.push({ sides: 10 }, { sides: 8 }, { sides: 6 }, { sides: 4 });
-        break;
-      case 12:
-        recruited.push({ sides: 12 }, { sides: 10 }, { sides: 8 }, { sides: 6 }, { sides: 4 });
-        break;
-    }
+    // FIXED: Add only the single recruited die based on roll value
+    const recruitedSize = getRecruitedDieSize(die.sides, die.value);
+    recruited.push({ sides: recruitedSize });
+    
+    console.log(`✅ Validation: d${die.sides} rolled ${die.value} → recruits single d${recruitedSize}`);
   }
   
   return { isValid: true, reason: '', recruited };
@@ -154,19 +83,93 @@ function validateProcessing(dice) {
       return { isValid: false, reason: 'All dice must have values to process' };
     }
     
-    totalPips += die.value * SCORING.PROCESS_MULTIPLIER;
+    totalPips += die.value * 2; // Processing gives 2x the pip value
   }
   
   return { isValid: true, reason: '', pipsGained: totalPips };
 }
 
 /**
- * Validate if a die value can be modified
- * @param {Object} die - Die object
- * @param {number} change - Change amount (+1, -1)
+ * Validate if dice can form a straight
+ * @param {Array} dice - Array of dice objects
+ * @returns {Object} - {isValid: boolean, reason: string, points?: number}
+ */
+function validateStraight(dice) {
+  if (dice.length < SCORING.MIN_STRAIGHT_LENGTH) {
+    return { 
+      isValid: false, 
+      reason: `Need at least ${SCORING.MIN_STRAIGHT_LENGTH} dice for a straight` 
+    };
+  }
+  
+  for (const die of dice) {
+    if (die.value === null) {
+      return { isValid: false, reason: 'All dice must have values to score' };
+    }
+  }
+  
+  // Sort dice by value
+  const sortedValues = dice.map(d => d.value).sort((a, b) => a - b);
+  
+  // Check if values form a consecutive sequence
+  for (let i = 1; i < sortedValues.length; i++) {
+    if (sortedValues[i] !== sortedValues[i-1] + 1) {
+      return { isValid: false, reason: 'Dice values must be consecutive for a straight' };
+    }
+  }
+  
+  // Calculate points: highest value * number of dice
+  const points = Math.max(...sortedValues) * dice.length;
+  
+  return { isValid: true, reason: '', points };
+}
+
+/**
+ * Validate if dice can form a set
+ * @param {Array} dice - Array of dice objects
+ * @returns {Object} - {isValid: boolean, reason: string, points?: number}
+ */
+function validateSet(dice) {
+  if (dice.length < SCORING.MIN_SET_SIZE) {
+    return { 
+      isValid: false, 
+      reason: `Need at least ${SCORING.MIN_SET_SIZE} dice for a set` 
+    };
+  }
+  
+  for (const die of dice) {
+    if (die.value === null) {
+      return { isValid: false, reason: 'All dice must have values to score' };
+    }
+  }
+  
+  // Check if all dice have the same value
+  const firstValue = dice[0].value;
+  const allSameValue = dice.every(die => die.value === firstValue);
+  
+  if (!allSameValue) {
+    return { isValid: false, reason: 'All dice must have the same value for a set' };
+  }
+  
+  // Calculate points: value * (number of dice + 1)
+  const points = firstValue * (dice.length + 1);
+  
+  return { isValid: true, reason: '', points };
+}
+
+/**
+ * Validate die modification (increase/decrease value)
+ * @param {Object} die - Die to modify
+ * @param {number} change - Change amount (+1 or -1)
+ * @param {number} pipCost - Cost in pips
+ * @param {number} availablePips - Player's available pips
  * @returns {Object} - {isValid: boolean, reason: string}
  */
-function validateDieModification(die, change) {
+function validateDieModification(die, change, pipCost, availablePips) {
+  if (availablePips < pipCost) {
+    return { isValid: false, reason: `Not enough pips (need ${pipCost}, have ${availablePips})` };
+  }
+  
   if (die.value === null) {
     return { isValid: false, reason: 'Die must have a value to modify' };
   }
@@ -179,6 +182,25 @@ function validateDieModification(die, change) {
   
   if (newValue > die.sides) {
     return { isValid: false, reason: `Die value cannot exceed ${die.sides}` };
+  }
+  
+  return { isValid: true, reason: '' };
+}
+
+/**
+ * Validate die reroll
+ * @param {Object} die - Die to reroll
+ * @param {number} pipCost - Cost in pips
+ * @param {number} availablePips - Player's available pips
+ * @returns {Object} - {isValid: boolean, reason: string}
+ */
+function validateDieReroll(die, pipCost, availablePips) {
+  if (availablePips < pipCost) {
+    return { isValid: false, reason: `Not enough pips (need ${pipCost}, have ${availablePips})` };
+  }
+  
+  if (die.value === null) {
+    return { isValid: false, reason: 'Die must have a value to reroll' };
   }
   
   return { isValid: true, reason: '' };
@@ -230,12 +252,13 @@ function validateMinimumDicePool(player) {
 }
 
 module.exports = {
+  validateRecruitment,
+  validatePromotion, 
+  validateProcessing,
   validateStraight,
   validateSet,
-  validateRecruitment,
-  validatePromotion,
-  validateProcessing,
   validateDieModification,
+  validateDieReroll,
   validatePlayerAction,
   validateMinimumDicePool
 };

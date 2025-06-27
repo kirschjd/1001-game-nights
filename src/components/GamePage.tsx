@@ -1,15 +1,17 @@
 // 1001 Game Nights - Game Page Component
-// Version: 2.1.0 - Complete implementation with fixed navigation and enhanced features
+// Version: 2.1.0 - Complete implementation with enhanced war game
 // Updated: December 2024
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
-import WarGame from './games/WarGame';
+import { EnhancedWarGame } from './games/war';
 import DiceFactoryGame from './games/dice-factory';
 
 interface WarGameState {
   type: string;
+  variant: string;
+  variantDisplayName: string;
   phase: 'dealing' | 'playing' | 'revealing' | 'complete';
   round: number;
   winner: string | null;
@@ -83,210 +85,136 @@ const GamePage: React.FC = () => {
     const newSocket = io(process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
     setSocket(newSocket);
 
-    // Connection error handling
-    newSocket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-      setConnectionError('Failed to connect to game server');
-      setLoading(false);
-    });
-
+    // Enhanced connection handling
     newSocket.on('connect', () => {
-      console.log('Socket connected:', newSocket.id);
+      console.log('Connected to server');
       setConnectionError(null);
     });
 
-    // Listen for game state updates
-    newSocket.on('game-started', (state: GameState) => {
-      console.log('Game started:', state);
-      setGameState(state);
-      setLoading(false);
+    newSocket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      setConnectionError('Connection lost. Please refresh the page.');
     });
 
-    newSocket.on('game-state-updated', (state: GameState) => {
-      console.log('Game state updated:', state);
-      setGameState(state);
-      setLoading(false);
+    newSocket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+      setConnectionError('Failed to connect to server. Please refresh the page.');
     });
 
-    // Listen for dice factory specific events
-    newSocket.on('dice-factory-error', (data) => {
-      console.error('Dice Factory error:', data.error);
-    });
-
-    newSocket.on('dice-factory-scored', (data) => {
-      console.log('Dice Factory scored:', data);
-    });
-
-    // Listen for lobby updates to determine leadership
-    newSocket.on('lobby-updated', (lobbyData: any) => {
-      console.log('Lobby updated:', lobbyData);
-      setIsLeader(lobbyData.leaderId === newSocket.id);
-    });
-
-    // Listen for game end
-    newSocket.on('game-ended', (results) => {
-      console.log('Game ended:', results);
-    });
-
-    // Enhanced error handling
-    newSocket.on('error', (error) => {
-      console.error('Socket error:', error);
-      setConnectionError(error.message || 'An error occurred');
-    });
-
-    // Handle disconnection
-    newSocket.on('disconnect', (reason) => {
-      console.log('Socket disconnected:', reason);
-      if (reason === 'io server disconnect') {
-        // Server disconnected the socket, try to reconnect
-        newSocket.connect();
-      }
-    });
-
-    // Cleanup when component unmounts
     return () => {
-      console.log('Cleaning up socket connection');
-      newSocket.emit('leave-game');
-      newSocket.emit('leave-lobby');
       newSocket.close();
     };
-  }, [slug]);
+  }, []);
 
-  // Join lobby once socket is ready
+  // Auto-join lobby and retrieve game state
   useEffect(() => {
-    if (socket && slug && !hasJoinedLobby && !connectionError) {
-      // Try to get existing player name from sessionStorage
-      let storedName = sessionStorage.getItem(`player-name-${slug}`);
-      if (!storedName) {
-        storedName = `Player ${Math.floor(Math.random() * 1000)}`;
-        sessionStorage.setItem(`player-name-${slug}`, storedName);
+    if (socket && !hasJoinedLobby && slug) {
+      const playerName = sessionStorage.getItem(`player-name-${slug}`) || `Player ${Math.floor(Math.random() * 1000)}`;
+      
+      console.log('GamePage: Auto-joining lobby as', playerName);
+      
+      socket.emit('join-lobby', { slug, playerName });
+      socket.emit('request-game-state', { slug });
+
+      // Check if this player should be the leader (first to join game page)
+      const currentLeader = sessionStorage.getItem(`lobby-leader-${slug}`);
+      if (!currentLeader && socket.id) {
+        sessionStorage.setItem(`lobby-leader-${slug}`, socket.id);
+        // Request to become leader
+        setTimeout(() => {
+          socket.emit('change-leader', { slug, newLeaderId: socket.id });
+        }, 500);
       }
 
-      console.log('Joining lobby with name:', storedName);
-      socket.emit('join-lobby', { slug, playerName: storedName });
+      console.log('GamePage: My socket ID is', socket.id);
       setHasJoinedLobby(true);
+
     }
-  }, [socket, slug, hasJoinedLobby, connectionError]);
+  }, [socket, hasJoinedLobby, slug]);
 
-  // Show connection error
-  if (connectionError) {
-    return (
-      <div className="min-h-screen bg-payne-grey-dark text-white flex items-center justify-center relative">
-        {/* Subtle texture overlay */}
-        <div className="absolute inset-0 opacity-40" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
-          backgroundSize: '20px 20px'
-        }}></div>
-        
-        <div className="text-center relative z-10">
-          <h1 className="text-4xl font-bold mb-4 text-lion">⚠️ Connection Error</h1>
-          <p className="text-xl mb-8 text-red-400">{connectionError}</p>
-          <div className="space-y-4">
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-lion hover:bg-lion-dark text-white font-bold py-3 px-6 rounded-lg mr-4 transition-colors"
-            >
-              🔄 Retry Connection
-            </button>
-            <button
-              onClick={handleBackToLobby}
-              className="bg-payne-grey hover:bg-payne-grey-light text-white font-bold py-3 px-6 rounded-lg transition-colors"
-            >
-              ← Back to Lobby
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Game state management
+  useEffect(() => {
+    if (!socket) return;
 
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-payne-grey-dark text-white flex items-center justify-center relative">
-        {/* Subtle texture overlay */}
-        <div className="absolute inset-0 opacity-40" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
-          backgroundSize: '20px 20px'
-        }}></div>
-        
-        <div className="text-center relative z-10">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-lion mx-auto mb-4"></div>
-          <p className="text-xl text-lion-light">Loading game...</p>
-          <p className="text-sm text-gray-400 mt-2">
-            Connecting to lobby: {slug}
-          </p>
-          <button
-            onClick={handleBackToLobby}
-            className="mt-4 bg-payne-grey hover:bg-payne-grey-light text-white font-bold py-2 px-4 rounded-lg transition-colors"
-          >
-            ← Back to Lobby
-          </button>
-        </div>
-      </div>
-    );
-  }
+    // Enhanced game state handling
+    const handleGameStarted = (gameData: GameState) => {
+      console.log('Game started:', gameData);
+      setGameState(gameData);
+      setLoading(false);
+    };
 
-  // Show game not found state
-  if (!gameState) {
+    const handleGameStateUpdated = (gameData: GameState) => {
+      console.log('Game state updated:', gameData);
+      setGameState(gameData);
+      setLoading(false);
+    };
+
+    const handleLobbyUpdated = (lobbyData: any) => {
+      console.log('Lobby updated:', lobbyData);
+      console.log('My socket ID:', socket.id);
+      console.log('Lobby leader ID:', lobbyData.leaderId);
+      console.log('Am I leader?', socket.id === lobbyData.leaderId);
+      setIsLeader(socket.id === lobbyData.leaderId);
+    };
+
+    // Error handling
+    const handleError = (error: { message: string }) => {
+      console.error('Game error:', error);
+      setConnectionError(error.message);
+    };
+
+    const handleWarError = (error: { error: string }) => {
+      console.error('War game error:', error);
+      setConnectionError(error.error);
+    };
+
+    const handleDiceFactoryError = (error: { error: string }) => {
+      console.error('Dice Factory error:', error);
+      setConnectionError(error.error);
+    };
+
+    // Register event listeners
+    socket.on('game-started', handleGameStarted);
+    socket.on('game-state-updated', handleGameStateUpdated);
+    socket.on('lobby-updated', handleLobbyUpdated);
+    socket.on('error', handleError);
+    socket.on('war-error', handleWarError);
+    socket.on('dice-factory-error', handleDiceFactoryError);
+
+    return () => {
+      socket.off('game-started', handleGameStarted);
+      socket.off('game-state-updated', handleGameStateUpdated);
+      socket.off('lobby-updated', handleLobbyUpdated);
+      socket.off('error', handleError);
+      socket.off('war-error', handleWarError);
+      socket.off('dice-factory-error', handleDiceFactoryError);
+    };
+  }, [socket]);
+
+  // Get player name for display
+  const getPlayerName = () => {
+    if (!slug) return 'Unknown Player';
+    return sessionStorage.getItem(`player-name-${slug}`) || 'Unknown Player';
+  };
+
+  const playerName = getPlayerName();
+
+  // Loading state
+  if (loading || !gameState) {
     return (
-      <div className="min-h-screen bg-payne-grey-dark text-white flex items-center justify-center relative">
-        {/* Subtle texture overlay */}
-        <div className="absolute inset-0 opacity-20" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Ccircle cx='8' cy='8' r='1'/%3E%3Ccircle cx='72' cy='72' r='1'/%3E%3Ccircle cx='24' cy='24' r='1'/%3E%3Ccircle cx='56' cy='56' r='1'/%3E%3Ccircle cx='40' cy='8' r='1'/%3E%3Ccircle cx='8' cy='40' r='1'/%3E%3Ccircle cx='72' cy='40' r='1'/%3E%3Ccircle cx='40' cy='72' r='1'/%3E%3Ccircle cx='16' cy='56' r='1'/%3E%3Ccircle cx='64' cy='24' r='1'/%3E%3Ccircle cx='32' cy='48' r='1'/%3E%3Ccircle cx='48' cy='32' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
-        
-        <div className="text-center relative z-10">
-          <h1 className="text-4xl font-bold mb-4 text-lion">🎮 Game Not Found</h1>
-          <p className="text-xl mb-8">The game session could not be loaded.</p>
-          <p className="text-gray-400 mb-4">
-            This could happen if:
-          </p>
-          <ul className="text-gray-400 mb-6 text-left inline-block">
-            <li>• The game hasn't been started yet</li>
-            <li>• You were disconnected during play</li>
-            <li>• The lobby was closed</li>
-          </ul>
-          <div className="space-y-4">
-            <button
-              onClick={handleBackToLobby}
-              className="bg-lion hover:bg-lion-dark text-white font-bold py-3 px-6 rounded-lg transition-colors"
-            >
-              ← Back to Lobby
-            </button>
-            <br />
-            <button
-              onClick={() => navigate('/')}
-              className="bg-payne-grey hover:bg-payne-grey-light text-white font-bold py-3 px-6 rounded-lg transition-colors"
-            >
-              🏠 Home Page
-            </button>
-          </div>
-          
-          {/* Debug information for development */}
-          {process.env.NODE_ENV === 'development' && (
-            <details className="mt-6">
-              <summary className="cursor-pointer text-gray-400 hover:text-white">
-                Show Debug Info
-              </summary>
-              <div className="text-left bg-payne-grey/50 p-4 rounded mt-2 border border-payne-grey text-sm">
-                <p><strong>Slug:</strong> {slug}</p>
-                <p><strong>Socket ID:</strong> {socket?.id}</p>
-                <p><strong>Socket Connected:</strong> {socket?.connected ? 'Yes' : 'No'}</p>
-                <p><strong>Has Joined Lobby:</strong> {hasJoinedLobby ? 'Yes' : 'No'}</p>
-                <p><strong>Is Leader:</strong> {isLeader ? 'Yes' : 'No'}</p>
-              </div>
-            </details>
+      <div className="min-h-screen bg-payne-grey-dark text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl mb-4">🎮</div>
+          <div className="text-xl mb-2">Loading Game...</div>
+          {connectionError && (
+            <div className="text-red-400 text-sm">{connectionError}</div>
           )}
         </div>
       </div>
     );
   }
 
-  const currentPlayer = gameState.currentPlayer;
-  const playerName = currentPlayer ? currentPlayer.name : 'Unknown';
-
-  // Get game-specific colors and styling
+  // Get game-specific colors
   const gameColor = gameState.type === 'war' ? 'tea-rose' : 'uranian-blue';
   const gameColorClasses = gameState.type === 'war' 
     ? 'border-tea-rose/30 bg-tea-rose/10' 
@@ -294,6 +222,12 @@ const GamePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-payne-grey-dark text-white relative">
+      {/* Subtle texture overlay */}
+      <div className="absolute inset-0 opacity-40" style={{
+        backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
+        backgroundSize: '20px 20px'
+      }}></div>
+
       {/* Header with game info and navigation */}
       <header className={`p-4 border-b ${gameColorClasses} flex items-center justify-between relative z-10`}>
         <div className="flex items-center gap-4">
@@ -308,7 +242,10 @@ const GamePage: React.FC = () => {
           />
           <div>
             <h1 className="text-2xl font-bold text-lion-light">
-              🎮 Playing: {gameState.type === 'war' ? 'War' : gameState.type === 'dice-factory' ? 'Dice Factory' : gameState.type}
+              🎮 Playing: {gameState.type === 'war' ? 
+                (gameState as WarGameState).variantDisplayName || 'War' : 
+                gameState.type === 'dice-factory' ? 'Dice Factory' : 
+                gameState.type}
             </h1>
             <p className="text-gray-400">Player: {playerName}</p>
           </div>
@@ -328,9 +265,9 @@ const GamePage: React.FC = () => {
       {/* Game content */}
       <main className="relative z-10">
         {gameState.type === 'war' && (
-          <WarGame 
+          <EnhancedWarGame 
             gameState={gameState as WarGameState} 
-            socket={socket} 
+            socket={socket!} 
             isLeader={isLeader} 
           />
         )}
@@ -338,7 +275,7 @@ const GamePage: React.FC = () => {
         {gameState.type === 'dice-factory' && (
           <DiceFactoryGame 
             gameState={gameState as DiceFactoryGameState} 
-            socket={socket} 
+            socket={socket!} 
             isLeader={isLeader} 
           />
         )}
@@ -368,6 +305,9 @@ const GamePage: React.FC = () => {
               <div>Phase: {gameState.phase}</div>
               <div>Socket: {socket?.connected ? '🟢' : '🔴'}</div>
               <div>Leader: {isLeader ? 'Yes' : 'No'}</div>
+              {gameState.type === 'war' && (gameState as WarGameState).variant && (
+                <div>Variant: {(gameState as WarGameState).variant}</div>
+              )}
             </div>
           </details>
         </div>

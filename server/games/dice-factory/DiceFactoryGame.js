@@ -287,6 +287,36 @@ class DiceFactoryGame {
     return { success: result.success, error: result.success ? undefined : result.message };
   }
 
+    /**
+   * Handle factory action (purchase effect or modification)
+   * @param {string} playerId - Player ID
+   * @param {string} actionType - 'effect' or 'modification'
+   * @param {string} targetId - ID of effect/modification to purchase
+   * @returns {Object} - {success: boolean, error?: string}
+   */
+  factoryAction(playerId, actionType, targetId) {
+    if (!this.canPlayerAct(playerId)) {
+      return { success: false, error: 'Player cannot act' };
+    }
+
+    let result;
+    
+    if (actionType === 'effect') {
+      result = this.factorySystem.purchaseEffect(playerId, targetId);
+    } else if (actionType === 'modification') {
+      // This should not be called directly for modifications since they use bidding
+      return { success: false, error: 'Modifications must be bid on, not purchased directly' };
+    } else {
+      return { success: false, error: `Unknown factory action type: ${actionType}` };
+    }
+    
+    if (result.success) {
+      this.turnSystem.recordPlayerAction(playerId, `factory_${actionType}`, { targetId });
+    }
+    
+    return { success: result.success, error: result.success ? undefined : result.message };
+  }
+
   /**
    * Play factory effect from hand
    * @param {string} playerId - Player ID
@@ -479,6 +509,38 @@ class DiceFactoryGame {
       default:
         return { success: false, error: `Unknown action: ${action.action}` };
     }
+  }
+  
+  // ===== BOT SUPPORT METHODS =====
+
+  /**
+   * Get pending bot players (those who haven't ended their turn)
+   * @returns {Array} - Array of bot players that need to act
+   */
+  getPendingBotPlayers() {
+    if (this.state.phase !== 'playing') return [];
+    
+    return this.state.players.filter(p => 
+      p.isBot && 
+      !p.isReady && 
+      !p.hasFled &&
+      this.canPlayerAct(p.id)
+    );
+  }
+
+  /**
+   * Check if it's a specific player's turn to act
+   * @param {string} playerId - Player ID to check
+   * @returns {boolean} - True if player can act
+   */
+  isPlayerTurn(playerId) {
+    const player = this.state.players.find(p => p.id === playerId);
+    if (!player) return false;
+    
+    return !player.isReady && 
+           !player.hasFled && 
+           this.state.phase === 'playing' &&
+           this.canPlayerAct(playerId);
   }
 
   // ===== UTILITY METHODS =====

@@ -1,5 +1,5 @@
 // 1001 Game Nights - Dice Factory Module Exports
-// Version: 2.0.0 - Export barrel for clean imports
+// Version: 2.1.0 - Updated exports for split factory panels
 // Updated: December 2024
 
 // Main component - default export for easier importing
@@ -11,7 +11,9 @@ export * from './types/DiceFactoryTypes';
 
 // Components
 export { default as GameHeader } from './components/GameHeader';
-export { default as FactoryEffects } from './components/FactoryEffects';
+export { default as FactoryEffects } from './components/FactoryEffects'; // Legacy component
+export { default as ActiveFactoryEffects } from './components/ActiveFactoryEffects';
+export { default as ActiveFactoryModifications } from './components/ActiveFactoryModifications';
 export { default as PlayerDicePool } from './components/PlayerDicePool';
 export { default as PlayerList } from './components/PlayerList';
 export { default as GameLog } from './components/GameLog';

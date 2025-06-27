@@ -8,6 +8,7 @@ interface GameInfo {
   duration: string;
   description: string;
   rules: string[];
+  features: string[];
   status: 'available' | 'coming-soon';
 }
 
@@ -20,14 +21,21 @@ const ExplorePage: React.FC = () => {
       name: 'War',
       players: '2-8 players',
       duration: '5-10 minutes',
-      description: 'A simple card game where the highest card wins the round.',
+      description: 'A strategic card game with multiple variants and AI opponents. Choose your battles wisely!',
       rules: [
         'Each player receives one card from a standard deck',
         'Players choose to either Play or Fold their card',
         'If you Fold, you lose 1 point automatically',
         'If you Play, the player with the highest card wins 1 point',
         'All other players who played lose 1 point',
-        'Game continues for multiple rounds'
+        'First player to 5 points wins the game',
+        'Available variants modify winning conditions'
+      ],
+      features: [
+        '🎯 Multiple game variants (Regular, Aces High)',
+        '🤖 AI bot opponents with different strategies',
+        '⚡ Quick setup and fast-paced gameplay',
+        '🎮 Perfect for casual gaming sessions'
       ],
       status: 'available'
     },
@@ -47,6 +55,12 @@ const ExplorePage: React.FC = () => {
         'Factory effects modify gameplay rules',
         'When collapse begins, decide to flee with points or risk staying',
         'Crushed players score 0 points!'
+      ],
+      features: [
+        '⚙️ Complex engine-building mechanics',
+        '🎲 Dynamic dice management system',
+        '💥 Thrilling collapse mechanics',
+        '🧠 Strategic depth and planning'
       ],
       status: 'available'
     }
@@ -106,82 +120,87 @@ const ExplorePage: React.FC = () => {
           {games.map((game) => {
             const gameColor = game.id === 'war' ? 'tea-rose' : 'uranian-blue';
             const gameBorderColor = game.id === 'war' ? 'border-tea-rose/30' : 'border-uranian-blue/30';
-            const gameAccentColor = game.id === 'war' ? 'bg-tea-rose/20' : 'bg-uranian-blue/20';
-            
+            const gameAccentColor = game.id === 'war' ? 'bg-tea-rose/10' : 'bg-uranian-blue/10';
+            const gameButtonColor = game.id === 'war' ? 'bg-tea-rose hover:bg-tea-rose-light' : 'bg-uranian-blue hover:bg-uranian-blue-light';
+
             return (
               <div
                 key={game.id}
-                className={`bg-payne-grey/20 backdrop-blur-md rounded-2xl p-8 hover:bg-payne-grey/30 transition-all duration-300 border border-payne-grey/30 ${gameBorderColor}`}
+                className={`bg-payne-grey p-8 rounded-xl border-2 ${gameBorderColor} shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1`}
               >
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-                  {/* Game Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-4">
+                <div className="flex flex-col lg:flex-row gap-6">
+                  {/* Game Icon and Basic Info */}
+                  <div className="lg:w-1/3">
+                    <div className="flex items-center mb-4">
                       <img 
                         src={`/assets/icon-${game.id}.jpg`} 
-                        alt={`${game.name} Icon`}
-                        className={`w-16 h-16 rounded-lg border-2 border-${gameColor}`}
+                        alt={game.name}
+                        className={`w-16 h-16 rounded-lg mr-4 border-2 border-${gameColor}`}
                       />
                       <div>
                         <h2 className={`text-3xl font-bold text-${gameColor}`}>{game.name}</h2>
-                        <span
-                          className={`inline-block mt-1 px-3 py-1 rounded-full text-sm font-semibold ${
-                            game.status === 'available'
-                              ? `${gameAccentColor} text-${gameColor} border border-${gameColor}/30`
-                              : 'bg-payne-grey text-gray-300 border border-payne-grey'
-                          }`}
-                        >
-                          {game.status === 'available' ? 'Available' : 'Coming Soon'}
-                        </span>
+                        <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
+                          <span>👥 {game.players}</span>
+                          <span>⏱️ {game.duration}</span>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-6 mb-4 text-gray-300">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">👥</span>
-                        <span>{game.players}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">⏱️</span>
-                        <span>{game.duration}</span>
-                      </div>
-                    </div>
-
-                    <p className="text-lg text-gray-200 mb-6">{game.description}</p>
-
-                    {/* Rules */}
-                    <div>
-                      <h3 className="text-xl font-semibold mb-3 text-lion-light">📋 How to Play</h3>
-                      <ul className="space-y-2">
-                        {game.rules.map((rule, index) => (
-                          <li key={index} className="text-gray-300 flex items-start gap-2">
-                            <span className={`text-${gameColor} font-bold mt-1`}>•</span>
-                            <span>{rule}</span>
-                          </li>
+                    
+                    <p className="text-gray-300 mb-4 leading-relaxed">{game.description}</p>
+                    
+                    {/* Game Features */}
+                    <div className={`p-4 rounded-lg ${gameAccentColor} border ${gameBorderColor}`}>
+                      <h4 className={`font-semibold mb-2 text-${gameColor}`}>✨ Features:</h4>
+                      <ul className="text-sm text-gray-300 space-y-1">
+                        {game.features.map((feature, index) => (
+                          <li key={index}>{feature}</li>
                         ))}
                       </ul>
                     </div>
                   </div>
 
-                  {/* Action Button */}
-                  <div className="lg:ml-8">
-                    {game.status === 'available' ? (
-                      <button
-                        onClick={() => createLobbyWithGame(game.id)}
-                        className={`bg-gradient-to-r from-lion to-lion-light hover:from-lion-dark hover:to-lion px-8 py-4 rounded-lg text-xl font-semibold transition-all duration-300 hover:transform hover:scale-105 shadow-lg whitespace-nowrap text-white`}
-                      >
-                        Create {game.name} Lobby
-                      </button>
-                    ) : (
-                      <div className="text-center">
-                        <div className="bg-payne-grey px-8 py-4 rounded-lg text-xl font-semibold text-gray-300 whitespace-nowrap border border-payne-grey">
-                          Coming Soon
-                        </div>
-                        <p className="text-sm text-gray-400 mt-2">
-                          In Development
-                        </p>
-                      </div>
-                    )}
+                  {/* Game Rules and Actions */}
+                  <div className="lg:w-2/3">
+                    <div className="mb-6">
+                      <h3 className="text-xl font-semibold mb-3 text-white">📋 How to Play</h3>
+                      <ul className="text-gray-300 space-y-2">
+                        {game.rules.map((rule, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className={`inline-block w-6 h-6 rounded-full bg-${gameColor}/20 text-${gameColor} text-xs flex items-center justify-center mr-3 mt-0.5 flex-shrink-0`}>
+                              {index + 1}
+                            </span>
+                            <span>{rule}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      {game.status === 'available' ? (
+                        <>
+                          <button
+                            onClick={() => createLobbyWithGame(game.id)}
+                            className={`flex-1 ${gameButtonColor} text-white font-bold py-4 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
+                          >
+                            🚀 Create Lobby
+                          </button>
+                          <button
+                            onClick={() => navigate('/')}
+                            className="flex-1 bg-payne-grey-light hover:bg-payne-grey text-white font-bold py-4 px-6 rounded-lg transition-colors border border-payne-grey-light"
+                          >
+                            🔍 Find Existing Game
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          disabled
+                          className="flex-1 bg-gray-600 text-gray-400 font-bold py-4 px-6 rounded-lg cursor-not-allowed"
+                        >
+                          🚧 Coming Soon
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -189,28 +208,23 @@ const ExplorePage: React.FC = () => {
           })}
         </div>
 
-        {/* Add Game Suggestion */}
+        {/* Footer Info */}
         <div className="mt-12 text-center">
-          <div className="bg-payne-grey/20 rounded-2xl p-8 border border-payne-grey/30">
-            <h3 className="text-2xl font-bold mb-4 text-lion-light">🎲 Want to see a specific game?</h3>
-            <p className="text-gray-300 mb-6">
-              We're always looking to add new games to the platform. 
-              Share your suggestions using the feedback button on the home page!
+          <div className="bg-payne-grey p-6 rounded-xl border border-payne-grey-light">
+            <h3 className="text-xl font-semibold mb-3 text-lion-light">🎮 Ready to Play?</h3>
+            <p className="text-gray-300 mb-4">
+              Create a lobby for any game and invite friends with a simple 3-word link. 
+              Games support real-time multiplayer with automatic reconnection.
             </p>
-            <button
-              onClick={() => navigate('/')}
-              className="bg-lion hover:bg-lion-dark px-6 py-3 rounded-lg transition-colors text-white font-semibold"
-            >
-              Submit Game Suggestion
-            </button>
+            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400">
+              <span>🔄 Real-time sync</span>
+              <span>📱 Mobile friendly</span>
+              <span>🤖 AI bot support</span>
+              <span>⚡ Instant setup</span>
+            </div>
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="text-center py-8 text-gray-400 border-t border-payne-grey relative z-10">
-        <p>Game development powered by community feedback</p>
-      </footer>
     </div>
   );
 };

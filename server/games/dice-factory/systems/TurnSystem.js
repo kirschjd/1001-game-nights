@@ -1,5 +1,5 @@
 // 1001 Game Nights - Turn System
-// Version: 2.0.0 - Handles turn and round management
+// Version: 2.1.0 - Added modification auction integration
 // Updated: December 2024
 
 const { validatePlayerAction, validateMinimumDicePool } = require('../data/ValidationRules');
@@ -58,7 +58,14 @@ class TurnSystem {
 
     // Check if all players are ready
     if (this.areAllPlayersReady()) {
-      this.advanceToNextTurn();
+      // IMPORTANT: Don't advance turn immediately - we need auction resolution first
+      this.gameState.allPlayersReady = true;
+      
+      this.gameState.gameLog = logSystem(
+        this.gameState.gameLog,
+        'All players ready - resolving auctions...',
+        this.gameState.round
+      );
     }
 
     return { 
@@ -76,7 +83,7 @@ class TurnSystem {
   }
 
   /**
-   * Advance to next turn/round
+   * Advance to next turn/round (called after auction resolution)
    */
   advanceToNextTurn() {
     // Increment turn counter and round
@@ -101,6 +108,73 @@ class TurnSystem {
   }
 
   /**
+   * Process end-of-turn auction resolution
+   * @param {Object} factorySystem - Factory system instance for auction resolution
+   * @returns {Object} - {needsAuction: boolean, auctions: Array}
+   */
+  processEndOfTurnAuctions(factorySystem) {
+    if (!this.areAllPlayersReady()) {
+      return { needsAuction: false, auctions: [] };
+    }
+
+    // Resolve modification auctions
+    const auctionResult = factorySystem.resolveModificationAuctions();
+    
+    if (auctionResult.auctions.length > 0) {
+      // There are modifications that need blind auction resolution
+      this.gameState.gameLog = logSystem(
+        this.gameState.gameLog,
+        `${auctionResult.auctions.length} modifications require auction resolution`,
+        this.gameState.round
+      );
+      
+      return { needsAuction: true, auctions: auctionResult.auctions };
+    } else {
+      // No auctions needed - can advance turn immediately
+      this.completeEndOfTurn(factorySystem);
+      return { needsAuction: false, auctions: [] };
+    }
+  }
+
+  /**
+   * Complete end-of-turn processing after auctions are resolved
+   * @param {Object} factorySystem - Factory system instance
+   */
+  completeEndOfTurn(factorySystem) {
+    // Start new factory turn (draw new modifications)
+    factorySystem.startNewTurn();
+    
+    // Process other end-of-turn effects
+    this.processOtherEndOfTurnEffects();
+    
+    // Advance to next turn
+    this.advanceToNextTurn();
+  }
+
+  /**
+   * Process other end-of-turn effects (collapse, etc.)
+   */
+  processOtherEndOfTurnEffects() {
+    // Apply Corporate Debt penalty
+    for (const player of this.gameState.players) {
+      if (player.modifications?.includes('corporate_debt') && player.freePips < 0) {
+        const debtPenalty = Math.abs(player.freePips);
+        player.score -= debtPenalty;
+        
+        this.gameState.gameLog = logAction(
+          this.gameState.gameLog,
+          player.name,
+          `lost ${debtPenalty} points due to Corporate Debt`,
+          this.gameState.round
+        );
+      }
+    }
+
+    // Other end-of-turn processing would go here
+    // (collapse checks, factory triggers, etc.)
+  }
+
+  /**
    * Reset a player for the next turn
    * @param {Object} player - Player object
    */
@@ -111,6 +185,9 @@ class TurnSystem {
     // Clear turn actions and exhausted dice
     player.currentTurnActions = [];
     player.exhaustedDice = [];
+
+    // Clear modification bids
+    player.modificationBids = {};
 
     // Ensure minimum dice pool
     const minDiceCheck = validateMinimumDicePool(player);
@@ -125,8 +202,59 @@ class TurnSystem {
       );
     }
 
+    // Process turn-start modification effects
+    this.processTurnStartModifications(player);
+
     // AUTO-ROLL all dice at start of turn
     this.autoRollPlayerDice(player);
+  }
+
+  /**
+   * Process modification effects that trigger at turn start
+   * @param {Object} player - Player object
+   */
+  processTurnStartModifications(player) {
+    // Dice Tower: Option to reroll all dice
+    if (player.modifications?.includes('dice_tower')) {
+      // This would be handled by the player during their turn
+      // Just log that the option is available
+      this.gameState.gameLog = logAction(
+        this.gameState.gameLog,
+        player.name,
+        'has Dice Tower available (can reroll all dice)',
+        this.gameState.round
+      );
+    }
+
+    // Roller Derby: Option to recruit d4 for everyone
+    if (player.modifications?.includes('roller_derby')) {
+      this.gameState.gameLog = logAction(
+        this.gameState.gameLog,
+        player.name,
+        'has Roller Derby available (can recruit d4 for everyone)',
+        this.gameState.round
+      );
+    }
+
+    // 2rUS: Automatically reroll all 2s
+    if (player.modifications?.includes('tworus')) {
+      let rerolledCount = 0;
+      for (const die of player.dicePool) {
+        if (die.value === 2) {
+          die.value = Math.floor(Math.random() * die.sides) + 1;
+          rerolledCount++;
+        }
+      }
+      
+      if (rerolledCount > 0) {
+        this.gameState.gameLog = logAction(
+          this.gameState.gameLog,
+          player.name,
+          `2rUS automatically rerolled ${rerolledCount} dice showing 2`,
+          this.gameState.round
+        );
+      }
+    }
   }
 
   /**
@@ -134,6 +262,12 @@ class TurnSystem {
    * @param {Object} player - Player object
    */
   autoRollPlayerDice(player) {
+    // Determine die type based on modifications
+    let dieType = 4; // Default d4
+    if (player.modifications?.includes('dice_pool_upgrade')) {
+      dieType = 6; // Upgrade to d6
+    }
+
     // Roll all dice in player's pool
     for (const die of player.dicePool) {
       die.value = Math.floor(Math.random() * die.sides) + 1;
@@ -167,20 +301,41 @@ class TurnSystem {
       return;
     }
 
-    // Convert to pips (1 pip per die value)
-    let pipsGained = 0;
-    for (const die of unusedDice) {
-      pipsGained += die.value;
+    // Check for Dividend modification
+    const hasDividend = player.modifications?.includes('dividend');
+    
+    if (hasDividend) {
+      // Player can choose between pips and points
+      // For now, we'll default to pips (this could be a player choice in the future)
+      let pipsGained = 0;
+      for (const die of unusedDice) {
+        pipsGained += die.value;
+      }
+
+      player.freePips += pipsGained;
+
+      this.gameState.gameLog = logAction(
+        this.gameState.gameLog,
+        player.name,
+        `converted ${unusedDice.length} unused dice to ${pipsGained} pips (Dividend available)`,
+        this.gameState.round
+      );
+    } else {
+      // Standard conversion to pips (1 pip per die value)
+      let pipsGained = 0;
+      for (const die of unusedDice) {
+        pipsGained += die.value;
+      }
+
+      player.freePips += pipsGained;
+
+      this.gameState.gameLog = logAction(
+        this.gameState.gameLog,
+        player.name,
+        `converted ${unusedDice.length} unused dice to ${pipsGained} pips`,
+        this.gameState.round
+      );
     }
-
-    player.freePips += pipsGained;
-
-    this.gameState.gameLog = logAction(
-      this.gameState.gameLog,
-      player.name,
-      `converted ${unusedDice.length} unused dice to ${pipsGained} pips`,
-      this.gameState.round
-    );
   }
 
   /**
@@ -229,6 +384,7 @@ class TurnSystem {
     // Clear turn tracking
     player.currentTurnActions = [];
     player.exhaustedDice = [];
+    player.modificationBids = {};
 
     this.gameState.gameLog = logAction(
       this.gameState.gameLog,
@@ -259,7 +415,8 @@ class TurnSystem {
       playersActive,
       playersFled,
       allReady: this.areAllPlayersReady(),
-      phase: this.gameState.phase
+      phase: this.gameState.phase,
+      needsAuctionResolution: this.gameState.allPlayersReady && !this.gameState.auctionsResolved
     };
   }
 
@@ -349,7 +506,8 @@ class TurnSystem {
       readyPlayers: this.gameState.players.filter(p => p.isReady).length,
       fledPlayers: this.gameState.players.filter(p => p.hasFled).length,
       averageActionsPerTurn: 0,
-      playerActionCounts: {}
+      playerActionCounts: {},
+      pendingAuctions: this.gameState.pendingAuctions?.length || 0
     };
 
     // Calculate average actions per turn
@@ -395,12 +553,14 @@ class TurnSystem {
     this.gameState.round = 1;
     this.gameState.turnCounter = 1;
     this.gameState.allPlayersReady = false;
+    this.gameState.auctionsResolved = false;
 
     for (const player of this.gameState.players) {
       player.isReady = false;
       player.currentTurnActions = [];
       player.exhaustedDice = [];
       player.turnStartState = null;
+      player.modificationBids = {};
     }
   }
 }

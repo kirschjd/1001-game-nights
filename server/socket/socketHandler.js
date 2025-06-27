@@ -6,6 +6,9 @@ const { registerLobbyEvents } = require('./lobbyEvents');
 const { registerWarEvents } = require('./warEvents');
 const { registerDiceFactoryEvents } = require('./diceFactoryEvents');
 
+// Import enhanced war events
+const setupEnhancedWarEvents = require('../games/war/events/enhancedWarEvents');
+
 /**
  * Initialize socket.io event handlers
  * @param {Object} io - Socket.io instance
@@ -21,6 +24,9 @@ function initializeSocketHandlers(io, lobbies, games) {
     registerLobbyEvents(io, socket, lobbies, games);
     registerWarEvents(io, socket, lobbies, games);
     registerDiceFactoryEvents(io, socket, lobbies, games);
+    
+    // Register enhanced war events (bots, variants, etc.)
+    setupEnhancedWarEvents(io, socket, lobbies, games);
 
     // Log when socket disconnects (handled in lobbyEvents)
   });

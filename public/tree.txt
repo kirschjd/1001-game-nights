@@ -1,0 +1,12 @@
+Folder PATH listing for volume DATA
+Volume serial number is 3826-9F8A
+H:.
+¦   index.html
+¦   tree.txt
+¦   
++---assets
+        banner-main.jpg
+        icon-dice-factory.jpg
+        icon-home.jpg
+        icon-war.jpg
+        
