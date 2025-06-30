@@ -5,7 +5,6 @@ H:.
 |   App.tsx
 |   index.css
 |   index.tsx
-|   tree.txt
 |   tree_src.txt
 |   
 \---components
@@ -22,6 +21,7 @@ H:.
         |   +---components
         |   |       ActiveFactoryEffects.tsx
         |   |       ActiveFactoryModifications.tsx
+        |   |       AuctionModal.tsx
         |   |       DiceRenderer.tsx
         |   |       FactoryEffects.tsx
         |   |       GameHeader.tsx

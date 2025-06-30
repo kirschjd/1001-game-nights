@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Socket } from 'socket.io-client';
+import AuctionModal from './AuctionModal';
 
 interface ModificationCard {
   id: string;
@@ -43,49 +44,65 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
   const [bidAmounts, setBidAmounts] = useState<Record<string, number>>({});
   const [showBidModal, setShowBidModal] = useState<string | null>(null);
   const [pendingBid, setPendingBid] = useState<number>(0);
+  const [activeAuctions, setActiveAuctions] = useState<any[]>([]);
+  const [showAuctionModal, setShowAuctionModal] = useState(false);
 
   // Request current turn modifications when component mounts or game state changes
   useEffect(() => {
     if (socket && gameState?.type === 'dice-factory') {
       socket.emit('dice-factory-get-turn-modifications');
     }
-  }, [socket, gameState?.round]);
+  }, [socket, gameState?.round, gameState?.type]);
 
-  // Listen for turn modifications updates
+  // Socket event listeners
   useEffect(() => {
     if (!socket) return;
 
-    const handleTurnModificationsUpdate = (data: { modifications: ModificationCard[], deckStatus: DeckStatus }) => {
+    const handleTurnModificationsUpdate = (data: { 
+      modifications: ModificationCard[], 
+      deckStatus: DeckStatus 
+    }) => {
       setCurrentTurnModifications(data.modifications);
       setDeckStatus(data.deckStatus);
     };
 
-    const handleModificationBidPlaced = (data: { playerId: string, modificationId: string }) => {
-      // Update UI to show that someone bid on this modification
-      setCurrentTurnModifications(prev => 
-        prev.map(mod => {
-          if (mod.id === data.modificationId) {
-            // Don't show the actual bid amount, just indicate a bid was placed
-            return {
-              ...mod,
-              bids: [...mod.bids.filter(bid => bid.playerId !== data.playerId), {
-                playerId: data.playerId,
-                playerName: 'Hidden Bid',
-                amount: 0 // Hidden during bidding
-              }]
-            };
-          }
-          return mod;
-        })
-      );
+    const handleModificationBidPlaced = (data: { 
+      playerId: string, 
+      modificationId: string 
+    }) => {
+      // Update UI to show someone placed a bid (but not the amount)
+      setCurrentTurnModifications(prev => prev.map(mod => {
+        if (mod.id === data.modificationId) {
+          // Just increment bid count, actual bid data comes from server
+          return { ...mod };
+        }
+        return mod;
+      }));
+    };
+
+    const handleAuctionPhaseStart = (data: { auctions: any[] }) => {
+      setActiveAuctions(data.auctions);
+      setShowAuctionModal(true);
+    };
+
+    const handleModificationPurchased = (data: { 
+      modification: any, 
+      source: string 
+    }) => {
+      // Show notification that modification was purchased
+      console.log('Modification purchased:', data.modification.name);
     };
 
     socket.on('turn-modifications-update', handleTurnModificationsUpdate);
     socket.on('modification-bid-placed', handleModificationBidPlaced);
+    socket.on('auction-phase-start', handleAuctionPhaseStart);
+    socket.on('modification-purchased', handleModificationPurchased);
 
     return () => {
       socket.off('turn-modifications-update', handleTurnModificationsUpdate);
       socket.off('modification-bid-placed', handleModificationBidPlaced);
+      socket.off('auction-phase-start', handleAuctionPhaseStart);
+      socket.off('modification-purchased', handleModificationPurchased);
     };
   }, [socket]);
 
@@ -151,75 +168,88 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
     return hasMarketManipulation ? Math.max(0, baseCost - 4) : baseCost;
   };
 
-  if (currentTurnModifications.length === 0) {
+  if (!currentPlayer) {
     return (
-      <div className="bg-payne-grey/50 p-4 rounded-lg border border-lion/30">
+      <div className="bg-midnight-green/50 p-4 rounded-lg border border-lion/30">
         <h3 className="text-lg font-semibold mb-3 text-lion">
-          🔧 Factory Modifications - This Turn
+          🔧 Factory Modifications
         </h3>
         <div className="text-sm text-gray-400 italic">
-          Loading modifications for this turn...
+          Waiting for game to start...
         </div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="bg-payne-grey/50 p-4 rounded-lg border border-lion/30">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-semibold text-lion">
-            🔧 Factory Modifications - This Turn
-          </h3>
-          <div className="text-sm text-gray-400">
-            Deck: {deckStatus.cardsRemaining}/{deckStatus.totalCards} cards
-          </div>
+    <div className="bg-midnight-green/50 p-4 rounded-lg border border-lion/30">
+      <h3 className="text-lg font-semibold mb-3 text-lion">
+        🔧 Factory Modifications
+      </h3>
+      
+      <div className="space-y-4">
+        {/* Deck Status */}
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm text-gray-400">
+            Deck: {deckStatus.cardsRemaining} / {deckStatus.totalCards} cards
+          </span>
+          <span className="text-sm text-gray-400">
+            Your Pips: <span className="text-lion font-bold">{currentPlayer.freePips}</span>
+          </span>
         </div>
-        
+
         {/* Current Turn Modifications */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {currentTurnModifications.map((modCard) => {
+        <div className="space-y-3">
+          <h4 className="font-semibold text-lion">Available This Turn:</h4>
+          {currentTurnModifications.length === 0 ? (
+            <div className="text-sm text-gray-400 italic">
+              No modifications available this turn.
+            </div>
+          ) : currentTurnModifications.map((modCard) => {
             const playerBid = getPlayerBid(modCard.id);
-            const otherBids = hasOtherBids(modCard.id);
             const actualCost = getModificationCost(modCard.modification.cost);
             
             return (
               <div 
                 key={modCard.id} 
-                className="bg-payne-grey/70 p-4 rounded border border-lion/20 hover:border-lion/40 transition-colors"
+                className="bg-payne-grey/70 p-3 rounded border border-lion/20 hover:border-lion/40 transition-colors"
               >
                 <div className="flex justify-between items-start mb-2">
-                  <div className="font-semibold text-lion">{modCard.modification.name}</div>
-                  <div className="text-xs px-2 py-1 rounded bg-lion/20 text-lion">
-                    Base: {modCard.modification.cost} pips
+                  <div>
+                    <div className="font-semibold text-white">{modCard.modification.name}</div>
+                    <div className="text-xs text-gray-400">
+                      Base cost: {modCard.modification.cost} pips
+                      {actualCost !== modCard.modification.cost && (
+                        <span className="text-lion"> → {actualCost} pips</span>
+                      )}
+                    </div>
                   </div>
+                  {modCard.winner && (
+                    <div className="text-xs px-2 py-1 rounded bg-lion/20 text-lion">
+                      Won
+                    </div>
+                  )}
                 </div>
                 
-                <div className="text-sm text-gray-300 mb-3 min-h-[3rem]">
+                <div className="text-sm text-gray-300 mb-3">
                   {modCard.modification.description}
                 </div>
                 
-                {/* Bidding Status */}
-                <div className="mb-3">
-                  {playerBid !== null ? (
-                    <div className="text-xs bg-uranian-blue/20 text-uranian-blue px-2 py-1 rounded">
-                      Your bid: {playerBid} pips
-                    </div>
-                  ) : (
-                    <div className="text-xs text-gray-500">
-                      No bid placed
-                    </div>
-                  )}
-                  
-                  {otherBids && (
-                    <div className="text-xs text-yellow-400 mt-1">
-                      ⚠️ Other players have bid
-                    </div>
-                  )}
-                </div>
+                {/* Bid Status */}
+                {playerBid !== null && (
+                  <div className="text-xs text-lion mb-2">
+                    Your bid: {playerBid} pips
+                  </div>
+                )}
+                
+                {hasOtherBids(modCard.id) && (
+                  <div className="text-xs text-gray-400 mb-2">
+                    Other players have also bid on this
+                  </div>
+                )}
                 
                 {/* Action Button */}
-                {canTakeActions() ? (
+                {canTakeActions() && !modCard.winner ? (
                   <button
                     onClick={() => handlePlaceBid(modCard.id)}
                     disabled={currentPlayer.freePips < actualCost}
@@ -327,7 +357,20 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
           </div>
         </div>
       )}
-    </>
+
+      {/* Auction Modal */}
+      {showAuctionModal && activeAuctions.length > 0 && (
+        <AuctionModal
+          socket={socket}
+          auctions={activeAuctions}
+          currentPlayer={currentPlayer}
+          onComplete={() => {
+            setShowAuctionModal(false);
+            setActiveAuctions([]);
+          }}
+        />
+      )}
+    </div>
   );
 };
 

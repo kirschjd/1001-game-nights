@@ -132,64 +132,98 @@ const GamePage: React.FC = () => {
     }
   }, [socket, hasJoinedLobby, slug]);
 
-  // Game state management
+  // GamePage.tsx - Updated game state management useEffect (CORRECTED VERSION)
   useEffect(() => {
-    if (!socket) return;
+  if (!socket) return;
 
-    // Enhanced game state handling
-    const handleGameStarted = (gameData: GameState) => {
-      console.log('Game started:', gameData);
-      setGameState(gameData);
-      setLoading(false);
-    };
+  // Enhanced game state handling
+  const handleGameStarted = (gameData: GameState) => {
+    console.log('Game started:', gameData);
+    setGameState(gameData);
+    setLoading(false);
+  };
 
-    const handleGameStateUpdated = (gameData: GameState) => {
-      console.log('Game state updated:', gameData);
-      setGameState(gameData);
-      setLoading(false);
-    };
+  const handleGameStateUpdated = (gameData: GameState) => {
+    console.log('Game state updated:', gameData);
+    setGameState(gameData);
+    setLoading(false);
+  };
 
-    const handleLobbyUpdated = (lobbyData: any) => {
-      console.log('Lobby updated:', lobbyData);
-      console.log('My socket ID:', socket.id);
-      console.log('Lobby leader ID:', lobbyData.leaderId);
-      console.log('Am I leader?', socket.id === lobbyData.leaderId);
-      setIsLeader(socket.id === lobbyData.leaderId);
-    };
+  const handleLobbyUpdated = (lobbyData: any) => {
+    console.log('Lobby updated:', lobbyData);
+    console.log('My socket ID:', socket.id);
+    console.log('Lobby leader ID:', lobbyData.leaderId);
+    console.log('Am I leader?', socket.id === lobbyData.leaderId);
+    setIsLeader(socket.id === lobbyData.leaderId);
+    
+    // Simple check - if we have lobby but no game after reasonable time, it means no game is running
+    // We'll handle this with a separate useEffect to avoid multiple timeouts
+  };
 
-    // Error handling
-    const handleError = (error: { message: string }) => {
-      console.error('Game error:', error);
-      setConnectionError(error.message);
-    };
+  // NEW: Handle explicit "no game running" response
+  const handleNoGameRunning = () => {
+    console.log('GamePage: Server confirmed no game is running');
+    setLoading(false);
+    navigate(`/lobby/${slug}`);
+  };
 
-    const handleWarError = (error: { error: string }) => {
-      console.error('War game error:', error);
-      setConnectionError(error.error);
-    };
+  // Error handling
+  const handleError = (error: { message: string }) => {
+    console.error('Game error:', error);
+    setConnectionError(error.message);
+    setLoading(false);
+  };
 
-    const handleDiceFactoryError = (error: { error: string }) => {
-      console.error('Dice Factory error:', error);
-      setConnectionError(error.error);
-    };
+  const handleWarError = (error: { error: string }) => {
+    console.error('War game error:', error);
+    setConnectionError(error.error);
+  };
 
-    // Register event listeners
-    socket.on('game-started', handleGameStarted);
-    socket.on('game-state-updated', handleGameStateUpdated);
-    socket.on('lobby-updated', handleLobbyUpdated);
-    socket.on('error', handleError);
-    socket.on('war-error', handleWarError);
-    socket.on('dice-factory-error', handleDiceFactoryError);
+  const handleDiceFactoryError = (error: { error: string }) => {
+    console.error('Dice Factory error:', error);
+    setConnectionError(error.error);
+  };
 
-    return () => {
-      socket.off('game-started', handleGameStarted);
-      socket.off('game-state-updated', handleGameStateUpdated);
-      socket.off('lobby-updated', handleLobbyUpdated);
-      socket.off('error', handleError);
-      socket.off('war-error', handleWarError);
-      socket.off('dice-factory-error', handleDiceFactoryError);
-    };
-  }, [socket]);
+  // Register event listeners
+  socket.on('game-started', handleGameStarted);
+  socket.on('game-state-updated', handleGameStateUpdated);
+  socket.on('lobby-updated', handleLobbyUpdated);
+  socket.on('no-game-running', handleNoGameRunning);
+  socket.on('error', handleError);
+  socket.on('war-error', handleWarError);
+  socket.on('dice-factory-error', handleDiceFactoryError);
+
+  return () => {
+    socket.off('game-started', handleGameStarted);
+    socket.off('game-state-updated', handleGameStateUpdated);
+    socket.off('lobby-updated', handleLobbyUpdated);
+    socket.off('no-game-running', handleNoGameRunning);
+    socket.off('error', handleError);
+    socket.off('war-error', handleWarError);
+    socket.off('dice-factory-error', handleDiceFactoryError);
+  };
+  }, [socket, navigate, slug]);
+
+// SEPARATE useEffect to handle the "no game" timeout - this prevents multiple timeouts
+useEffect(() => {
+  if (!loading || gameState || !hasJoinedLobby) {
+    return; // Don't set timeout if not loading, already have game state, or haven't joined yet
+  }
+
+  console.log('GamePage: Setting timeout to check for game state...');
+  
+  const noGameTimeout = setTimeout(() => {
+    if (loading && !gameState) {
+      console.log('GamePage: No game state received after timeout - redirecting to lobby');
+      navigate(`/lobby/${slug}`);
+    }
+  }, 4000); // Give 4 seconds for game state to arrive
+
+  return () => {
+    console.log('GamePage: Clearing no-game timeout');
+    clearTimeout(noGameTimeout);
+  };
+}, [loading, gameState, hasJoinedLobby, navigate, slug]);
 
   // Get player name for display
   const getPlayerName = () => {

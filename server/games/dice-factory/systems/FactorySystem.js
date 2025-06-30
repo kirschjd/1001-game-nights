@@ -528,6 +528,17 @@ class FactorySystem {
   }
 
   /**
+   * Get all available factory items (effects and modifications)
+   * @returns {Object} - {effects: Array, modifications: Array}
+   */
+  getAvailableFactoryItems() {
+    return {
+      effects: this.gameState.availableEffects || [],
+      modifications: this.gameState.currentTurnModifications || []
+    };
+  }
+
+  /**
    * Get modification deck status
    * @returns {Object} - {cardsRemaining: number, totalCards: number}
    */

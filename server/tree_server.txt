@@ -1,63 +1,63 @@
 Folder PATH listing for volume DATA
 Volume serial number is 3826-9F8A
 H:.
-    index.bak
-    index.js
-    tree_server.txt
-    
+¦   index.bak
+¦   index.js
+¦   tree_server.txt
+¦   
 +---games
-    +---bots
-            BotSystem.js
-            DiceFactoryBotHandler.js
-            index.js
-            WarBotHandler.js
-            
-    +---dice-factory
-            DiceFactoryGame.js
-            index.js
-            
-        +---data
-                FactoryEffects.js
-                FactoryModifications.js
-                GameConstants.js
-                ValidationRules.js
-                
-        +---old
-                dice-factory.bak
-                
-        +---systems
-                CollapseSystem.js
-                DiceSystem.js
-                FactorySystem.js
-                ScoringSystem.js
-                TurnSystem.js
-                
-        +---utils
-                DiceHelpers.js
-                GameLogger.js
-                
-    +---war
-            EnhancedWarGame.js
-            index.js
-            WarGame.js
-            
-        +---events
-                basicWarEvents.js
-                enhancedWarEvents.js
-                index.js
-                
-        +---old
-                war.bak
-                
-        +---utils
-                warConstants.js
-                
-        +---variants
-                VariantRegistry.js
-                
+¦   +---bots
+¦   ¦       BotSystem.js
+¦   ¦       DiceFactoryBotHandler.js
+¦   ¦       index.js
+¦   ¦       WarBotHandler.js
+¦   ¦       
+¦   +---dice-factory
+¦   ¦   ¦   DiceFactoryGame.js
+¦   ¦   ¦   index.js
+¦   ¦   ¦   
+¦   ¦   +---data
+¦   ¦   ¦       FactoryEffects.js
+¦   ¦   ¦       FactoryModifications.js
+¦   ¦   ¦       GameConstants.js
+¦   ¦   ¦       ValidationRules.js
+¦   ¦   ¦       
+¦   ¦   +---old
+¦   ¦   ¦       dice-factory.bak
+¦   ¦   ¦       
+¦   ¦   +---systems
+¦   ¦   ¦       CollapseSystem.js
+¦   ¦   ¦       DiceSystem.js
+¦   ¦   ¦       FactorySystem.js
+¦   ¦   ¦       ScoringSystem.js
+¦   ¦   ¦       TurnSystem.js
+¦   ¦   ¦       
+¦   ¦   +---utils
+¦   ¦           DiceHelpers.js
+¦   ¦           GameLogger.js
+¦   ¦           
+¦   +---war
+¦       ¦   EnhancedWarGame.js
+¦       ¦   index.js
+¦       ¦   WarGame.js
+¦       ¦   
+¦       +---events
+¦       ¦       basicWarEvents.js
+¦       ¦       enhancedWarEvents.js
+¦       ¦       index.js
+¦       ¦       
+¦       +---old
+¦       ¦       war.bak
+¦       ¦       
+¦       +---utils
+¦       ¦       warConstants.js
+¦       ¦       
+¦       +---variants
+¦               VariantRegistry.js
+¦               
 +---routes
-        api.js
-        
+¦       api.js
+¦       
 +---socket
         diceFactoryEvents.js
         lobbyEvents.js

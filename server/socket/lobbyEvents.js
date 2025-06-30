@@ -377,6 +377,31 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     io.to(slug).emit('lobby-updated', lobby);
   });
 
+  // Handle explicit game state requests
+  socket.on('request-game-state', (data) => {
+    const { slug } = data;
+
+    if (!slug) {
+      socket.emit('error', { message: 'Missing slug in game state request' });
+      return;
+    }
+
+    console.log(`🎮 Game state requested for lobby: ${slug} by ${socket.id}`);
+
+    const game = games.get(slug);
+
+    if (game) {
+      // Game exists - send current state
+      console.log(`✅ Sending game state for ${slug}`);
+      const playerView = game.getPlayerView(socket.id);
+      socket.emit('game-started', playerView);
+    } else {
+      // No game running - inform client
+      console.log(`❌ No game running in lobby ${slug} - informing client`);
+      socket.emit('no-game-running', { slug });
+    }
+  });
+
   // Change bot style (leader only)
   socket.on('change-bot-style', (data) => {
     const { slug, botId, newStyle } = data;

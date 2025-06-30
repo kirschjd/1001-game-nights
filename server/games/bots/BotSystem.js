@@ -96,6 +96,61 @@ class BotSystem {
     return handler.getBotAction(bot, gameState);
   }
 
+  // Add this method to BotSystem.js class
+
+  /**
+   * Execute a bot's turn for any game type
+   * @param {Object} io - Socket.io instance  
+   * @param {string} lobbySlug - Lobby identifier
+   * @param {Object} game - Game instance
+   * @param {Map} lobbies - Lobbies storage
+   * @param {string} botId - Bot ID to execute turn for
+   */
+  executeBotTurn(io, lobbySlug, game, lobbies, botId) {
+  console.log(`🤖 Executing bot turn for ${botId}`);
+  
+  const bot = this.getBot(botId);
+  if (!bot) {
+    console.log(`❌ Bot ${botId} not found`);
+    return;
+  }
+
+  const gameState = game.getGameState();
+  const action = this.getBotAction(botId, gameState);
+  
+  if (!action) {
+    console.log(`❌ No action returned for bot ${botId}`);
+    return;
+  }
+
+  console.log(`🎮 Bot ${bot.name} taking action:`, action);
+
+  // Execute the action on the game
+  let result;
+  if (action.action === 'end-turn') {
+    result = game.setPlayerReady(botId);
+  } else {
+    result = game.processAction(botId, action);
+  }
+
+  if (result.success) {
+    console.log(`✅ Bot ${bot.name} action successful`);
+    
+    // Broadcast update to all human players
+    const lobby = lobbies.get(lobbySlug);
+    if (lobby) {
+      lobby.players.forEach(player => {
+        if (player.isConnected && !this.isBot(player.id)) {
+          const playerView = game.getPlayerView(player.id);
+          io.to(player.id).emit('game-state-updated', playerView);
+        }
+      });
+    }
+  } else {
+    console.log(`❌ Bot ${bot.name} action failed:`, result.error);
+  }
+  }
+
   /**
    * Schedule bot actions for a game
    * @param {string} gameId - Game/lobby slug

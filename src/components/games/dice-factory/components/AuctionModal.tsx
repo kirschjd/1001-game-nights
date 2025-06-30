@@ -35,7 +35,6 @@ const AuctionModal: React.FC<AuctionModalProps> = ({
 }) => {
   const [currentAuctionIndex, setCurrentAuctionIndex] = useState(0);
   const [bidAmount, setBidAmount] = useState(0);
-  const [submittedBids, setSubmittedBids] = useState<Record<string, number>>({});
   const [auctionResults, setAuctionResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
 
@@ -71,12 +70,6 @@ const AuctionModal: React.FC<AuctionModalProps> = ({
       modificationId: currentAuction.modificationId,
       bidAmount: bidAmount
     });
-
-    // Record submitted bid
-    setSubmittedBids(prev => ({
-      ...prev,
-      [currentAuction.modificationId]: bidAmount
-    }));
 
     // Move to next auction or wait for results
     if (currentAuctionIndex < auctions.length - 1) {
@@ -116,12 +109,14 @@ const AuctionModal: React.FC<AuctionModalProps> = ({
                       Winner: {result.winner.playerName} with {result.winner.bidAmount} pips
                     </p>
                     <div className="text-sm text-gray-400">
-                      All bids:
-                      {Object.entries(result.allBids).map(([playerId, amount]) => (
-                        <div key={playerId} className="ml-4">
-                          • {playerId === currentPlayer.id ? 'You' : 'Opponent'}: {amount} pips
-                        </div>
-                      ))}
+                      <div>All bids:</div>
+                      <div>
+                        {Object.entries(result.allBids).map(([playerId, amount]) => (
+                          <div key={playerId} className="ml-4">
+                            {`• ${playerId === currentPlayer.id ? 'You' : 'Opponent'}: ${amount} pips`}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ) : (

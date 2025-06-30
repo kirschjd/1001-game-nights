@@ -586,4 +586,4 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
   });
 }
 
-module.exports = registerDiceFactoryEvents;
+module.exports = { registerDiceFactoryEvents };

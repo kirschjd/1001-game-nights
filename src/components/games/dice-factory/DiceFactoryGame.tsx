@@ -221,7 +221,9 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
 
             {/* Active Factory Modifications Panel */}
             <ActiveFactoryModifications 
-              modifications={activeEffects || []} 
+              socket={socket}
+              currentPlayer={currentPlayer}
+              gameState={gameState}
             />
           </div>
 
