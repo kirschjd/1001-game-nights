@@ -104,6 +104,8 @@ class DiceFactoryGame {
     
     if (result.success) {
       this.turnSystem.recordPlayerAction(playerId, 'recruit_dice', { diceIds });
+      
+      this.saveActionState(playerId, 'recruit', { diceIds });
     }
     
     return { success: result.success, error: result.success ? undefined : result.message };
@@ -124,6 +126,7 @@ class DiceFactoryGame {
     
     if (result.success) {
       this.turnSystem.recordPlayerAction(playerId, 'promote_dice', { diceIds });
+      this.saveActionState(playerId, 'recruit', { diceIds });
     }
     
     return { success: result.success, error: result.success ? undefined : result.message };
@@ -144,6 +147,10 @@ class DiceFactoryGame {
     
     if (result.success) {
       this.turnSystem.recordPlayerAction(playerId, 'process_dice', { diceIds });
+      this.saveActionState(playerId, 'process', { 
+        diceIds, 
+        pipsGained: result.pipsGained 
+      });
     }
     
     return { success: result.success, error: result.success ? undefined : result.message };
@@ -168,6 +175,11 @@ class DiceFactoryGame {
     
     if (result.success) {
       this.turnSystem.recordPlayerAction(playerId, 'modify_die', { dieId, change });
+      this.saveActionState(playerId, 'modify_value', { 
+        dieId, 
+        change, 
+        cost 
+      });
     }
     
     return { success: result.success, error: result.success ? undefined : result.message };
@@ -188,6 +200,13 @@ class DiceFactoryGame {
     
     if (result.success) {
       this.turnSystem.recordPlayerAction(playerId, 'reroll_die', { dieId });
+      // Save state for undo with deterministic reroll data
+      this.saveActionState(playerId, 'reroll', { 
+        dieId, 
+        oldValue, 
+        newValue, // Store the result so undo/redo is deterministic
+        cost: require('./data/GameConstants').PIP_COSTS.REROLL_DIE 
+      });
     }
     
     return { success: result.success, error: result.success ? undefined : result.message };
@@ -211,6 +230,11 @@ class DiceFactoryGame {
     if (result.success) {
       this.turnSystem.recordPlayerAction(playerId, 'score_straight', { diceIds });
       this.diceSystem.enforceMinimumDiceFloor(playerId);
+      // Save state for undo
+      this.saveActionState(playerId, 'score_straight', { 
+        diceIds, 
+        points: result.points 
+      });
     }
     
     return { 
@@ -236,6 +260,11 @@ class DiceFactoryGame {
     if (result.success) {
       this.turnSystem.recordPlayerAction(playerId, 'score_set', { diceIds });
       this.diceSystem.enforceMinimumDiceFloor(playerId);
+      // Save state for undo
+      this.saveActionState(playerId, 'score_set', { 
+        diceIds, 
+        points: result.points 
+      });
     }
     
     return { 
@@ -415,6 +444,130 @@ class DiceFactoryGame {
   }
 
   // ===== GAME FLOW =====
+
+  /**
+   * Handle deterministic reroll for undo/redo support
+   * @param {string} playerId - Player ID
+   * @param {string} dieId - Die ID to reroll
+   * @param {number} predeterminedValue - Value to set (for redo after undo)
+   * @returns {Object} - Result
+   */
+  rerollDieWithValue(playerId, dieId, predeterminedValue) {
+    if (!this.canPlayerAct(playerId)) {
+      return { success: false, error: 'Player cannot act' };
+    }
+  
+    const result = this.diceSystem.rerollDie(
+      playerId, 
+      dieId, 
+      require('./data/GameConstants').PIP_COSTS.REROLL_DIE,
+      predeterminedValue
+    );
+    
+    if (result.success) {
+      this.turnSystem.recordPlayerAction(playerId, 'reroll_die', { dieId });
+      // Save state for undo with the predetermined value
+      this.saveActionState(playerId, 'reroll', { 
+        dieId, 
+        newValue: predeterminedValue,
+        cost: require('./data/GameConstants').PIP_COSTS.REROLL_DIE 
+      });
+    }
+    
+    return { success: result.success, error: result.success ? undefined : result.message };
+  }
+
+  /**
+   * Save player state after an action (for undo functionality)
+   * @param {string} playerId - Player ID
+   * @param {string} actionType - Type of action performed
+   * @param {Object} actionData - Additional action data (like random results)
+   */
+  saveActionState(playerId, actionType, actionData = {}) {
+  const player = this.state.players.find(p => p.id === playerId);
+  if (!player) return;
+
+  // Initialize action history if it doesn't exist
+  if (!player.actionHistory) {
+    player.actionHistory = [];
+  }
+
+  // Save current state snapshot
+  const stateSnapshot = {
+    timestamp: Date.now(),
+    actionType,
+    actionData,
+    playerState: {
+      dicePool: JSON.parse(JSON.stringify(player.dicePool)),
+      freePips: player.freePips,
+      score: player.score,
+      exhaustedDice: [...(player.exhaustedDice || [])],
+      // Don't save modifications/effects as they shouldn't be undoable
+    }
+  };
+
+  player.actionHistory.push(stateSnapshot);
+
+  // Limit history to prevent memory issues (keep last 10 actions)
+  if (player.actionHistory.length > 10) {
+    player.actionHistory.shift();
+  }
+  }
+  
+  /**
+   * Undo the last action for a player
+   * @param {string} playerId - Player ID
+   * @returns {Object} - {success: boolean, error?: string}
+   */
+  undoLastAction(playerId) {
+  const player = this.state.players.find(p => p.id === playerId);
+  
+  if (!player) {
+    return { success: false, error: 'Player not found' };
+  }
+
+  if (player.hasFled) {
+    return { success: false, error: 'Cannot undo after fleeing' };
+  }
+
+  if (player.isReady) {
+    return { success: false, error: 'Cannot undo after ending turn' };
+  }
+
+  if (!player.actionHistory || player.actionHistory.length === 0) {
+    return { success: false, error: 'No actions to undo' };
+  }
+
+  // Remove the current state (last action result)
+  const lastAction = player.actionHistory.pop();
+  
+  if (player.actionHistory.length === 0) {
+    // If no more history, restore to turn start state
+    if (player.turnStartState) {
+      player.dicePool = JSON.parse(JSON.stringify(player.turnStartState.dicePool));
+      player.freePips = player.turnStartState.freePips;
+      player.score = player.turnStartState.score;
+      player.exhaustedDice = [];
+    }
+  } else {
+    // Restore to previous action state
+    const previousState = player.actionHistory[player.actionHistory.length - 1];
+    player.dicePool = JSON.parse(JSON.stringify(previousState.playerState.dicePool));
+    player.freePips = previousState.playerState.freePips;
+    player.score = previousState.playerState.score;
+    player.exhaustedDice = [...previousState.playerState.exhaustedDice];
+  }
+
+  this.state.gameLog = require('./utils/GameLogger').logAction(
+    this.state.gameLog,
+    player.name,
+    `undid last action: ${lastAction.actionType}`,
+    this.state.round
+  );
+
+  return { success: true };
+  }
+
 
   /**
    * Process end-of-turn events (collapse checks, etc.)

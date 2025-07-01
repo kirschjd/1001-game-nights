@@ -273,12 +273,12 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
   // Recruit dice
   socket.on('dice-factory-recruit', (data) => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       return;
     }
-    
-    const result = game.recruitDice(socket.id, data.dieId);
+
+    const result = game.recruitDice(socket.id, data.diceIds); // <-- CORRECT: data.diceIds
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
       scheduleDiceFactoryBotsIfNeeded(io, socket.lobbySlug, game, lobbies);
@@ -390,7 +390,7 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       return;
     }
     
-    const result = game.processDice(socket.id, data.dieId);
+    const result = game.processDice(socket.id, data.diceIds); // <-- CORRECT: data.diceIds
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
       scheduleDiceFactoryBotsIfNeeded(io, socket.lobbySlug, game, lobbies);

@@ -281,15 +281,16 @@ recruitDice(playerId, diceIds) {
   }
 
   /**
-   * Reroll a single die
+   * Reroll a single die (with optional predetermined result for undo/redo)
    * @param {string} playerId - Player ID
    * @param {string} dieId - ID of die to reroll
    * @param {number} cost - Pip cost for reroll
-   * @returns {Object} - {success: boolean, message: string}
+   * @param {number} predeterminedValue - Optional: specific value to set (for undo/redo)
+   * @returns {Object} - {success: boolean, message: string, newValue?: number}
    */
-  rerollDie(playerId, dieId, cost) {
+  rerollDie(playerId, dieId, cost, predeterminedValue = null) {
     const player = this.gameState.players.find(p => p.id === playerId);
-    
+
     if (!player) {
       return { success: false, message: 'Player not found' };
     }
@@ -303,13 +304,20 @@ recruitDice(playerId, diceIds) {
       return { success: false, message: 'Die not found' };
     }
 
-    // Reroll the die
+    // Reroll the die (use predetermined value if provided, otherwise random)
     const oldValue = die.value;
-    die.value = Math.floor(Math.random() * die.sides) + 1;
+    if (predeterminedValue !== null) {
+      // For undo/redo - use the stored result
+      die.value = predeterminedValue;
+    } else {
+      // Normal random reroll
+      die.value = Math.floor(Math.random() * die.sides) + 1;
+    }
+
     player.freePips -= cost;
 
     // Log reroll
-    this.gameState.gameLog = logAction(
+    this.gameState.gameLog = require('../utils/GameLogger').logAction(
       this.gameState.gameLog,
       player.name,
       `rerolled d${die.sides} from ${oldValue} to ${die.value} (${cost} pips)`,
@@ -318,10 +326,11 @@ recruitDice(playerId, diceIds) {
 
     return { 
       success: true, 
-      message: `Rerolled die to ${die.value}` 
+      message: `Rerolled die to ${die.value}`,
+      newValue: die.value
     };
   }
-
+  
   /**
    * Ensure player meets minimum dice floor requirement
    * @param {string} playerId - Player ID

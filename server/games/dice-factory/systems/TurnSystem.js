@@ -181,30 +181,33 @@ class TurnSystem {
   resetPlayerForNextTurn(player) {
     // Reset ready status
     player.isReady = false;
-
+  
     // Clear turn actions and exhausted dice
     player.currentTurnActions = [];
     player.exhaustedDice = [];
-
+  
+    // CLEAR ACTION HISTORY - fresh start for new turn
+    player.actionHistory = [];
+  
     // Clear modification bids
     player.modificationBids = {};
-
+  
     // Ensure minimum dice pool
-    const minDiceCheck = validateMinimumDicePool(player);
+    const minDiceCheck = require('../data/ValidationRules').validateMinimumDicePool(player);
     if (minDiceCheck.needsRecruitment) {
-      player.dicePool = autoRecruitToFloor(player.dicePool, player.diceFloor);
+      player.dicePool = require('../utils/DiceHelpers').autoRecruitToFloor(player.dicePool, player.diceFloor);
       
-      this.gameState.gameLog = logAction(
+      this.gameState.gameLog = require('../utils/GameLogger').logAction(
         this.gameState.gameLog,
         player.name,
         `auto-recruited ${minDiceCheck.diceNeeded} dice to meet minimum floor`,
         this.gameState.round
       );
     }
-
+  
     // Process turn-start modification effects
     this.processTurnStartModifications(player);
-
+  
     // AUTO-ROLL all dice at start of turn
     this.autoRollPlayerDice(player);
   }
