@@ -19,16 +19,23 @@ H:.
         |   |   index.ts
         |   |   
         |   +---components
-        |   |       ActiveFactoryEffects.tsx
-        |   |       ActiveFactoryModifications.tsx
-        |   |       AuctionModal.tsx
-        |   |       DiceRenderer.tsx
-        |   |       FactoryEffects.tsx
-        |   |       GameHeader.tsx
-        |   |       GameLog.tsx
-        |   |       PlayerDicePool.tsx
-        |   |       PlayerList.tsx
-        |   |       
+        |   |   +---game
+        |   |   |       GameHeader.tsx
+        |   |   |       GameLog.tsx
+        |   |   |       
+        |   |   +---market
+        |   |   |       ActiveFactoryEffects.tsx
+        |   |   |       ActiveFactoryModifications.tsx
+        |   |   |       AuctionModal.tsx
+        |   |   |       
+        |   |   \---player
+        |   |           DiceRenderer.tsx
+        |   |           EffectHand.tsx
+        |   |           OwnedModifications.tsx
+        |   |           PlayedEffects.tsx
+        |   |           PlayerDicePool.tsx
+        |   |           PlayerList.tsx
+        |   |           
         |   +---hooks
         |   |       useDiceActions.ts
         |   |       useGameState.ts

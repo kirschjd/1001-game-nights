@@ -3,7 +3,7 @@
 // Updated: December 2024
 
 import React from 'react';
-import { Player } from '../types/DiceFactoryTypes';
+import { Player } from '../../types/DiceFactoryTypes';
 
 interface PlayerListProps {
   players: Player[];

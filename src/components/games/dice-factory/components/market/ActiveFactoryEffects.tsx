@@ -3,7 +3,7 @@
 // Updated: December 2024
 
 import React from 'react';
-import { FactoryEffect } from '../types/DiceFactoryTypes';
+import { FactoryEffect } from '../../types/DiceFactoryTypes';
 
 interface ActiveFactoryEffectsProps {
   effects: FactoryEffect[];

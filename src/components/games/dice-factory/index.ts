@@ -10,14 +10,13 @@ export { default as DiceFactoryGame } from './DiceFactoryGame';
 export * from './types/DiceFactoryTypes';
 
 // Components
-export { default as GameHeader } from './components/GameHeader';
-export { default as FactoryEffects } from './components/FactoryEffects'; // Legacy component
-export { default as ActiveFactoryEffects } from './components/ActiveFactoryEffects';
-export { default as ActiveFactoryModifications } from './components/ActiveFactoryModifications';
-export { default as PlayerDicePool } from './components/PlayerDicePool';
-export { default as PlayerList } from './components/PlayerList';
-export { default as GameLog } from './components/GameLog';
-export { default as DiceRenderer } from './components/DiceRenderer';
+  export { default as GameHeader } from './components/game/GameHeader';
+  export { default as GameLog } from './components/game/GameLog';
+  export { default as ActiveFactoryEffects } from './components/market/ActiveFactoryEffects';
+  export { default as ActiveFactoryModifications } from './components/market/ActiveFactoryModifications';
+  export { default as PlayerDicePool } from './components/player/PlayerDicePool';
+  export { default as PlayerList } from './components/player/PlayerList';
+  export { default as DiceRenderer } from './components/player/DiceRenderer';
 
 // Hooks
 export { useGameState } from './hooks/useGameState';

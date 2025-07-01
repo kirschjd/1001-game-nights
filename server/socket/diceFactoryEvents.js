@@ -25,6 +25,30 @@ function broadcastDiceFactoryUpdate(io, lobbySlug, game, lobbies) {
 }
 
 /**
+ * Broadcast factory item updates to a specific player
+ * @param {Object} io - Socket.io instance
+ * @param {string} playerId - Player ID to send update to
+ * @param {Object} game - Game instance
+ */
+function broadcastPlayerFactoryItems(io, playerId, game) {
+  const factoryItems = game.factorySystem.getPlayerFactoryItems(playerId);
+  
+  const response = {
+    modifications: factoryItems.modifications || [],
+    effects: (factoryItems.effects || []).map(effectId => {
+      const effect = game.state.availableEffects?.find(e => e.id === effectId);
+      return effect || { id: effectId, name: effectId, description: 'Unknown effect', cost: 0 };
+    }),
+    hand: (factoryItems.hand || []).map(effectId => {
+      const effect = game.state.availableEffects?.find(e => e.id === effectId);
+      return effect || { id: effectId, name: effectId, description: 'Unknown effect', cost: 0 };
+    })
+  };
+
+  io.to(playerId).emit('player-factory-items-update', response);
+}
+
+/**
  * Helper function to handle auction phase
  * @param {Object} io - Socket.io instance
  * @param {string} lobbySlug - Lobby identifier
@@ -113,23 +137,30 @@ function completeAuctionPhase(io, lobbySlug, game, lobbies) {
  * @param {Map} lobbies - Lobbies map
  */
 function resolveAllAuctions(io, lobbySlug, game, lobbies) {
-  console.log('🔨 Resolving all auctions...');
+  console.log('🔨 Resolving all auctions');
   
-  const auctionResults = [];
+  const results = [];
   
-  for (const auction of game.state.currentAuctions) {
+  game.state.currentAuctions.forEach(auction => {
     const blindBids = game.state.auctionBids[auction.modificationId] || {};
+    
+    console.log(`🔨 Resolving auction for ${auction.modification.name}:`, blindBids);
+    
     const result = game.factorySystem.resolveBlindAuction(auction.modificationId, blindBids);
     
-    if (result.success) {
-      auctionResults.push({
-        modificationId: auction.modificationId,
-        modification: auction.modification,
-        winner: result.winner,
-        allBids: blindBids
-      });
+    if (result.success && result.winner) {
+      console.log(`🏆 Auction winner: ${result.winner.playerName} for ${auction.modification.name}`);
+      
+      // ADD THIS LINE:
+      broadcastPlayerFactoryItems(io, result.winner.playerId, game);
     }
-  }
+    
+    results.push({
+      modification: auction.modification,
+      winner: result.winner,
+      allBids: blindBids
+    });
+  });
   
   // Broadcast auction results to all players
   const lobby = lobbies.get(lobbySlug);
@@ -256,6 +287,67 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
+  // Get player's owned factory items (modifications, effects, hand)
+  socket.on('dice-factory-get-player-factory-items', (data) => {
+    const { playerId } = data;
+    const game = games.get(socket.lobbySlug);
+
+    if (!game || game.state.type !== 'dice-factory') {
+      socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
+      return;
+    }
+
+    const targetPlayerId = playerId || socket.id;
+    const factoryItems = game.factorySystem.getPlayerFactoryItems(targetPlayerId);
+
+    console.log(`📦 Getting factory items for player ${targetPlayerId}:`, factoryItems);
+
+    // The factoryItems should already contain full objects from getPlayerModifications()
+    // and we need to convert effect IDs to full objects
+    const response = {
+      modifications: factoryItems.modifications || [], // Already full objects
+      effects: (factoryItems.effects || []).map(effectId => {
+        const effect = game.state.availableEffects?.find(e => e.id === effectId);
+        return effect || { id: effectId, name: effectId, description: 'Unknown effect', cost: 0 };
+      }),
+      hand: (factoryItems.hand || []).map(effectId => {
+        const effect = game.state.availableEffects?.find(e => e.id === effectId);
+        return effect || { id: effectId, name: effectId, description: 'Unknown effect', cost: 0 };
+      })
+    };
+
+    console.log(`📦 Sending factory items response:`, response);
+    socket.emit('player-factory-items-update', response);
+  });
+
+  // Play effect from hand
+  socket.on('dice-factory-play-effect', (data) => {
+    const { effectId } = data;
+    const game = games.get(socket.lobbySlug);
+
+    if (!game || game.state.type !== 'dice-factory') {
+      socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
+      return;
+    }
+
+    console.log(`🎴 Player ${socket.playerName} playing effect: ${effectId}`);
+
+    const result = game.playFactoryEffect(socket.id, effectId);
+    if (result.success) {
+      console.log(`✅ Effect ${effectId} played successfully`);
+
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+
+      // Send updated factory items to the player who played the effect
+      broadcastPlayerFactoryItems(io, socket.id, game);
+
+      scheduleDiceFactoryBotsIfNeeded(io, socket.lobbySlug, game, lobbies);
+    } else {
+      console.log(`❌ Failed to play effect ${effectId}:`, result.error);
+      socket.emit('dice-factory-error', { error: result.error });
+    }
+  });
+
   // Score straight
   socket.on('dice-factory-score-straight', (data) => {
     const game = games.get(socket.lobbySlug);
@@ -332,11 +424,22 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       return;
     }
     
+    console.log(`🏭 Player ${socket.playerName} factory action:`, data);
+    
     const result = game.factoryAction(socket.id, data.actionType, data.targetId);
     if (result.success) {
+      console.log(`✅ Factory action successful: ${data.actionType} ${data.targetId}`);
+      
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+      
+      // ADD THIS BLOCK:
+      if (data.actionType === 'effect') {
+        broadcastPlayerFactoryItems(io, socket.id, game);
+      }
+      
       scheduleDiceFactoryBotsIfNeeded(io, socket.lobbySlug, game, lobbies);
     } else {
+      console.log(`❌ Factory action failed:`, result.error);
       socket.emit('dice-factory-error', { error: result.error });
     }
   });
@@ -371,23 +474,31 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
   // Purchase random modification from deck
   socket.on('dice-factory-buy-random-modification', () => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
       return;
     }
 
+    console.log(`🎲 Player ${socket.playerName} buying random modification`);
+
     const result = game.factorySystem.purchaseRandomModification(socket.id);
     if (result.success) {
+      console.log(`✅ Random modification purchased: ${result.modification.name}`);
+
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
-      
+
+      // ADD THIS LINE:
+      broadcastPlayerFactoryItems(io, socket.id, game);
+
       socket.emit('modification-purchased', {
         modification: result.modification,
         source: 'deck'
       });
-      
+
       scheduleDiceFactoryBotsIfNeeded(io, socket.lobbySlug, game, lobbies);
     } else {
+      console.log(`❌ Failed to buy random modification:`, result.error);
       socket.emit('dice-factory-error', { error: result.error });
     }
   });

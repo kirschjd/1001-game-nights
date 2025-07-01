@@ -3,7 +3,7 @@
 // Updated: December 2024
 
 import React, { useEffect, useRef } from 'react';
-import { GameLogEntry } from '../types/DiceFactoryTypes';
+import { GameLogEntry } from '../../types/DiceFactoryTypes';
 
 interface GameLogProps {
   gameLog: GameLogEntry[];

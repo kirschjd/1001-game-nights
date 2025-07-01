@@ -5,12 +5,14 @@
 import React, { useEffect, useCallback } from 'react';
 
 // Components
-import GameHeader from './components/GameHeader';
-import ActiveFactoryEffects from './components/ActiveFactoryEffects';
-import ActiveFactoryModifications from './components/ActiveFactoryModifications';
-import PlayerDicePool from './components/PlayerDicePool';
-import PlayerList from './components/PlayerList';
-import GameLog from './components/GameLog';
+import GameHeader from './components/game/GameHeader';
+import ActiveFactoryEffects from './components/market/ActiveFactoryEffects';
+import ActiveFactoryModifications from './components/market/ActiveFactoryModifications';
+import PlayerDicePool from './components/player/PlayerDicePool';
+import PlayerList from './components/player/PlayerList';
+import GameLog from './components/game/GameLog';
+import OwnedModifications from './components/player/OwnedModifications';
+import EffectHand from './components/player/EffectHand';
 
 // Hooks
 import { useGameState } from './hooks/useGameState';
@@ -208,12 +210,31 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
               actions={diceActions}
               helpers={diceActions}
               gameState={gameState}
+              socket={socket}
             />
           )}
+          
+          {/* Factory Items and Hand - Side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Factory Items Owned */}
+            <OwnedModifications
+              socket={socket}
+              currentPlayer={currentPlayer}
+              gameState={gameState}
+            />
 
-          {/* Factory Effects and Modifications - Below Your Factory, Stacked Vertically */}
+            {/* Hand */}
+            <EffectHand
+              socket={socket}
+              currentPlayer={currentPlayer}
+              gameState={gameState}
+              canTakeActions={() => diceActions.canTakeActions()}
+            />
+          </div>
+
+          {/* Factory Effects and Modifications - Market/Bidding */}
           <div className="space-y-6">
-            
+
             {/* Active Factory Effects Panel */}
             <ActiveFactoryEffects 
               effects={activeEffects || []} 

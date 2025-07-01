@@ -11,7 +11,10 @@ import {
   DiceActionHandlers, 
   GameStateHelpers,
   MessageType
-} from '../types/DiceFactoryTypes';
+} from '../../types/DiceFactoryTypes';
+
+import { Socket } from 'socket.io-client';
+import PlayedEffects from './PlayedEffects';
 
 interface PlayerDicePoolProps {
   currentPlayer: Player;
@@ -24,6 +27,7 @@ interface PlayerDicePoolProps {
   actions: DiceActionHandlers;
   helpers: GameStateHelpers;
   gameState: any; // For checking collapse status
+  socket?: Socket | null; 
 }
 
 const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
@@ -36,7 +40,8 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
   onActionModeChange,
   actions,
   helpers,
-  gameState
+  gameState,
+  socket
 }) => {
   const { canTakeActions, isDieSelectable, isExhausted } = helpers;
   const [pendingEndTurn, setPendingEndTurn] = useState(false);
@@ -187,11 +192,23 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
       {/* Dice Pool */}
       <div className="mb-6">
         <h4 className="text-lg font-semibold mb-3 text-uranian-blue">Your Dice Pool</h4>
-        <div className="flex flex-wrap gap-3 p-4 bg-payne-grey/70 rounded-lg min-h-24 relative border border-uranian-blue/20">
-          {currentPlayer.dicePool.map(die => renderDie(die))}
-          {currentPlayer.dicePool.length === 0 && (
-            <div className="text-gray-500 italic">No dice in pool</div>
-          )}
+        <div className="p-4 bg-payne-grey/70 rounded-lg min-h-24 relative border border-uranian-blue/20">
+          {/* Dice Grid */}
+          <div className="flex flex-wrap gap-3 mb-3">
+            {currentPlayer.dicePool.map(die => 
+              renderDie(die)
+            )}
+            {currentPlayer.dicePool.length === 0 && (
+              <div className="text-gray-500 italic">No dice in pool</div>
+            )}
+          </div>
+          
+          {/* Active Effects - NEW */}
+          <PlayedEffects
+            socket={socket || null}
+            currentPlayer={currentPlayer}
+            gameState={gameState}
+          />
         </div>
       </div>
 

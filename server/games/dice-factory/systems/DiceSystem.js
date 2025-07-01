@@ -193,8 +193,13 @@ recruitDice(playerId, diceIds) {
       return { success: false, message: 'Player not found' };
     }
 
+    // ADD THIS VALIDATION:
+    if (!diceIds || !Array.isArray(diceIds) || diceIds.length === 0) {
+      console.log(`⚠️ processDice called with invalid diceIds:`, { playerId, diceIds });
+      return { success: false, message: 'No dice specified to process' };
+    }
+
     const diceToProcess = findDiceByIds(player.dicePool, diceIds);
-    
     if (diceToProcess.length !== diceIds.length) {
       return { success: false, message: 'Some dice not found in pool' };
     }

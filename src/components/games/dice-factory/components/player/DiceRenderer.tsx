@@ -5,10 +5,10 @@
 import React from 'react';
 
 // Re-export Die interface from types (avoiding duplication)
-export type { Die } from '../types/DiceFactoryTypes';
+export type { Die } from '../../types/DiceFactoryTypes';
 
 export interface DiceRendererProps {
-  die: import('../types/DiceFactoryTypes').Die;
+  die: import('../../types/DiceFactoryTypes').Die;
   size?: 'sm' | 'md' | 'lg';
   glowing?: boolean;
   dimmed?: boolean;

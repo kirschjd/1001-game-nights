@@ -3,7 +3,7 @@
 // Updated: December 2024
 
 import React from 'react';
-import { DiceFactoryGameState } from '../types/DiceFactoryTypes';
+import { DiceFactoryGameState } from '../../types/DiceFactoryTypes';
 
 interface GameHeaderProps {
   gameState: DiceFactoryGameState;
