@@ -159,7 +159,7 @@ class DiceFactoryGame {
   // ===== DICE MODIFICATIONS =====
 
   /**
-   * Modify die value (increase/decrease)
+   * Modify die value (increase/decrease) - UPDATED to use dynamic costs
    * @param {string} playerId - Player ID
    * @param {string} dieId - ID of die to modify
    * @param {number} change - Change amount (+1 or -1)
@@ -170,45 +170,60 @@ class DiceFactoryGame {
       return { success: false, error: 'Player cannot act' };
     }
 
-    const cost = change > 0 ? PIP_COSTS.INCREASE_DIE : PIP_COSTS.DECREASE_DIE;
-    const result = this.diceSystem.modifyDieValue(playerId, dieId, change, cost);
-    
+    // Get original cost for logging purposes
+    const { PIP_COSTS } = require('./data/GameConstants');
+    const originalCost = change > 0 ? PIP_COSTS.INCREASE_DIE : PIP_COSTS.DECREASE_DIE;
+
+    const result = this.diceSystem.modifyDieValue(playerId, dieId, change, originalCost);
+
     if (result.success) {
       this.turnSystem.recordPlayerAction(playerId, 'modify_die', { dieId, change });
+      // Save state for undo
       this.saveActionState(playerId, 'modify_value', { 
         dieId, 
         change, 
-        cost 
+        cost: result.actualCost // Use the actual cost paid
       });
     }
-    
+
     return { success: result.success, error: result.success ? undefined : result.message };
   }
 
   /**
-   * Reroll a die
-   * @param {string} playerId - Player ID
-   * @param {string} dieId - ID of die to reroll
-   * @returns {Object} - {success: boolean, error?: string}
+   * Reroll a die - UPDATED to use dynamic costs
+ * @param {string} playerId - Player ID
+ * @param {string} dieId - ID of die to reroll
+ * @returns {Object} - {success: boolean, error?: string}
    */
   rerollDie(playerId, dieId) {
     if (!this.canPlayerAct(playerId)) {
       return { success: false, error: 'Player cannot act' };
     }
 
-    const result = this.diceSystem.rerollDie(playerId, dieId, PIP_COSTS.REROLL_DIE);
-    
+    const player = this.state.players.find(p => p.id === playerId);
+    const die = player.dicePool.find(d => d.id === dieId);
+    const oldValue = die ? die.value : null;
+
+    // Get original cost for logging purposes
+    const { PIP_COSTS } = require('./data/GameConstants');
+    const originalCost = PIP_COSTS.REROLL_DIE;
+
+    const result = this.diceSystem.rerollDie(playerId, dieId, originalCost);
+
     if (result.success) {
+      // Get the new value after reroll
+      const newValue = player.dicePool.find(d => d.id === dieId)?.value;
+
       this.turnSystem.recordPlayerAction(playerId, 'reroll_die', { dieId });
       // Save state for undo with deterministic reroll data
       this.saveActionState(playerId, 'reroll', { 
         dieId, 
         oldValue, 
         newValue, // Store the result so undo/redo is deterministic
-        cost: require('./data/GameConstants').PIP_COSTS.REROLL_DIE 
+        cost: result.actualCost // Use the actual cost paid
       });
     }
-    
+
     return { success: result.success, error: result.success ? undefined : result.message };
   }
 
@@ -446,34 +461,38 @@ class DiceFactoryGame {
   // ===== GAME FLOW =====
 
   /**
-   * Handle deterministic reroll for undo/redo support
-   * @param {string} playerId - Player ID
-   * @param {string} dieId - Die ID to reroll
-   * @param {number} predeterminedValue - Value to set (for redo after undo)
-   * @returns {Object} - Result
+   * Handle deterministic reroll for undo/redo support - UPDATED to use dynamic costs
+ * @param {string} playerId - Player ID
+ * @param {string} dieId - Die ID to reroll
+ * @param {number} predeterminedValue - Value to set (for redo after undo)
+ * @returns {Object} - Result
    */
   rerollDieWithValue(playerId, dieId, predeterminedValue) {
     if (!this.canPlayerAct(playerId)) {
       return { success: false, error: 'Player cannot act' };
     }
-  
+
+    // Get original cost for logging purposes
+    const { PIP_COSTS } = require('./data/GameConstants');
+    const originalCost = PIP_COSTS.REROLL_DIE;
+
     const result = this.diceSystem.rerollDie(
       playerId, 
       dieId, 
-      require('./data/GameConstants').PIP_COSTS.REROLL_DIE,
+      originalCost,
       predeterminedValue
     );
-    
+
     if (result.success) {
       this.turnSystem.recordPlayerAction(playerId, 'reroll_die', { dieId });
       // Save state for undo with the predetermined value
       this.saveActionState(playerId, 'reroll', { 
         dieId, 
         newValue: predeterminedValue,
-        cost: require('./data/GameConstants').PIP_COSTS.REROLL_DIE 
+        cost: result.actualCost // Use the actual cost paid
       });
     }
-    
+
     return { success: result.success, error: result.success ? undefined : result.message };
   }
 
@@ -484,34 +503,34 @@ class DiceFactoryGame {
    * @param {Object} actionData - Additional action data (like random results)
    */
   saveActionState(playerId, actionType, actionData = {}) {
-  const player = this.state.players.find(p => p.id === playerId);
-  if (!player) return;
-
-  // Initialize action history if it doesn't exist
-  if (!player.actionHistory) {
-    player.actionHistory = [];
-  }
-
-  // Save current state snapshot
-  const stateSnapshot = {
-    timestamp: Date.now(),
-    actionType,
-    actionData,
-    playerState: {
-      dicePool: JSON.parse(JSON.stringify(player.dicePool)),
-      freePips: player.freePips,
-      score: player.score,
-      exhaustedDice: [...(player.exhaustedDice || [])],
-      // Don't save modifications/effects as they shouldn't be undoable
+    const player = this.state.players.find(p => p.id === playerId);
+    if (!player) return;
+    
+    // Initialize action history if it doesn't exist
+    if (!player.actionHistory) {
+      player.actionHistory = [];
     }
-  };
-
-  player.actionHistory.push(stateSnapshot);
-
-  // Limit history to prevent memory issues (keep last 10 actions)
-  if (player.actionHistory.length > 10) {
-    player.actionHistory.shift();
-  }
+  
+    // Save current state snapshot
+    const stateSnapshot = {
+      timestamp: Date.now(),
+      actionType,
+      actionData,
+      playerState: {
+        dicePool: JSON.parse(JSON.stringify(player.dicePool)),
+        freePips: player.freePips,
+        score: player.score,
+        exhaustedDice: [...(player.exhaustedDice || [])],
+        // Don't save modifications/effects as they shouldn't be undoable
+      }
+    };
+  
+    player.actionHistory.push(stateSnapshot);
+  
+    // Limit history to prevent memory issues (keep last 10 actions)
+    if (player.actionHistory.length > 10) {
+      player.actionHistory.shift();
+    }
   }
   
   /**

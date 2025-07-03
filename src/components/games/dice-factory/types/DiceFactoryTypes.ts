@@ -24,6 +24,10 @@ export interface Player {
   currentTurnActions?: any[];
   turnStartState?: any;
   actionHistory?: any[];
+  modifications?: string[]; // Array of modification IDs the player owns
+  effects?: string[]; // Array of effect IDs the player has played
+  factoryHand?: string[]; // Array of effect IDs in player's hand
+  exhaustedDice?: string[]; // Array of dice IDs that are exhausted this turn
 }
 
 export interface GameLogEntry {

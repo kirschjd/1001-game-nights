@@ -69,6 +69,15 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
         return;
       }
     }
+
+    if (actionMode === 'process') {
+      const clickedDie = currentPlayer.dicePool.find(d => d.id === dieId);
+      if (clickedDie && isDieSelectable(clickedDie, 'process')) {
+        // Small delay to allow selection to register first
+        setTimeout(() => actions.handleProcessDice(), 100);
+        return;
+      }
+    }
   }, [actionMode, currentPlayer.dicePool, isDieSelectable, actions, onDiceClick]);
 
   // Enhanced action mode handler with auto-execution and validation
@@ -160,6 +169,38 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
     );
   };
 
+  /**
+   * Get the actual pip cost for actions based on player's modifications
+   */
+  const getActualCost = useCallback((actionType: string) => {
+    if (!currentPlayer) return 0;
+
+    const hasImprovedRollers = currentPlayer.modifications?.includes('improved_rollers');
+    const hasDueDiligence = currentPlayer.modifications?.includes('due_diligence');
+
+    switch (actionType) {
+      case 'increase':
+        return hasDueDiligence ? 3 : 4; // Due Diligence reduces from 4 to 3
+      case 'decrease':
+        return 3; // No modifications affect this
+      case 'reroll':
+        return hasImprovedRollers ? 1 : 2; // Improved Rollers reduces from 2 to 1
+      default:
+        return 0;
+    }
+  }, [currentPlayer]);
+
+  /**
+   * Format cost display with modification indicator
+   */
+  const formatCostDisplay = useCallback((actionType: string, baseCost: number) => {
+    const actualCost = getActualCost(actionType);
+    if (actualCost !== baseCost) {
+      return `${actualCost} pips (was ${baseCost})`;
+    }
+    return `${actualCost} pips`;
+  }, [getActualCost]);
+  
   return (
     <div className={`bg-payne-grey/50 p-6 rounded-lg border border-uranian-blue/30 ${
       currentPlayer.isReady ? 'ring-2 ring-green-400' : ''
@@ -255,9 +296,57 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
               {/* Free Pips Button */}
               <button
                 onClick={() => handleActionModeChange(actionMode === 'freepips' ? null : 'freepips')}
-                className={`px-4 py-2 rounded transition-colors font-semibold focus:outline-none ${
-                  actionMode === 'freepips' ? 'bg-lion text-white' : 'bg-payne-grey hover:bg-payne-grey-light text-white border border-uranian-blue/30'
-                }`}
+                className={`px-4 py-2 rounded transition-colors font-semibold focus:outline-none ${actionMode === 'freepips' && (
+                  <div className="bg-payne-grey/30 p-4 rounded border border-uranian-blue/20 space-y-3">
+                    <h6 className="text-sm font-semibold text-uranian-blue">Free Pip Actions</h6>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => actions.handlePipAction('increase')}
+                        disabled={selectedDice.length !== 1 || currentPlayer.freePips < getActualCost('increase')}
+                        className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
+                      >
+                        +1 Value ({formatCostDisplay('increase', 4)})
+                      </button>
+                      <button
+                        onClick={() => actions.handlePipAction('decrease')}
+                        disabled={selectedDice.length !== 1 || currentPlayer.freePips < getActualCost('decrease')}
+                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
+                      >
+                        -1 Value ({formatCostDisplay('decrease', 3)})
+                      </button>
+                      <button
+                        onClick={() => actions.handlePipAction('reroll')}
+                        disabled={selectedDice.length !== 1 || currentPlayer.freePips < getActualCost('reroll')}
+                        className="bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
+                      >
+                        Reroll ({formatCostDisplay('reroll', 2)})
+                      </button>
+                      <button
+                        onClick={() => actions.handleFactoryAction('effect')}
+                        disabled={currentPlayer.freePips < 7}
+                        className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
+                      >
+                        Buy Effect (7 pips)
+                      </button>
+                      <button
+                        onClick={() => actions.handleFactoryAction('modification')}
+                        disabled={currentPlayer.freePips < 9}
+                        className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm col-span-2 focus:outline-none"
+                      >
+                        Buy Modification (9 pips)
+                      </button>
+                    </div>
+                    <div className="text-xs text-uranian-blue">
+                      Select exactly one die for value modification or reroll actions.
+                      {(currentPlayer.modifications?.includes('improved_rollers') || 
+                        currentPlayer.modifications?.includes('due_diligence')) && (
+                        <div className="mt-1 text-lion">
+                          💡 Modified costs due to your factory modifications!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}`}
               >
                 💎 Free Pips
               </button>

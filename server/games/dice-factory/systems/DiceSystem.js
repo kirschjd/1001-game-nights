@@ -40,13 +40,14 @@ class DiceSystem {
       message: `${player.name} rolled all dice` 
     };
   }
-/**
+
+  /**
  * Recruit new dice using existing dice - FIXED: Properly exhaust recruiting dice
  * @param {string} playerId - Player ID
  * @param {Array} diceIds - IDs of dice to use for recruitment
  * @returns {Object} - {success: boolean, message: string}
  */
-recruitDice(playerId, diceIds) {
+  recruitDice(playerId, diceIds) {
   console.log('=== DICE SYSTEM: recruitDice FIXED ===');
   console.log('Player ID:', playerId);
   console.log('Dice IDs:', diceIds);
@@ -118,7 +119,7 @@ recruitDice(playerId, diceIds) {
     success: true, 
     message: `Recruited ${newDice.length} dice` 
   };
-}
+  }
 
   /**
    * Promote dice to next size
@@ -231,106 +232,154 @@ recruitDice(playerId, diceIds) {
   }
 
   /**
-   * Modify a die's value (increase/decrease)
-   * @param {string} playerId - Player ID
-   * @param {string} dieId - ID of die to modify
-   * @param {number} change - Change amount (+1 or -1)
-   * @param {number} cost - Pip cost for modification
-   * @returns {Object} - {success: boolean, message: string}
+   * Get actual pip cost for die modification based on player's modifications
+   * @param {Object} player - Player object
+   * @param {string} actionType - 'increase', 'decrease', 'reroll'
+   * @returns {number} - Actual cost after modifications
    */
-  modifyDieValue(playerId, dieId, change, cost) {
-    const player = this.gameState.players.find(p => p.id === playerId);
-    
-    if (!player) {
-      return { success: false, message: 'Player not found' };
-    }
-
-    if (player.freePips < cost) {
-      return { success: false, message: 'Not enough pips' };
-    }
-
-    const die = player.dicePool.find(d => d.id === dieId);
-    if (!die) {
-      return { success: false, message: 'Die not found' };
-    }
-
-    // Validate modification
-    const validation = validateDieModification(die, change);
-    if (!validation.isValid) {
-      return { success: false, message: validation.reason };
-    }
-
-    // Apply modification
-    const oldValue = die.value;
-    Object.assign(die, modifyDieValue(die, change));
-    player.freePips -= cost;
-
-    // Log modification
-    const action = change > 0 ? 'increased' : 'decreased';
-    this.gameState.gameLog = logAction(
-      this.gameState.gameLog,
-      player.name,
-      `${action} d${die.sides} from ${oldValue} to ${die.value} (${cost} pips)`,
-      this.gameState.round
-    );
-
-    return { 
-      success: true, 
-      message: `Modified die value by ${change}` 
-    };
+  getModifiedPipCost(player, actionType) {
+  const { PIP_COSTS } = require('../data/GameConstants');
+  let baseCost;
+  
+  switch (actionType) {
+    case 'increase':
+      baseCost = PIP_COSTS.INCREASE_DIE; // 4 pips normally
+      // Apply Due Diligence modification
+      if (player.modifications?.includes('due_diligence')) {
+        return 3; // Reduced from 4 to 3
+      }
+      return baseCost;
+      
+    case 'decrease':
+      return PIP_COSTS.DECREASE_DIE; // 3 pips - no modifications affect this
+      
+    case 'reroll':
+      baseCost = PIP_COSTS.REROLL_DIE; // 2 pips normally
+      // Apply Improved Rollers modification
+      if (player.modifications?.includes('improved_rollers')) {
+        return 1; // Reduced from 2 to 1
+      }
+      return baseCost;
+      
+    default:
+      return 0;
+  }
   }
 
   /**
-   * Reroll a single die (with optional predetermined result for undo/redo)
+   * Modify a die's value (increase/decrease) - UPDATED with cost modifications
+   * @param {string} playerId - Player ID
+   * @param {string} dieId - ID of die to modify
+   * @param {number} change - Change amount (+1 or -1)
+   * @param {number} originalCost - Original pip cost (will be recalculated)
+   * @returns {Object} - {success: boolean, message: string}
+   */
+  modifyDieValue(playerId, dieId, change, originalCost) {
+  const player = this.gameState.players.find(p => p.id === playerId);
+  
+  if (!player) {
+    return { success: false, message: 'Player not found' };
+  }
+
+  // Calculate actual cost based on modifications
+  const actionType = change > 0 ? 'increase' : 'decrease';
+  const actualCost = this.getModifiedPipCost(player, actionType);
+
+  if (player.freePips < actualCost) {
+    return { success: false, message: `Not enough pips (need ${actualCost}, have ${player.freePips})` };
+  }
+
+  const die = player.dicePool.find(d => d.id === dieId);
+  if (!die) {
+    return { success: false, message: 'Die not found' };
+  }
+
+  // Validate modification
+  const validation = require('../data/ValidationRules').validateDieModification(die, change);
+  if (!validation.isValid) {
+    return { success: false, message: validation.reason };
+  }
+
+  // Apply modification
+  const oldValue = die.value;
+  Object.assign(die, require('../utils/DiceHelpers').modifyDieValue(die, change));
+  player.freePips -= actualCost;
+
+  // Log modification with actual cost
+  const action = change > 0 ? 'increased' : 'decreased';
+  const modificationNote = actualCost !== originalCost ? ` (${originalCost}→${actualCost} pips due to modifications)` : '';
+  
+  this.gameState.gameLog = require('../utils/GameLogger').logAction(
+    this.gameState.gameLog,
+    player.name,
+    `${action} d${die.sides} from ${oldValue} to ${die.value} (${actualCost} pips${modificationNote})`,
+    this.gameState.round
+  );
+
+  return { 
+    success: true, 
+    message: `Modified die value by ${change}`,
+    actualCost: actualCost
+  };
+  }
+
+  /**
+   * Reroll a single die - UPDATED with cost modifications
    * @param {string} playerId - Player ID
    * @param {string} dieId - ID of die to reroll
-   * @param {number} cost - Pip cost for reroll
+   * @param {number} originalCost - Original pip cost (will be recalculated)
    * @param {number} predeterminedValue - Optional: specific value to set (for undo/redo)
    * @returns {Object} - {success: boolean, message: string, newValue?: number}
    */
-  rerollDie(playerId, dieId, cost, predeterminedValue = null) {
-    const player = this.gameState.players.find(p => p.id === playerId);
+  rerollDie(playerId, dieId, originalCost, predeterminedValue = null) {
+  const player = this.gameState.players.find(p => p.id === playerId);
+  
+  if (!player) {
+    return { success: false, message: 'Player not found' };
+  }
 
-    if (!player) {
-      return { success: false, message: 'Player not found' };
-    }
+  // Calculate actual cost based on modifications
+  const actualCost = this.getModifiedPipCost(player, 'reroll');
 
-    if (player.freePips < cost) {
-      return { success: false, message: 'Not enough pips' };
-    }
+  if (player.freePips < actualCost) {
+    return { success: false, message: `Not enough pips (need ${actualCost}, have ${player.freePips})` };
+  }
 
-    const die = player.dicePool.find(d => d.id === dieId);
-    if (!die) {
-      return { success: false, message: 'Die not found' };
-    }
+  const die = player.dicePool.find(d => d.id === dieId);
+  if (!die) {
+    return { success: false, message: 'Die not found' };
+  }
 
-    // Reroll the die (use predetermined value if provided, otherwise random)
-    const oldValue = die.value;
-    if (predeterminedValue !== null) {
-      // For undo/redo - use the stored result
-      die.value = predeterminedValue;
-    } else {
-      // Normal random reroll
-      die.value = Math.floor(Math.random() * die.sides) + 1;
-    }
-
-    player.freePips -= cost;
-
-    // Log reroll
-    this.gameState.gameLog = require('../utils/GameLogger').logAction(
-      this.gameState.gameLog,
-      player.name,
-      `rerolled d${die.sides} from ${oldValue} to ${die.value} (${cost} pips)`,
-      this.gameState.round
-    );
-
-    return { 
-      success: true, 
-      message: `Rerolled die to ${die.value}`,
-      newValue: die.value
-    };
+  // Reroll the die (use predetermined value if provided, otherwise random)
+  const oldValue = die.value;
+  if (predeterminedValue !== null) {
+    // For undo/redo - use the stored result
+    die.value = predeterminedValue;
+  } else {
+    // Normal random reroll
+    die.value = Math.floor(Math.random() * die.sides) + 1;
   }
   
+  player.freePips -= actualCost;
+
+  // Log reroll with actual cost
+  const modificationNote = actualCost !== originalCost ? ` (${originalCost}→${actualCost} pips due to modifications)` : '';
+  
+  this.gameState.gameLog = require('../utils/GameLogger').logAction(
+    this.gameState.gameLog,
+    player.name,
+    `rerolled d${die.sides} from ${oldValue} to ${die.value} (${actualCost} pips${modificationNote})`,
+    this.gameState.round
+  );
+
+  return { 
+    success: true, 
+    message: `Rerolled die to ${die.value}`,
+    newValue: die.value,
+    actualCost: actualCost
+  };
+  }
+
   /**
    * Ensure player meets minimum dice floor requirement
    * @param {string} playerId - Player ID

@@ -12,7 +12,46 @@ class ScoringSystem {
   }
 
   /**
-   * Score a straight with selected dice
+   * Apply score modifiers from factory effects/modifications - UPDATED with synergy
+   * @param {Object} player - Player object
+   * @param {string} scoreType - 'straight' or 'set'
+   * @param {number} basePoints - Base points before modifiers
+   * @param {Array} dice - Dice used in scoring
+   * @returns {number} - Modified points
+   */
+  applyScoreModifiers(player, scoreType, basePoints, dice) {
+    let modifiedPoints = basePoints;
+    let effectiveDiceCount = dice.length;
+
+    // Apply Synergy modification - counts as having 1 additional die
+    if (player.modifications?.includes('synergy')) {
+      effectiveDiceCount += 1;
+
+      // Recalculate points with extra die
+      if (scoreType === 'straight') {
+        // Straight: highest value × (dice count + 1)
+        const highestValue = Math.max(...dice.map(d => d.value));
+        modifiedPoints = highestValue * effectiveDiceCount;
+      } else if (scoreType === 'set') {
+        // Set: value × (dice count + 1 + 1) = value × (dice count + 2)
+        const setValue = dice[0].value; // All dice have same value in a set
+        modifiedPoints = setValue * (effectiveDiceCount + 1);
+      }
+
+      // Log the synergy bonus
+      this.gameState.gameLog = require('../utils/GameLogger').logAction(
+        this.gameState.gameLog,
+        player.name,
+        `synergy added +1 effective die (${dice.length}→${effectiveDiceCount}) for +${modifiedPoints - basePoints} points`,
+        this.gameState.round
+      );
+    }
+
+    return modifiedPoints;
+  }
+
+  /**
+   * Score a straight with selected dice - UPDATED with synergy support
    * @param {string} playerId - Player ID
    * @param {Array} diceIds - IDs of dice to use for straight
    * @returns {Object} - {success: boolean, message: string, points?: number}
@@ -24,14 +63,14 @@ class ScoringSystem {
       return { success: false, message: 'Player not found' };
     }
 
-    const straightDice = findDiceByIds(player.dicePool, diceIds);
-    
+    const straightDice = require('../utils/DiceHelpers').findDiceByIds(player.dicePool, diceIds);
+
     if (straightDice.length !== diceIds.length) {
       return { success: false, message: 'Some dice not found in pool' };
     }
 
     // Validate straight
-    const validation = validateStraight(straightDice);
+    const validation = require('../data/ValidationRules').validateStraight(straightDice);
     if (!validation.isValid) {
       return { success: false, message: validation.reason };
     }
@@ -45,7 +84,7 @@ class ScoringSystem {
     if (!this.gameState.firstStraight) {
       this.gameState.firstStraight = true;
       points += 5;
-      this.gameState.gameLog = logAction(
+      this.gameState.gameLog = require('../utils/GameLogger').logAction(
         this.gameState.gameLog,
         player.name,
         'earned 5 bonus points for first straight of the game',
@@ -54,11 +93,11 @@ class ScoringSystem {
     }
 
     // Remove dice from pool and add points
-    player.dicePool = removeDiceByIds(player.dicePool, diceIds);
+    player.dicePool = require('../utils/DiceHelpers').removeDiceByIds(player.dicePool, diceIds);
     player.score += points;
 
     // Log scoring
-    this.gameState.gameLog = logScore(
+    this.gameState.gameLog = require('../utils/GameLogger').logScore(
       this.gameState.gameLog,
       player.name,
       `straight (${straightDice.length} dice)`,
@@ -74,7 +113,7 @@ class ScoringSystem {
   }
 
   /**
-   * Score a set with selected dice
+   * Score a set with selected dice - UPDATED with synergy support
    * @param {string} playerId - Player ID
    * @param {Array} diceIds - IDs of dice to use for set
    * @returns {Object} - {success: boolean, message: string, points?: number}
@@ -85,79 +124,54 @@ class ScoringSystem {
     if (!player) {
       return { success: false, message: 'Player not found' };
     }
-
-    const setDice = findDiceByIds(player.dicePool, diceIds);
+  
+    const setDice = require('../utils/DiceHelpers').findDiceByIds(player.dicePool, diceIds);
     
     if (setDice.length !== diceIds.length) {
       return { success: false, message: 'Some dice not found in pool' };
     }
-
+  
     // Validate set
-    const validation = validateSet(setDice);
+    const validation = require('../data/ValidationRules').validateSet(setDice);
     if (!validation.isValid) {
       return { success: false, message: validation.reason };
     }
-
+  
     let points = validation.points;
-
+  
     // Apply factory effects/modifications that might affect scoring
     points = this.applyScoreModifiers(player, 'set', points, setDice);
-
+  
     // Check for first set bonus
     if (!this.gameState.firstSet) {
       this.gameState.firstSet = true;
       points += 5;
-      this.gameState.gameLog = logAction(
+      this.gameState.gameLog = require('../utils/GameLogger').logAction(
         this.gameState.gameLog,
         player.name,
         'earned 5 bonus points for first set of the game',
         this.gameState.round
       );
     }
-
+  
     // Remove dice from pool and add points
-    player.dicePool = removeDiceByIds(player.dicePool, diceIds);
+    player.dicePool = require('../utils/DiceHelpers').removeDiceByIds(player.dicePool, diceIds);
     player.score += points;
-
+  
     // Log scoring
-    this.gameState.gameLog = logScore(
+    this.gameState.gameLog = require('../utils/GameLogger').logScore(
       this.gameState.gameLog,
       player.name,
       `set (${setDice.length} dice of ${setDice[0].value}s)`,
       points,
       this.gameState.round
     );
-
+  
     return { 
       success: true, 
       message: `Scored ${points} points with set`,
       points 
     };
-  }
-
-  /**
-   * Apply score modifiers from factory effects/modifications
-   * @param {Object} player - Player object
-   * @param {string} scoreType - 'straight' or 'set'
-   * @param {number} basePoints - Base points before modifiers
-   * @param {Array} dice - Dice used in scoring
-   * @returns {number} - Modified points
-   */
-  applyScoreModifiers(player, scoreType, basePoints, dice) {
-    let modifiedPoints = basePoints;
-
-    // This is a placeholder for the new effects/modifications system
-    // Individual effects and modifications will modify scores here
-    
-    // Example effects that might apply:
-    // - "Synergy": All tricks count as having 1 additional die
-    // - "Efficiency": One die returns when scoring
-    // - "First Mover": Get bonus points for being first
-    
-    // For now, just return base points
-    // This will be implemented when the new effects system is designed
-    
-    return modifiedPoints;
   }
 
   /**
