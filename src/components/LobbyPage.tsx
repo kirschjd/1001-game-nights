@@ -34,6 +34,7 @@ const LobbyPage: React.FC = () => {
   const [myPlayerName, setMyPlayerName] = useState('');
   const [selectedVariant, setSelectedVariant] = useState('regular');
   const [botStyles, setBotStyles] = useState<any[]>([]);
+  const [selectedDFVariant, setSelectedDFVariant] = useState('standard');
 
   useEffect(() => {
     const newSocket = io(process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
@@ -145,8 +146,8 @@ const LobbyPage: React.FC = () => {
           // Removed: bots array - use existing lobby bots only
         });
       } else {
-        // Start other games normally
-        socket.emit('start-game', { slug });
+        // Start Dice Factory with variant support
+        socket.emit('start-game', { slug, variant: selectedDFVariant });
       }
     }
   };
@@ -453,6 +454,27 @@ const LobbyPage: React.FC = () => {
                     : 'Standard rules - highest card wins'
                   }
                 </p>
+              </div>
+            )}
+
+            {/* Dice Factory Variant Selection */}
+            {lobby.gameType === 'dice-factory' && isLeader && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Game Mode
+                </label>
+                <select
+                  value={selectedDFVariant}
+                  onChange={e => setSelectedDFVariant(e.target.value)}
+                  className="px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
+                >
+                  <option value="standard">Standard</option>
+                  <option value="experimental">Experimental</option>
+                </select>
+                <div className="text-xs text-gray-400 mt-1">
+                  <strong>Standard:</strong> Classic Dice Factory rules.<br/>
+                  <strong>Experimental:</strong> New or test mechanics (see release notes).
+                </div>
               </div>
             )}
           </div>

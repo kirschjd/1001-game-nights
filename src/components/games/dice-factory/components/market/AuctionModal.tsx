@@ -187,7 +187,7 @@ const AuctionModal: React.FC<AuctionModalProps> = ({
               max={currentPlayer.freePips}
               value={bidAmount}
               onChange={(e) => setBidAmount(Math.max(0, Math.min(currentPlayer.freePips, parseInt(e.target.value) || 0)))}
-              className="flex-1 bg-midnight-green text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-lion"
+              className="flex-1 bg-midnight-green text-white border border-lion/30 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-lion placeholder-gray-400"
             />
             <span className="text-gray-400">pips</span>
           </div>

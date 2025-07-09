@@ -48,9 +48,7 @@ class DiceSystem {
  * @returns {Object} - {success: boolean, message: string}
  */
   recruitDice(playerId, diceIds) {
-  console.log('=== DICE SYSTEM: recruitDice FIXED ===');
-  console.log('Player ID:', playerId);
-  console.log('Dice IDs:', diceIds);
+  
   
   const player = this.gameState.players.find(p => p.id === playerId);
   
@@ -60,28 +58,40 @@ class DiceSystem {
   }
 
   const recruitingDice = findDiceByIds(player.dicePool, diceIds);
-  console.log('Recruiting dice found:', recruitingDice.map(d => ({ id: d.id, sides: d.sides, value: d.value })));
+  
   
   if (recruitingDice.length !== diceIds.length) {
     console.error('Some dice not found in pool');
     return { success: false, message: 'Some dice not found in pool' };
   }
 
-  // Validate recruitment
-  const validation = validateRecruitment(recruitingDice);
-  console.log('Recruitment validation:', validation);
+  // Outsourcing mod: allow recruitment regardless of value, always recruit same size
+  const hasOutsourcing = player.modifications?.includes('outsourcing');
+  let newDice = [];
+  if (hasOutsourcing) {
+    for (const die of recruitingDice) {
+      if (die.value === null) {
+        return { success: false, message: 'All dice must have values to recruit' };
+      }
+      // Always recruit a die of the same size
+      const DiceHelpers = require('../utils/DiceHelpers');
+      newDice.push(DiceHelpers.createDie(die.sides));
+    }
+  } else {
+    // Validate recruitment
+    const hasDiversification = player.modifications?.includes('diversification');
+    const validation = validateRecruitment(recruitingDice, hasDiversification);
+    
+    if (!validation.isValid) {
+      return { success: false, message: validation.reason };
+    }
+    // Use the recruited dice from validation result
+    const DiceHelpers = require('../utils/DiceHelpers');
+    for (const recruitedDieData of validation.recruited) {
+      newDice.push(DiceHelpers.createDie(recruitedDieData.sides));
+    }
+  }
   
-  if (!validation.isValid) {
-    return { success: false, message: validation.reason };
-  }
-
-  // Generate recruited dice
-  const newDice = [];
-  for (const die of recruitingDice) {
-    const recruited = recruitDice(die);
-    newDice.push(...recruited);
-  }
-  console.log('New dice recruited:', newDice.length);
 
   // Add recruited dice to pool (recruiting dice stay in pool but get exhausted)
   player.dicePool = addDiceToPool(player.dicePool, newDice);
@@ -91,7 +101,7 @@ class DiceSystem {
     player.exhaustedDice = [];
   }
   player.exhaustedDice.push(...diceIds);
-  console.log('Exhausted dice:', player.exhaustedDice);
+  
 
   // Log recruitment
   this.gameState.gameLog = logRecruitment(
@@ -114,7 +124,7 @@ class DiceSystem {
     );
   }
 
-  console.log('Recruitment successful, total dice pool:', player.dicePool.length);
+  
   return { 
     success: true, 
     message: `Recruited ${newDice.length} dice` 
@@ -185,9 +195,10 @@ class DiceSystem {
    * Process dice for pips (removes dice from pool)
    * @param {string} playerId - Player ID
    * @param {Array} diceIds - IDs of dice to process
+   * @param {string} arbitrageChoice - 'pips' or 'points'
    * @returns {Object} - {success: boolean, message: string, pipsGained: number}
    */
-  processDice(playerId, diceIds) {
+  processDice(playerId, diceIds, arbitrageChoice) {
     const player = this.gameState.players.find(p => p.id === playerId);
     
     if (!player) {
@@ -196,7 +207,7 @@ class DiceSystem {
 
     // ADD THIS VALIDATION:
     if (!diceIds || !Array.isArray(diceIds) || diceIds.length === 0) {
-      console.log(`⚠️ processDice called with invalid diceIds:`, { playerId, diceIds });
+      
       return { success: false, message: 'No dice specified to process' };
     }
 
@@ -211,23 +222,65 @@ class DiceSystem {
       return { success: false, message: validation.reason };
     }
 
+    // Arbitrage: process for points instead of pips
+    if (player.modifications?.includes('arbitrage') && arbitrageChoice === 'points') {
+      if (player._arbitrageUsedThisTurn) {
+        return { success: false, message: 'You can only use Arbitrage once per turn.' };
+      }
+      let pointsGained = 0;
+      for (const die of diceToProcess) {
+        pointsGained += die.value * 2;
+      }
+      player.dicePool = removeDiceByIds(player.dicePool, diceIds);
+      player.score += pointsGained;
+      player._arbitrageUsedThisTurn = true;
+      this.gameState.gameLog = logAction(
+        this.gameState.gameLog,
+        player.name,
+        `Arbitrage: processed ${diceToProcess.length} dice for ${pointsGained} points`,
+        this.gameState.round
+      );
+      return {
+        success: true,
+        message: `Processed ${diceToProcess.length} dice for ${pointsGained} points`,
+        pointsGained
+      };
+    }
+
+    // Cash Flow Enhancement: first processed die gives 3x pips
+    let bonusPips = 0;
+    if (player.modifications?.includes('cash_flow_enhancement') && !player._cashFlowUsedThisTurn) {
+      // Only apply to the first die processed this turn
+      // Base gives value * 2, bonus gives value * 1 (total 3x)
+      bonusPips = diceToProcess.length > 0 ? diceToProcess[0].value : 0;
+      player._cashFlowUsedThisTurn = true;
+    }
+
     // Remove dice from pool and gain pips
     player.dicePool = removeDiceByIds(player.dicePool, diceIds);
-    player.freePips += validation.pipsGained;
+    player.freePips += validation.pipsGained + bonusPips;
 
     // Log processing
     this.gameState.gameLog = logProcessing(
       this.gameState.gameLog,
       player.name,
       diceToProcess,
-      validation.pipsGained,
+      validation.pipsGained + bonusPips,
       this.gameState.round
     );
+    if (bonusPips > 0) {
+      this.gameState.gameLog = logAction(
+        this.gameState.gameLog,
+        player.name,
+        `Cash Flow Enhancement: first processed die gave ${diceToProcess[0].value * 3} pips!`,
+        this.gameState.round
+      );
+    }
 
     return { 
       success: true, 
-      message: `Processed ${diceToProcess.length} dice for ${validation.pipsGained} pips`,
-      pipsGained: validation.pipsGained
+      message: `Processed ${diceToProcess.length} dice for ${validation.pipsGained + bonusPips} pips`,
+      pipsGained: validation.pipsGained + bonusPips
     };
   }
 
@@ -285,17 +338,13 @@ class DiceSystem {
   const actionType = change > 0 ? 'increase' : 'decrease';
   const actualCost = this.getModifiedPipCost(player, actionType);
 
-  if (player.freePips < actualCost) {
-    return { success: false, message: `Not enough pips (need ${actualCost}, have ${player.freePips})` };
-  }
-
   const die = player.dicePool.find(d => d.id === dieId);
   if (!die) {
     return { success: false, message: 'Die not found' };
   }
 
-  // Validate modification
-  const validation = require('../data/ValidationRules').validateDieModification(die, change);
+  // Validate modification (includes Corporate Debt check)
+  const validation = require('../data/ValidationRules').validateDieModification(die, change, actualCost, player);
   if (!validation.isValid) {
     return { success: false, message: validation.reason };
   }
@@ -332,52 +381,69 @@ class DiceSystem {
    * @returns {Object} - {success: boolean, message: string, newValue?: number}
    */
   rerollDie(playerId, dieId, originalCost, predeterminedValue = null) {
-  const player = this.gameState.players.find(p => p.id === playerId);
-  
-  if (!player) {
-    return { success: false, message: 'Player not found' };
-  }
+    const player = this.gameState.players.find(p => p.id === playerId);
+    
+    if (!player) {
+      return { success: false, message: 'Player not found' };
+    }
 
-  // Calculate actual cost based on modifications
-  const actualCost = this.getModifiedPipCost(player, 'reroll');
+    // Quality Control: first reroll each turn is free
+    let actualCost = this.getModifiedPipCost(player, 'reroll');
+    let usedQualityControl = false;
+    if (player.modifications?.includes('quality_control') && !player._qualityControlUsedThisTurn) {
+      actualCost = 0;
+      player._qualityControlUsedThisTurn = true;
+      usedQualityControl = true;
+    }
 
-  if (player.freePips < actualCost) {
-    return { success: false, message: `Not enough pips (need ${actualCost}, have ${player.freePips})` };
-  }
+    const die = player.dicePool.find(d => d.id === dieId);
+    if (!die) {
+      return { success: false, message: 'Die not found' };
+    }
 
-  const die = player.dicePool.find(d => d.id === dieId);
-  if (!die) {
-    return { success: false, message: 'Die not found' };
-  }
+    // Validate reroll (includes Corporate Debt check)
+    const validation = require('../data/ValidationRules').validateDieReroll(die, actualCost, player);
+    if (!validation.isValid) {
+      return { success: false, message: validation.reason };
+    }
 
-  // Reroll the die (use predetermined value if provided, otherwise random)
-  const oldValue = die.value;
-  if (predeterminedValue !== null) {
-    // For undo/redo - use the stored result
-    die.value = predeterminedValue;
-  } else {
-    // Normal random reroll
-    die.value = Math.floor(Math.random() * die.sides) + 1;
-  }
-  
-  player.freePips -= actualCost;
+    // Reroll the die (use predetermined value if provided, otherwise random)
+    const oldValue = die.value;
+    if (predeterminedValue !== null) {
+      // For undo/redo - use the stored result
+      die.value = predeterminedValue;
+    } else {
+      // Normal random reroll (prevent 2s if player has 2rUS)
+      const has2rUS = player.modifications?.includes('tworus');
+      if (has2rUS) {
+        let value;
+        do {
+          value = Math.floor(Math.random() * die.sides) + 1;
+        } while (value === 2); // Keep rolling until we get a non-2
+        die.value = value;
+      } else {
+        die.value = Math.floor(Math.random() * die.sides) + 1;
+      }
+    }
+    
+    player.freePips -= actualCost;
 
-  // Log reroll with actual cost
-  const modificationNote = actualCost !== originalCost ? ` (${originalCost}→${actualCost} pips due to modifications)` : '';
-  
-  this.gameState.gameLog = require('../utils/GameLogger').logAction(
-    this.gameState.gameLog,
-    player.name,
-    `rerolled d${die.sides} from ${oldValue} to ${die.value} (${actualCost} pips${modificationNote})`,
-    this.gameState.round
-  );
+    // Log reroll with actual cost
+    const modificationNote = actualCost !== originalCost ? ` (${originalCost}→${actualCost} pips due to modifications)` : '';
+    
+    this.gameState.gameLog = require('../utils/GameLogger').logAction(
+      this.gameState.gameLog,
+      player.name,
+      `rerolled d${die.sides} from ${oldValue} to ${die.value} (${actualCost} pips${usedQualityControl ? ' - Quality Control' : ''}${modificationNote})`,
+      this.gameState.round
+    );
 
-  return { 
-    success: true, 
-    message: `Rerolled die to ${die.value}`,
-    newValue: die.value,
-    actualCost: actualCost
-  };
+    return { 
+      success: true, 
+      message: `Rerolled die to ${die.value}`,
+      newValue: die.value,
+      actualCost: actualCost
+    };
   }
 
   /**
@@ -392,8 +458,11 @@ class DiceSystem {
       return { success: false, message: 'Player not found' };
     }
 
+    // Determine minimum die size based on modifications
+    const minimumDieSize = player.modifications?.includes('dice_pool_upgrade') ? 6 : 4;
+
     const originalCount = player.dicePool.length;
-    player.dicePool = autoRecruitToFloor(player.dicePool, player.diceFloor);
+    player.dicePool = autoRecruitToFloor(player.dicePool, player.diceFloor, minimumDieSize);
     const newCount = player.dicePool.length;
 
     if (newCount > originalCount) {

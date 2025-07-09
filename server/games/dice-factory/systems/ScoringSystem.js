@@ -21,28 +21,26 @@ class ScoringSystem {
    */
   applyScoreModifiers(player, scoreType, basePoints, dice) {
     let modifiedPoints = basePoints;
-    let effectiveDiceCount = dice.length;
 
     // Apply Synergy modification - counts as having 1 additional die
     if (player.modifications?.includes('synergy')) {
-      effectiveDiceCount += 1;
-
-      // Recalculate points with extra die
       if (scoreType === 'straight') {
-        // Straight: highest value × (dice count + 1)
+        // Straight: base formula is highest value × dice count
+        // With synergy: highest value × (dice count + 1)
         const highestValue = Math.max(...dice.map(d => d.value));
-        modifiedPoints = highestValue * effectiveDiceCount;
+        modifiedPoints = highestValue * (dice.length + 1);
       } else if (scoreType === 'set') {
-        // Set: value × (dice count + 1 + 1) = value × (dice count + 2)
+        // Set: base formula is value × (dice count + 1)
+        // With synergy: value × (dice count + 2)
         const setValue = dice[0].value; // All dice have same value in a set
-        modifiedPoints = setValue * (effectiveDiceCount + 1);
+        modifiedPoints = setValue * (dice.length + 2);
       }
 
       // Log the synergy bonus
       this.gameState.gameLog = require('../utils/GameLogger').logAction(
         this.gameState.gameLog,
         player.name,
-        `synergy added +1 effective die (${dice.length}→${effectiveDiceCount}) for +${modifiedPoints - basePoints} points`,
+        `synergy added +1 effective die for +${modifiedPoints - basePoints} points`,
         this.gameState.round
       );
     }
@@ -70,7 +68,8 @@ class ScoringSystem {
     }
 
     // Validate straight
-    const validation = require('../data/ValidationRules').validateStraight(straightDice);
+    const hasVerticalIntegration = player.modifications?.includes('vertical_integration');
+    const validation = require('../data/ValidationRules').validateStraight(straightDice, hasVerticalIntegration);
     if (!validation.isValid) {
       return { success: false, message: validation.reason };
     }
@@ -93,7 +92,23 @@ class ScoringSystem {
     }
 
     // Remove dice from pool and add points
-    player.dicePool = require('../utils/DiceHelpers').removeDiceByIds(player.dicePool, diceIds);
+    let diceToRemove = diceIds;
+    if (player.modifications?.includes('patent_protection')) {
+      // Keep the highest-value die
+      const scoredDice = require('../utils/DiceHelpers').findDiceByIds(player.dicePool, diceIds);
+      if (scoredDice.length > 0) {
+        const highestDie = scoredDice.reduce((a, b) => (a.value > b.value ? a : b));
+        // Remove all except the highest-value die
+        diceToRemove = diceIds.filter(id => id !== highestDie.id);
+        this.gameState.gameLog = require('../utils/GameLogger').logAction(
+          this.gameState.gameLog,
+          player.name,
+          `Patent Protection: kept d${highestDie.sides} showing ${highestDie.value} from scored trick`,
+          this.gameState.round
+        );
+      }
+    }
+    player.dicePool = require('../utils/DiceHelpers').removeDiceByIds(player.dicePool, diceToRemove);
     player.score += points;
 
     // Log scoring
@@ -132,7 +147,8 @@ class ScoringSystem {
     }
   
     // Validate set
-    const validation = require('../data/ValidationRules').validateSet(setDice);
+    const hasJointVenture = player.modifications?.includes('joint_venture');
+    const validation = require('../data/ValidationRules').validateSet(setDice, hasJointVenture);
     if (!validation.isValid) {
       return { success: false, message: validation.reason };
     }
@@ -155,7 +171,23 @@ class ScoringSystem {
     }
   
     // Remove dice from pool and add points
-    player.dicePool = require('../utils/DiceHelpers').removeDiceByIds(player.dicePool, diceIds);
+    let diceToRemove = diceIds;
+    if (player.modifications?.includes('patent_protection')) {
+      // Keep the highest-value die
+      const scoredDice = require('../utils/DiceHelpers').findDiceByIds(player.dicePool, diceIds);
+      if (scoredDice.length > 0) {
+        const highestDie = scoredDice.reduce((a, b) => (a.value > b.value ? a : b));
+        // Remove all except the highest-value die
+        diceToRemove = diceIds.filter(id => id !== highestDie.id);
+        this.gameState.gameLog = require('../utils/GameLogger').logAction(
+          this.gameState.gameLog,
+          player.name,
+          `Patent Protection: kept d${highestDie.sides} showing ${highestDie.value} from scored trick`,
+          this.gameState.round
+        );
+      }
+    }
+    player.dicePool = require('../utils/DiceHelpers').removeDiceByIds(player.dicePool, diceToRemove);
     player.score += points;
   
     // Log scoring

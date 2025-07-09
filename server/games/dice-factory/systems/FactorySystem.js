@@ -58,16 +58,17 @@ class FactorySystem {
    */
   drawTurnModifications() {
     const { drawnCards, remainingDeck } = drawFromDeck(this.gameState.modificationDeck, 3);
-    
+    // Add a unique instanceId to each card
+    if (!this._modInstanceCounter) this._modInstanceCounter = 1;
     this.gameState.currentTurnModifications = drawnCards.map(modId => ({
-      id: modId,
+      id: `mod_${this._modInstanceCounter++}`,
+      modTypeId: modId, // Store the type for reference
       modification: getModificationById(modId),
       bids: [], // {playerId, amount}
-      winner: null
+      winner: null,
+      reservations: [] // {playerId, playerName}
     }));
-    
     this.gameState.modificationDeck = remainingDeck;
-    
     // Log the new modifications available
     this.gameState.gameLog = logAction(
       this.gameState.gameLog,
@@ -210,47 +211,36 @@ class FactorySystem {
    */
   resolveModificationAuctions() {
     const auctions = [];
-    
     for (const modCard of this.gameState.currentTurnModifications) {
-      if (modCard.bids.length === 0) {
-        // No bids - card is discarded
-        continue;
-      } else if (modCard.bids.length === 1) {
-        // Single bid - automatic win
-        const winningBid = modCard.bids[0];
-        const winner = this.gameState.players.find(p => p.id === winningBid.playerId);
-        
-        if (winner) {
-          const actualCost = getActualModificationCost(winner, modCard.id);
-          
-          if (winner.freePips >= winningBid.amount) {
-            winner.freePips -= winningBid.amount;
-            winner.modifications.push(modCard.id);
-            modCard.winner = winningBid.playerId;
-            
-            // Apply modification
-            this.applyModification(winningBid.playerId, modCard.id);
-            
+      // Reservation-based logic
+      if (modCard.reservations && modCard.reservations.length > 0) {
+        if (modCard.reservations.length === 1) {
+          // Single reserver: award modification
+          const reserver = this.gameState.players.find(p => p.id === modCard.reservations[0].playerId);
+          if (reserver) {
+            reserver.modifications.push(modCard.modTypeId); // Give the player the type, not the instance id
+            modCard.winner = reserver.id;
+            this.applyModification(reserver.id, modCard.modTypeId);
             this.gameState.gameLog = logFactoryPurchase(
               this.gameState.gameLog,
-              winner.name,
-              'modification',
+              reserver.name,
+              'modification (reserved)',
               modCard.modification.name,
-              winningBid.amount,
+              0, // Cost already paid
               this.gameState.round
             );
           }
+        } else {
+          // Multiple reservers: trigger auction
+          auctions.push({
+            modificationId: modCard.id,
+            modification: modCard.modification,
+            bidders: modCard.reservations.map(r => ({ playerId: r.playerId, playerName: r.playerName }))
+          });
         }
-      } else {
-        // Multiple bids - needs auction resolution
-        auctions.push({
-          modificationId: modCard.id,
-          modification: modCard.modification,
-          bidders: modCard.bids
-        });
       }
+      // If no reservations, do nothing (mod is discarded)
     }
-    
     return { success: true, auctions };
   }
 
@@ -322,11 +312,11 @@ class FactorySystem {
 
     // Award modification to winner
     winner.freePips -= highestBid;
-    winner.modifications.push(modificationId);
+    winner.modifications.push(modCard.modTypeId);
     modCard.winner = winnerId;
 
     // Apply modification
-    this.applyModification(winnerId, modificationId);
+    this.applyModification(winnerId, modCard.modTypeId);
 
     this.gameState.gameLog = logFactoryPurchase(
       this.gameState.gameLog,
@@ -626,6 +616,100 @@ class FactorySystem {
     }
 
     return stats;
+  }
+
+  /**
+   * Reserve a modification for a player
+   * @param {string} playerId - Player ID
+   * @param {string} modificationId - Modification ID from current turn
+   * @returns {Object} - {success: boolean, message: string}
+   */
+  reserveModification(playerId, modificationId) {
+    const player = this.gameState.players.find(p => p.id === playerId);
+    if (!player) {
+      return { success: false, message: 'Player not found' };
+    }
+    const modCard = this.gameState.currentTurnModifications.find(card => card.id === modificationId);
+    if (!modCard) {
+      return { success: false, message: 'Modification not available this turn' };
+    }
+    const modification = modCard.modification;
+    if (!modification) {
+      return { success: false, message: 'Invalid modification' };
+    }
+    // Check if already reserved by this player
+    if (modCard.reservations.some(r => r.playerId === playerId)) {
+      return { success: false, message: 'Already reserved by this player' };
+    }
+    // Check if player already owns (and not stackable)
+    if (!modification.stackable && player.modifications?.includes(modificationId)) {
+      return { success: false, message: 'Already own this modification and it\'s not stackable' };
+    }
+    // Calculate cost (9 pips, or less with market manipulation)
+    const actualCost = getActualModificationCost(player, modCard.modTypeId);
+    if (player.freePips < actualCost) {
+      return { success: false, message: 'Not enough pips to reserve' };
+    }
+    // Deduct pips
+    player.freePips -= actualCost;
+    // Add reservation
+    modCard.reservations.push({ playerId, playerName: player.name });
+    // Log reservation
+    this.gameState.gameLog = logAction(
+      this.gameState.gameLog,
+      player.name,
+      `reserved ${modification.name} for ${actualCost} pips`,
+      this.gameState.round
+    );
+    // Record as undoable action
+    if (!player.actionHistory) player.actionHistory = [];
+    player.actionHistory.push({ type: 'reserve_modification', modificationId, cost: actualCost });
+    // Record in currentTurnActions for undo button visibility
+    if (!player.currentTurnActions) player.currentTurnActions = [];
+    player.currentTurnActions.push({
+      action: 'reserve_modification',
+      timestamp: new Date().toISOString(),
+      data: { modificationId, cost: actualCost }
+    });
+    return { success: true, message: `Reserved ${modification.name}` };
+  }
+
+  /**
+   * Undo a reservation for a modification
+   * @param {string} playerId - Player ID
+   * @param {string} modificationId - Modification ID
+   * @param {number} cost - Amount of pips to refund
+   * @returns {Object} - {success: boolean, message: string}
+   */
+  undoReserveModification(playerId, modificationId, cost) {
+
+    const player = this.gameState.players.find(p => p.id === playerId);
+    if (!player) {
+      return { success: false, message: 'Player not found' };
+    }
+    const modCard = this.gameState.currentTurnModifications.find(card => card.id === modificationId);
+    if (!modCard) {
+      return { success: false, message: 'Modification not found in current turn' };
+    }
+    // Remove reservation
+    modCard.reservations = modCard.reservations.filter(r => r.playerId !== playerId);
+    // Refund pips
+    player.freePips += cost;
+    // Remove from currentTurnActions
+    if (player.currentTurnActions) {
+      player.currentTurnActions = player.currentTurnActions.filter(action => 
+        !(action.action === 'reserve_modification' && action.data.modificationId === modificationId)
+      );
+    }
+    // Log undo
+    this.gameState.gameLog = logAction(
+      this.gameState.gameLog,
+      player.name,
+      `undid reservation for ${modCard.modification.name}, refunded ${cost} pips`,
+      this.gameState.round
+    );
+
+    return { success: true, message: 'Reservation undone' };
   }
 }
 

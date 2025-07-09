@@ -14,10 +14,11 @@ const FactorySystem = require('./systems/FactorySystem');
 const TurnSystem = require('./systems/TurnSystem');
 
 class DiceFactoryGame {
-  constructor(players) {
+  constructor(players, variant = 'standard') {
     // Initialize game state
     this.state = {
       type: 'dice-factory',
+      variant: variant,
       phase: PHASES.PLAYING,
       round: 1,
       turnCounter: 1,
@@ -32,7 +33,7 @@ class DiceFactoryGame {
       players: players.map((p) => ({
         id: p.id,
         name: p.name,
-        dicePool: createInitialDicePool(),
+        dicePool: p.modifications && p.modifications.includes('dice_pool_upgrade') ? createInitialDicePool(6) : createInitialDicePool(),
         diceFloor: GAME_DEFAULTS.INITIAL_DICE_FLOOR,
         freePips: GAME_DEFAULTS.INITIAL_FREE_PIPS,
         score: GAME_DEFAULTS.INITIAL_SCORE,
@@ -138,18 +139,20 @@ class DiceFactoryGame {
    * @param {Array} diceIds - IDs of dice to process
    * @returns {Object} - {success: boolean, error?: string}
    */
-  processDice(playerId, diceIds) {
+  processDice(playerId, diceIds, arbitrageChoice) {
     if (!this.canPlayerAct(playerId)) {
       return { success: false, error: 'Player cannot act' };
     }
 
-    const result = this.diceSystem.processDice(playerId, diceIds);
+    const result = this.diceSystem.processDice(playerId, diceIds, arbitrageChoice);
     
     if (result.success) {
-      this.turnSystem.recordPlayerAction(playerId, 'process_dice', { diceIds });
+      this.turnSystem.recordPlayerAction(playerId, 'process_dice', { diceIds, arbitrageChoice });
       this.saveActionState(playerId, 'process', { 
         diceIds, 
-        pipsGained: result.pipsGained 
+        pipsGained: result.pipsGained,
+        pointsGained: result.pointsGained,
+        arbitrageChoice
       });
     }
     
@@ -417,8 +420,8 @@ class DiceFactoryGame {
    * @param {string} playerId - Player ID
    * @returns {Object} - {success: boolean, error?: string}
    */
-  setPlayerReady(playerId) {
-    const result = this.turnSystem.setPlayerReady(playerId);
+  setPlayerReady(playerId, dividendChoice) {
+    const result = this.turnSystem.setPlayerReady(playerId, dividendChoice);
     
     // Check for collapse after turn ends
     if (result.success) {
@@ -556,10 +559,24 @@ class DiceFactoryGame {
   if (!player.actionHistory || player.actionHistory.length === 0) {
     return { success: false, error: 'No actions to undo' };
   }
-
+  console.log('🟠 undoLastAction: actionHistory =', JSON.stringify(player.actionHistory, null, 2)); // DEBUG
   // Remove the current state (last action result)
   const lastAction = player.actionHistory.pop();
+  console.log('🟠 undoLastAction: lastAction =', JSON.stringify(lastAction, null, 2)); // DEBUG
   
+  // Handle reservation undo
+  if (lastAction.type === 'reserve_modification' && lastAction.modificationId) {
+    console.log('🟠 RESERVATION UNDO: Triggering reservation undo logic'); // DEBUG
+    this.factorySystem.undoReserveModification(playerId, lastAction.modificationId, lastAction.cost);
+    this.state.gameLog = require('./utils/GameLogger').logAction(
+      this.state.gameLog,
+      player.name,
+      `undid reservation for ${lastAction.modificationId}`,
+      this.state.round
+    );
+    return { success: true };
+  }
+
   if (player.actionHistory.length === 0) {
     // If no more history, restore to turn start state
     if (player.turnStartState) {
@@ -597,22 +614,33 @@ class DiceFactoryGame {
       return;
     }
 
+    // Experimental mode: end after 11 rounds, skip collapse
+    if (this.state.variant === 'experimental') {
+      if (this.state.round >= 11) {
+        this.endGame();
+        return;
+      }
+      // No collapse system in experimental mode
+      this.factorySystem.processTriggers('turn_end');
+      const endCheck = this.turnSystem.checkTurnEndConditions();
+      if (endCheck.shouldEnd) {
+        this.endGame();
+      }
+      return;
+    }
+
     // Check for collapse start
     const collapseCheck = this.collapseSystem.checkForCollapseStart();
-    
     // If collapse is active, process collapse phase
     if (this.state.collapseStarted) {
       const collapseResult = this.collapseSystem.processCollapsePhase();
-      
       if (collapseResult.gameEnded) {
         this.endGame();
         return;
       }
     }
-
     // Process factory triggers
     this.factorySystem.processTriggers('turn_end');
-
     // Check other end conditions
     const endCheck = this.turnSystem.checkTurnEndConditions();
     if (endCheck.shouldEnd) {
@@ -789,7 +817,7 @@ class DiceFactoryGame {
 
     // Reset players
     for (const player of this.state.players) {
-      player.dicePool = createInitialDicePool();
+      player.dicePool = player.modifications && player.modifications.includes('dice_pool_upgrade') ? createInitialDicePool(6) : createInitialDicePool();
       player.freePips = GAME_DEFAULTS.INITIAL_FREE_PIPS;
       player.score = GAME_DEFAULTS.INITIAL_SCORE;
       player.hasFled = false;
@@ -820,25 +848,8 @@ class DiceFactoryGame {
    */
   getGameState() {
     return {
-      type: this.state.type,
-      phase: this.state.phase,
-      round: this.state.round,
-      turnCounter: this.state.turnCounter,
-      collapseStarted: this.state.collapseStarted,
-      collapseDice: this.state.collapseDice,
-      winner: this.state.winner,
-      lastCollapseRoll: this.state.lastCollapseRoll,
-      gameLog: this.state.gameLog,
-      allPlayersReady: this.turnSystem.areAllPlayersReady(),
-      players: this.state.players.map(p => ({...p})),
-      // Frontend expects 'activeEffects' - provide both available effects and modifications
-      activeEffects: [
-        ...(this.state.availableEffects || []),
-        ...(this.state.availableModifications || [])
-      ],
-      // Also provide the new separate arrays
-      availableEffects: this.state.availableEffects || [],
-      availableModifications: this.state.availableModifications || []
+      ...this.state,
+      variant: this.state.variant || 'standard',
     };
   }
 
@@ -858,11 +869,13 @@ class DiceFactoryGame {
       currentPlayer = baseState.players[0];
     }
     
-    return {
+    const view = {
       ...baseState,
       currentPlayer: currentPlayer,
       exhaustedDice: currentPlayer?.exhaustedDice || []
     };
+    view.variant = this.state.variant || 'standard';
+    return view;
   }
 }
 

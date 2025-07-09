@@ -190,7 +190,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
 
   // Start a new game (leader only)
   socket.on('start-game', (data) => {
-    const { slug } = data;
+    const { slug, variant: clientVariant } = data;
     const lobby = lobbies.get(slug);
     
     if (!lobby || lobby.leaderId !== socket.id) {
@@ -211,7 +211,10 @@ function registerLobbyEvents(io, socket, lobbies, games) {
       game = new WarGame(connectedPlayers);
       game.dealCards();
     } else if (lobby.gameType === 'dice-factory') {
-      game = new DiceFactoryGame(connectedPlayers);
+      // Support variants for Dice Factory
+      const variant = clientVariant || lobby.gameVariant || 'standard';
+      game = new DiceFactoryGame(connectedPlayers, variant);
+      lobby.gameVariant = variant;
       game.state.phase = 'playing';
       connectedPlayers.forEach(player => {
         game.savePlayerTurnState(player.id);

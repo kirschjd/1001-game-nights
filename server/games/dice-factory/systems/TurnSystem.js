@@ -14,9 +14,10 @@ class TurnSystem {
   /**
    * Set player as ready (end their turn)
    * @param {string} playerId - Player ID
+   * @param {string} dividendChoice - 'pips' or 'points' for Dividend mod
    * @returns {Object} - {success: boolean, message: string}
    */
-  setPlayerReady(playerId) {
+  setPlayerReady(playerId, dividendChoice) {
     const player = this.gameState.players.find(p => p.id === playerId);
     
     if (!player) {
@@ -37,8 +38,8 @@ class TurnSystem {
       return { success: false, message: validation.reason };
     }
 
-    // Convert unused dice to pips (if any)
-    this.convertUnusedDiceToPips(player);
+    // Convert unused dice to pips or points (Dividend mod)
+    this.convertUnusedDiceToPips(player, dividendChoice);
 
     // Set player as ready
     player.isReady = true;
@@ -191,11 +192,24 @@ class TurnSystem {
   
     // Clear modification bids
     player.modificationBids = {};
+
+    // Reset cash flow enhancement usage
+    player._cashFlowUsedThisTurn = false;
+    // Reset quality control usage
+    player._qualityControlUsedThisTurn = false;
+    // Reset Dice Tower usage
+    player._diceTowerUsedThisTurn = false;
+    // Reset arbitrage usage
+    player._arbitrageUsedThisTurn = false;
+    // Reset roller derby usage
+    player._rollerDerbyUsedThisTurn = false;
   
     // Ensure minimum dice pool
     const minDiceCheck = require('../data/ValidationRules').validateMinimumDicePool(player);
     if (minDiceCheck.needsRecruitment) {
-      player.dicePool = require('../utils/DiceHelpers').autoRecruitToFloor(player.dicePool, player.diceFloor);
+      // Determine minimum die size based on modifications
+      const minimumDieSize = player.modifications?.includes('dice_pool_upgrade') ? 6 : 4;
+      player.dicePool = require('../utils/DiceHelpers').autoRecruitToFloor(player.dicePool, player.diceFloor, minimumDieSize);
       
       this.gameState.gameLog = require('../utils/GameLogger').logAction(
         this.gameState.gameLog,
@@ -230,34 +244,25 @@ class TurnSystem {
     }
 
     // Roller Derby: Option to recruit d4 for everyone
-    if (player.modifications?.includes('roller_derby')) {
+    if (player.modifications?.includes('roller_derby') && !player._rollerDerbyUsedThisTurn) {
+      // Recruit a d4 for the player (free recruitment)
+      const DiceHelpers = require('../utils/DiceHelpers');
+      const newDie = DiceHelpers.createDie(4);
+      player.dicePool.push(newDie);
       this.gameState.gameLog = logAction(
         this.gameState.gameLog,
         player.name,
-        'has Roller Derby available (can recruit d4 for everyone)',
+        'used Roller Derby: recruited a d4 for everyone',
         this.gameState.round
       );
+      // All players (including this one) recruit a d4
+      for (const p of this.gameState.players) {
+        p.dicePool.push(DiceHelpers.createDie(4));
+        p._rollerDerbyUsedThisTurn = true;
+      }
     }
 
-    // 2rUS: Automatically reroll all 2s
-    if (player.modifications?.includes('tworus')) {
-      let rerolledCount = 0;
-      for (const die of player.dicePool) {
-        if (die.value === 2) {
-          die.value = Math.floor(Math.random() * die.sides) + 1;
-          rerolledCount++;
-        }
-      }
-      
-      if (rerolledCount > 0) {
-        this.gameState.gameLog = logAction(
-          this.gameState.gameLog,
-          player.name,
-          `2rUS automatically rerolled ${rerolledCount} dice showing 2`,
-          this.gameState.round
-        );
-      }
-    }
+
   }
 
   /**
@@ -271,16 +276,23 @@ class TurnSystem {
       dieType = 6; // Upgrade to d6
     }
 
-    // Roll all dice in player's pool
-    for (const die of player.dicePool) {
-      die.value = Math.floor(Math.random() * die.sides) + 1;
+    // Check for 2rUS modification
+    const has2rUS = player.modifications?.includes('tworus');
+
+    // Roll all dice in player's pool (preventing 2s if they have 2rUS)
+    const DiceHelpers = require('../utils/DiceHelpers');
+    const rolledDice = DiceHelpers.rollDiceWithout2s(player.dicePool, has2rUS);
+    
+    // Update the dice values
+    for (let i = 0; i < player.dicePool.length; i++) {
+      player.dicePool[i].value = rolledDice[i].value;
     }
 
     // Log the auto-roll
     this.gameState.gameLog = logAction(
       this.gameState.gameLog,
       player.name,
-      `dice auto-rolled: ${player.dicePool.map(d => `${d.value}(d${d.sides})`).join(', ')}`,
+      `dice auto-rolled: ${player.dicePool.map(d => `${d.value}(d${d.sides})`).join(', ')}${has2rUS ? ' (2rUS prevented 2s)' : ''}`,
       this.gameState.round
     );
   }
@@ -288,8 +300,9 @@ class TurnSystem {
   /**
    * Convert unused dice to pips at end of turn
    * @param {Object} player - Player object
+   * @param {string} dividendChoice - 'pips' or 'points' for Dividend mod
    */
-  convertUnusedDiceToPips(player) {
+  convertUnusedDiceToPips(player, dividendChoice) {
     if (!player.dicePool || player.dicePool.length === 0) {
       return;
     }
@@ -307,20 +320,23 @@ class TurnSystem {
     // Check for Dividend modification
     const hasDividend = player.modifications?.includes('dividend');
     
-    if (hasDividend) {
-      // Player can choose between pips and points
-      // For now, we'll default to pips (this could be a player choice in the future)
+    if (hasDividend && dividendChoice === 'points' && unusedDice.length > 0) {
+      // Convert only one unused die (the highest value) to points, rest to pips
+      const sortedDice = [...unusedDice].sort((a, b) => b.value - a.value);
+      const dieForPoints = sortedDice[0];
+      const pointsGained = dieForPoints.value;
+      player.score += pointsGained;
+      // Remove the die used for points from the unusedDice array
+      const remainingDice = sortedDice.slice(1);
       let pipsGained = 0;
-      for (const die of unusedDice) {
+      for (const die of remainingDice) {
         pipsGained += die.value;
       }
-
       player.freePips += pipsGained;
-
       this.gameState.gameLog = logAction(
         this.gameState.gameLog,
         player.name,
-        `converted ${unusedDice.length} unused dice to ${pipsGained} pips (Dividend available)`,
+        `converted 1 unused die to ${pointsGained} points (Dividend), ${remainingDice.length} dice to ${pipsGained} pips`,
         this.gameState.round
       );
     } else {
@@ -329,13 +345,11 @@ class TurnSystem {
       for (const die of unusedDice) {
         pipsGained += die.value;
       }
-
       player.freePips += pipsGained;
-
       this.gameState.gameLog = logAction(
         this.gameState.gameLog,
         player.name,
-        `converted ${unusedDice.length} unused dice to ${pipsGained} pips`,
+        `converted ${unusedDice.length} unused dice to ${pipsGained} pips${hasDividend ? ' (Dividend available)' : ''}`,
         this.gameState.round
       );
     }
@@ -357,118 +371,15 @@ class TurnSystem {
   }
 
   /**
-   * Undo player's turn (restore to turn start state)
-   * @param {string} playerId - Player ID
-   * @returns {Object} - {success: boolean, message: string}
-   */
-  undoPlayerTurn(playerId) {
-    const player = this.gameState.players.find(p => p.id === playerId);
-    
-    if (!player) {
-      return { success: false, message: 'Player not found' };
-    }
-
-    if (!player.turnStartState) {
-      return { success: false, message: 'No turn state to restore' };
-    }
-
-    if (player.isReady) {
-      return { success: false, message: 'Cannot undo after ending turn' };
-    }
-
-    // Restore player state
-    player.dicePool = JSON.parse(JSON.stringify(player.turnStartState.dicePool));
-    player.freePips = player.turnStartState.freePips;
-    player.score = player.turnStartState.score;
-    player.modifications = [...player.turnStartState.modifications];
-    player.effects = [...player.turnStartState.effects];
-    player.factoryHand = [...player.turnStartState.factoryHand];
-
-    // Clear turn tracking
-    player.currentTurnActions = [];
-    player.exhaustedDice = [];
-    player.modificationBids = {};
-
-    this.gameState.gameLog = logAction(
-      this.gameState.gameLog,
-      player.name,
-      'undid their entire turn',
-      this.gameState.round
-    );
-
-    return { 
-      success: true, 
-      message: `${player.name}'s turn was undone` 
-    };
-  }
-
-  /**
-   * Get current turn status
-   * @returns {Object} - Turn status information
-   */
-  getTurnStatus() {
-    const playersReady = this.gameState.players.filter(p => p.isReady && !p.hasFled).length;
-    const playersActive = this.gameState.players.filter(p => !p.hasFled).length;
-    const playersFled = this.gameState.players.filter(p => p.hasFled).length;
-
-    return {
-      round: this.gameState.round,
-      turnCounter: this.gameState.turnCounter,
-      playersReady,
-      playersActive,
-      playersFled,
-      allReady: this.areAllPlayersReady(),
-      phase: this.gameState.phase,
-      needsAuctionResolution: this.gameState.allPlayersReady && !this.gameState.auctionsResolved
-    };
-  }
-
-  /**
-   * Force advance turn (admin/debug function)
-   * @returns {Object} - {success: boolean, message: string}
-   */
-  forceAdvanceTurn() {
-    // Set all active players as ready
-    for (const player of this.gameState.players) {
-      if (!player.hasFled) {
-        player.isReady = true;
-      }
-    }
-
-    this.advanceToNextTurn();
-
-    this.gameState.gameLog = logSystem(
-      this.gameState.gameLog,
-      'Turn was force-advanced',
-      this.gameState.round
-    );
-
-    return { 
-      success: true, 
-      message: 'Turn force-advanced' 
-    };
-  }
-
-  /**
-   * Get players who still need to end their turn
-   * @returns {Array} - Array of player objects who are not ready
-   */
-  getPlayersNotReady() {
-    return this.gameState.players.filter(p => !p.isReady && !p.hasFled);
-  }
-
-  /**
    * Check if a specific player can take actions
    * @param {string} playerId - Player ID
    * @returns {Object} - {canAct: boolean, reason: string}
    */
   canPlayerAct(playerId) {
     const player = this.gameState.players.find(p => p.id === playerId);
-    
     if (!player) {
       return { canAct: false, reason: 'Player not found' };
     }
-
     return validatePlayerAction(player, this.gameState);
   }
 
@@ -480,52 +391,17 @@ class TurnSystem {
    */
   recordPlayerAction(playerId, action, actionData = {}) {
     const player = this.gameState.players.find(p => p.id === playerId);
-    
     if (!player) {
       return;
     }
-
     if (!player.currentTurnActions) {
       player.currentTurnActions = [];
     }
-
     player.currentTurnActions.push({
       action,
       timestamp: new Date().toISOString(),
       data: actionData
     });
-  }
-
-  /**
-   * Get turn statistics
-   * @returns {Object} - Turn statistics
-   */
-  getTurnStatistics() {
-    const stats = {
-      currentRound: this.gameState.round,
-      currentTurnCounter: this.gameState.turnCounter,
-      totalPlayers: this.gameState.players.length,
-      activePlayers: this.gameState.players.filter(p => !p.hasFled).length,
-      readyPlayers: this.gameState.players.filter(p => p.isReady).length,
-      fledPlayers: this.gameState.players.filter(p => p.hasFled).length,
-      averageActionsPerTurn: 0,
-      playerActionCounts: {},
-      pendingAuctions: this.gameState.pendingAuctions?.length || 0
-    };
-
-    // Calculate average actions per turn
-    let totalActions = 0;
-    for (const player of this.gameState.players) {
-      const actionCount = player.currentTurnActions?.length || 0;
-      totalActions += actionCount;
-      stats.playerActionCounts[player.id] = actionCount;
-    }
-
-    if (stats.activePlayers > 0) {
-      stats.averageActionsPerTurn = totalActions / stats.activePlayers;
-    }
-
-    return stats;
   }
 
   /**
@@ -538,33 +414,12 @@ class TurnSystem {
     if (activePlayers.length === 0) {
       return { shouldEnd: true, reason: 'All players have fled' };
     }
-
     // Check if only one player remains
     if (activePlayers.length === 1) {
       return { shouldEnd: true, reason: 'Only one player remains' };
     }
-
     // Other end conditions can be added here
-    
     return { shouldEnd: false, reason: '' };
-  }
-
-  /**
-   * Reset turn system for new game 
-   */
-  resetTurnSystem() {
-    this.gameState.round = 1;
-    this.gameState.turnCounter = 1;
-    this.gameState.allPlayersReady = false;
-    this.gameState.auctionsResolved = false;
-
-    for (const player of this.gameState.players) {
-      player.isReady = false;
-      player.currentTurnActions = [];
-      player.exhaustedDice = [];
-      player.turnStartState = null;
-      player.modificationBids = {};
-    }
   }
 }
 

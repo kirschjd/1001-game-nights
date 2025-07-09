@@ -7,9 +7,10 @@ const { RECRUITMENT_TABLE, getRecruitedDieSize, DICE_PROGRESSION, MAX_DICE_SIDES
 /**
  * FIXED: Validate if dice can recruit (single die per recruiting die)
  * @param {Array} dice - Array of dice objects
+ * @param {boolean} diversification - If true, allow d4s to recruit on a 2 as well as a 1
  * @returns {Object} - {isValid: boolean, reason: string, recruited?: Array}
  */
-function validateRecruitment(dice) {
+function validateRecruitment(dice, diversification = false) {
   if (dice.length === 0) {
     return { isValid: false, reason: 'Need at least one die to recruit' };
   }
@@ -21,7 +22,10 @@ function validateRecruitment(dice) {
       return { isValid: false, reason: 'All dice must have values to recruit' };
     }
     
-    const recruitmentValues = RECRUITMENT_TABLE[die.sides];
+    let recruitmentValues = RECRUITMENT_TABLE[die.sides];
+    if (diversification && die.sides === 4) {
+      recruitmentValues = [...recruitmentValues, 2];
+    }
     if (!recruitmentValues || !recruitmentValues.includes(die.value)) {
       return { 
         isValid: false, 
@@ -33,7 +37,7 @@ function validateRecruitment(dice) {
     const recruitedSize = getRecruitedDieSize(die.sides, die.value);
     recruited.push({ sides: recruitedSize });
     
-    console.log(`✅ Validation: d${die.sides} rolled ${die.value} → recruits single d${recruitedSize}`);
+    
   }
   
   return { isValid: true, reason: '', recruited };
@@ -92,9 +96,10 @@ function validateProcessing(dice) {
 /**
  * Validate if dice can form a straight
  * @param {Array} dice - Array of dice objects
+ * @param {boolean} verticalIntegration - If true, allow one gap in the sequence (one skipped number)
  * @returns {Object} - {isValid: boolean, reason: string, points?: number}
  */
-function validateStraight(dice) {
+function validateStraight(dice, verticalIntegration = false) {
   if (dice.length < SCORING.MIN_STRAIGHT_LENGTH) {
     return { 
       isValid: false, 
@@ -111,10 +116,18 @@ function validateStraight(dice) {
   // Sort dice by value
   const sortedValues = dice.map(d => d.value).sort((a, b) => a - b);
   
-  // Check if values form a consecutive sequence
+  // Check if values form a consecutive sequence (with optional one gap)
+  let gaps = 0;
   for (let i = 1; i < sortedValues.length; i++) {
     if (sortedValues[i] !== sortedValues[i-1] + 1) {
-      return { isValid: false, reason: 'Dice values must be consecutive for a straight' };
+      gaps++;
+      if (!verticalIntegration || gaps > 1) {
+        return { isValid: false, reason: verticalIntegration ? 'With Vertical Integration, only one gap is allowed in a straight' : 'Dice values must be consecutive for a straight' };
+      }
+      // Check that the gap is exactly 1 (not larger)
+      if (verticalIntegration && sortedValues[i] - sortedValues[i-1] > 2) {
+        return { isValid: false, reason: 'With Vertical Integration, gaps must be exactly 1 (e.g., 1-3 is valid, 1-4 is not)' };
+      }
     }
   }
   
@@ -127,9 +140,10 @@ function validateStraight(dice) {
 /**
  * Validate if dice can form a set
  * @param {Array} dice - Array of dice objects
+ * @param {boolean} jointVenture - If true, allow sets with up to two values (all dice must be one of those two values)
  * @returns {Object} - {isValid: boolean, reason: string, points?: number}
  */
-function validateSet(dice) {
+function validateSet(dice, jointVenture = false) {
   if (dice.length < SCORING.MIN_SET_SIZE) {
     return { 
       isValid: false, 
@@ -143,18 +157,35 @@ function validateSet(dice) {
     }
   }
   
-  // Check if all dice have the same value
-  const firstValue = dice[0].value;
-  const allSameValue = dice.every(die => die.value === firstValue);
-  
-  if (!allSameValue) {
-    return { isValid: false, reason: 'All dice must have the same value for a set' };
+  // Check if all dice have the same value, or (if jointVenture) up to two values
+  const valueCounts = {};
+  for (const die of dice) {
+    valueCounts[die.value] = (valueCounts[die.value] || 0) + 1;
   }
-  
-  // Calculate points: value * (number of dice + 1)
-  const points = firstValue * (dice.length + 1);
-  
-  return { isValid: true, reason: '', points };
+  const uniqueValues = Object.keys(valueCounts).map(Number);
+  if (!jointVenture) {
+    if (uniqueValues.length !== 1) {
+      return { isValid: false, reason: 'All dice must have the same value for a set' };
+    }
+    const value = uniqueValues[0];
+    const points = value * (dice.length + 1);
+    return { isValid: true, reason: '', points };
+  } else {
+    if (uniqueValues.length > 2) {
+      return { isValid: false, reason: 'With Joint Venture, sets can have at most two values' };
+    }
+    // Points: use the most common value
+    let maxCount = 0;
+    let mainValue = uniqueValues[0];
+    for (const v of uniqueValues) {
+      if (valueCounts[v] > maxCount) {
+        maxCount = valueCounts[v];
+        mainValue = v;
+      }
+    }
+    const points = mainValue * (dice.length + 1);
+    return { isValid: true, reason: '', points };
+  }
 }
 
 /**
@@ -162,12 +193,15 @@ function validateSet(dice) {
  * @param {Object} die - Die to modify
  * @param {number} change - Change amount (+1 or -1)
  * @param {number} pipCost - Cost in pips
- * @param {number} availablePips - Player's available pips
+ * @param {Object} player - Player object (for Corporate Debt check)
  * @returns {Object} - {isValid: boolean, reason: string}
  */
-function validateDieModification(die, change, pipCost, availablePips) {
-  if (availablePips < pipCost) {
-    return { isValid: false, reason: `Not enough pips (need ${pipCost}, have ${availablePips})` };
+function validateDieModification(die, change, pipCost, player) {
+  const hasCorporateDebt = player.modifications?.includes('corporate_debt');
+  const minimumPips = hasCorporateDebt ? -20 : 0;
+  
+  if (player.freePips - pipCost < minimumPips) {
+    return { isValid: false, reason: `Not enough pips (need ${pipCost}, have ${player.freePips})` };
   }
   
   if (die.value === null) {
@@ -191,12 +225,15 @@ function validateDieModification(die, change, pipCost, availablePips) {
  * Validate die reroll
  * @param {Object} die - Die to reroll
  * @param {number} pipCost - Cost in pips
- * @param {number} availablePips - Player's available pips
+ * @param {Object} player - Player object (for Corporate Debt check)
  * @returns {Object} - {isValid: boolean, reason: string}
  */
-function validateDieReroll(die, pipCost, availablePips) {
-  if (availablePips < pipCost) {
-    return { isValid: false, reason: `Not enough pips (need ${pipCost}, have ${availablePips})` };
+function validateDieReroll(die, pipCost, player) {
+  const hasCorporateDebt = player.modifications?.includes('corporate_debt');
+  const minimumPips = hasCorporateDebt ? -20 : 0;
+  
+  if (player.freePips - pipCost < minimumPips) {
+    return { isValid: false, reason: `Not enough pips (need ${pipCost}, have ${player.freePips})` };
   }
   
   if (die.value === null) {

@@ -41,13 +41,38 @@ function rollDice(dicePool) {
 }
 
 /**
- * Create initial dice pool for new players
- * @returns {Array} - Array of d4 dice
+ * Roll dice while preventing 2s for players with 2rUS
+ * @param {Array} dicePool - Array of dice objects
+ * @param {boolean} has2rUS - Whether player has 2rUS modification
+ * @returns {Array} - Array of dice with new values (no 2s if has2rUS)
  */
-function createInitialDicePool() {
+function rollDiceWithout2s(dicePool, has2rUS = false) {
+  if (!has2rUS) {
+    return rollDice(dicePool);
+  }
+  
+  return dicePool.map(die => {
+    let value;
+    do {
+      value = Math.floor(Math.random() * die.sides) + 1;
+    } while (value === 2); // Keep rolling until we get a non-2
+    
+    return {
+      ...die,
+      value
+    };
+  });
+}
+
+/**
+ * Create initial dice pool for new players
+ * @param {number} [minimumDieSize=GAME_DEFAULTS.INITIAL_DIE_SIDES] - Minimum die size (e.g., 4 or 6)
+ * @returns {Array} - Array of dice
+ */
+function createInitialDicePool(minimumDieSize = GAME_DEFAULTS.INITIAL_DIE_SIDES) {
   const dicePool = [];
   for (let i = 0; i < GAME_DEFAULTS.INITIAL_DICE_COUNT; i++) {
-    dicePool.push(createDie(GAME_DEFAULTS.INITIAL_DIE_SIDES));
+    dicePool.push(createDie(minimumDieSize));
   }
   return dicePool;
 }
@@ -103,15 +128,12 @@ function addDiceToPool(dicePool, newDice) {
  * @returns {Array} - Array containing single newly recruited die
  */
 function recruitDice(recruitingDie) {
-  console.log('🎯 RECRUITING SINGLE DIE:', {
-    recruitingDie: recruitingDie.sides,
-    rollValue: recruitingDie.value
-  });
+
   
   // Get the size of die to recruit based on roll value
   const recruitedSize = getRecruitedDieSize(recruitingDie.sides, recruitingDie.value);
   
-  console.log(`📦 Recruiting single d${recruitedSize} (was d${recruitingDie.sides} rolled ${recruitingDie.value})`);
+
   
   // Create and return single recruited die
   const recruitedDie = createDie(recruitedSize);
@@ -152,9 +174,10 @@ function modifyDieValue(die, change) {
  * Auto-recruit dice to meet minimum dice floor
  * @param {Array} dicePool - Current dice pool
  * @param {number} minimumFloor - Minimum number of dice required
+ * @param {number} [minimumDieSize=GAME_DEFAULTS.INITIAL_DIE_SIDES] - Minimum die size for recruited dice
  * @returns {Array} - Dice pool with auto-recruited dice
  */
-function autoRecruitToFloor(dicePool, minimumFloor) {
+function autoRecruitToFloor(dicePool, minimumFloor, minimumDieSize = GAME_DEFAULTS.INITIAL_DIE_SIDES) {
   if (dicePool.length >= minimumFloor) {
     return dicePool;
   }
@@ -163,7 +186,7 @@ function autoRecruitToFloor(dicePool, minimumFloor) {
   const newDice = [];
   
   for (let i = 0; i < neededDice; i++) {
-    newDice.push(createDie(GAME_DEFAULTS.INITIAL_DIE_SIDES));
+    newDice.push(createDie(minimumDieSize));
   }
   
   return addDiceToPool(dicePool, newDice);
@@ -197,6 +220,7 @@ module.exports = {
   generateDieId,
   createDie,
   rollDice,
+  rollDiceWithout2s,
   createInitialDicePool,
   findDiceByIds,
   removeDiceByIds,

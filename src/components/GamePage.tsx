@@ -62,23 +62,13 @@ const GamePage: React.FC = () => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // Enhanced back to lobby handler with proper cleanup
-  const handleBackToLobby = useCallback(() => {
-    console.log('Back to lobby clicked, slug:', slug);
-    
-    // Emit leave game event to clean up game state
+  const handleHome = useCallback(() => {
+    // Clean up socket and navigate to home
     if (socket) {
-      socket.emit('leave-game');
-      socket.emit('leave-lobby'); // Also leave lobby to ensure cleanup
+      socket.disconnect();
     }
-    
-    if (slug) {
-      navigate(`/lobby/${slug}`);
-    } else {
-      console.error('No slug available for navigation');
-      // Fallback to home page if no slug
-      navigate('/');
-    }
-  }, [slug, navigate, socket]);
+    navigate('/');
+  }, [navigate, socket]);
 
   // Socket setup and connection management
   useEffect(() => {
@@ -288,10 +278,10 @@ useEffect(() => {
         {/* Navigation controls */}
         <div className="flex items-center gap-2">
           <button
-            onClick={handleBackToLobby}
+            onClick={handleHome}
             className="bg-payne-grey hover:bg-payne-grey-light text-white px-4 py-2 rounded-lg transition-colors border border-payne-grey-light"
           >
-            ← Back to Lobby
+            ← Home
           </button>
         </div>
       </header>
@@ -320,10 +310,10 @@ useEffect(() => {
             <h2 className="text-2xl font-bold mb-4 text-red-400">Unknown Game Type</h2>
             <p className="text-gray-400 mb-4">Game type "{gameState.type}" is not supported.</p>
             <button
-              onClick={handleBackToLobby}
+              onClick={handleHome}
               className="bg-lion hover:bg-lion-dark px-6 py-3 rounded-lg font-bold text-white transition-colors"
             >
-              ← Back to Lobby
+              ← Home
             </button>
           </div>
         )}

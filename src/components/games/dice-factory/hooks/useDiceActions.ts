@@ -50,8 +50,16 @@ export const useDiceActions = ({
     // For action-specific validation (used for styling/hints, not blocking selection)
     switch (currentActionMode) {
       case 'recruit':
+        // Check for outsourcing modification - allows any die to recruit
+        const hasOutsourcing = currentPlayer?.modifications?.includes('outsourcing');
+        if (hasOutsourcing) {
+          return true; // Any die can be selected for recruitment with outsourcing
+        }
+        
+        // Check for diversification modification - allows d4s to recruit on 2 as well as 1
+        const hasDiversification = currentPlayer?.modifications?.includes('diversification');
         const recruitTable: Record<number, number[]> = {
-          4: [1],
+          4: hasDiversification ? [1, 2] : [1],
           6: [1, 2],
           8: [1, 2, 3],
           10: [1, 2, 3, 4],
@@ -125,16 +133,16 @@ export const useDiceActions = ({
     showMessage(`Scoring set with ${selectedDice.length} dice`, 'info');
   }, [socket, selectedDice, setSelectedDice, setActionMode, showMessage]);
 
-  const handleProcessDice = useCallback(() => {
-    if (!socket || selectedDice.length === 0) return;
-    
+  const handleProcessDice = useCallback((diceIds?: string[], arbitrageChoice?: 'pips' | 'points') => {
+    const ids = diceIds ?? selectedDice;
+    if (!socket || ids.length === 0) return;
     socket.emit('dice-factory-process', {
-      diceIds: selectedDice
+      diceIds: ids,
+      arbitrageChoice
     });
-    
     setSelectedDice([]);
     setActionMode(null);
-    showMessage(`Processing ${selectedDice.length} dice for pips`, 'info');
+    showMessage(`Processing ${ids.length} dice for ${arbitrageChoice === 'points' ? 'points' : 'pips'}`, 'info');
   }, [socket, selectedDice, setSelectedDice, setActionMode, showMessage]);
 
   const handlePipAction = useCallback((actionType: 'increase' | 'decrease' | 'reroll') => {
@@ -162,10 +170,10 @@ export const useDiceActions = ({
     showMessage(`Purchasing factory ${actionType}`, 'info');
   }, [socket, showMessage]);
 
-  const handleEndTurn = useCallback(() => {
+  const handleEndTurn = useCallback((dividendChoice?: 'pips' | 'points') => {
     if (!socket) return;
     
-    socket.emit('dice-factory-end-turn');
+    socket.emit('dice-factory-end-turn', dividendChoice ? { dividendChoice } : {});
     
     setSelectedDice([]);
     setActionMode(null);
@@ -174,8 +182,13 @@ export const useDiceActions = ({
 
   // FIXED: Correct undo handler using the right socket event
   const handleUndo = useCallback(() => {
-    if (!socket) return;
+    console.log('🟠 FRONTEND: Undo button clicked'); // DEBUG
+    if (!socket) {
+      console.log('❌ FRONTEND: No socket available for undo'); // DEBUG
+      return;
+    }
     
+    console.log('🟠 FRONTEND: Emitting dice-factory-undo event'); // DEBUG
     socket.emit('dice-factory-undo');
     
     setSelectedDice([]);
@@ -191,6 +204,18 @@ export const useDiceActions = ({
     showMessage('Fleeing the factory...', 'info');
   }, [socket, showMessage]);
 
+  const handleRerollAllDice = useCallback(() => {
+    if (!socket) return;
+    socket.emit('dice-factory-reroll-all');
+    showMessage('Rerolling all dice...', 'info');
+  }, [socket, showMessage]);
+
+  const handleIncreaseDicePool = useCallback(() => {
+    if (!socket) return;
+    socket.emit('dice-factory-increase-dice-pool');
+    showMessage('Increasing dice pool by 1...', 'info');
+  }, [socket, showMessage]);
+
   return {
     // Action handlers
     handlePromoteDice,
@@ -203,7 +228,8 @@ export const useDiceActions = ({
     handleEndTurn,
     handleUndo,
     handleFlee,
-    
+    handleRerollAllDice,
+    handleIncreaseDicePool,
     // Helper functions
     canTakeActions,
     isExhausted,

@@ -168,7 +168,7 @@ function resolveAllAuctions(io, lobbySlug, game, lobbies) {
     lobby.players.forEach(player => {
       if (player.isConnected && !botSystem.isBot(player.id)) {
         io.to(player.id).emit('auction-results', {
-          results: auctionResults
+          results: results
         });
       }
     });
@@ -390,7 +390,7 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       return;
     }
     
-    const result = game.processDice(socket.id, data.diceIds); // <-- CORRECT: data.diceIds
+    const result = game.processDice(socket.id, data.diceIds, data.arbitrageChoice);
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
       scheduleDiceFactoryBotsIfNeeded(io, socket.lobbySlug, game, lobbies);
@@ -432,17 +432,50 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
       
-      // ADD THIS BLOCK:
-      if (data.actionType === 'effect') {
-        broadcastPlayerFactoryItems(io, socket.id, game);
-      }
+      // Send updated factory items to the player who made the purchase
+      broadcastPlayerFactoryItems(io, socket.id, game);
       
       scheduleDiceFactoryBotsIfNeeded(io, socket.lobbySlug, game, lobbies);
     } else {
-      console.log(`❌ Factory action failed:`, result.error);
       socket.emit('dice-factory-error', { error: result.error });
     }
   });
+
+      // Get modified pip costs for player
+    socket.on('dice-factory-get-modified-costs', () => {
+      const game = games.get(socket.lobbySlug);
+      
+      if (!game || game.state.type !== 'dice-factory') {
+        socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
+        return;
+      }
+      
+      const player = game.state.players.find(p => p.id === socket.id);
+      if (!player) {
+        socket.emit('dice-factory-error', { error: 'Player not found' });
+        return;
+      }
+      
+      // Get modified costs using the DiceSystem
+      let rerollCost = game.diceSystem.getModifiedPipCost(player, 'reroll');
+      
+      // Check if Quality Control is available for this turn
+      const hasQualityControl = player.modifications?.includes('quality_control');
+      const qualityControlAvailable = hasQualityControl && !player._qualityControlUsedThisTurn;
+      
+      // If Quality Control is available, first reroll is free
+      if (qualityControlAvailable) {
+        rerollCost = 0;
+      }
+      
+      const costs = {
+        increase: game.diceSystem.getModifiedPipCost(player, 'increase'),
+        decrease: game.diceSystem.getModifiedPipCost(player, 'decrease'),
+        reroll: rerollCost
+      };
+      
+      socket.emit('modified-costs-update', costs);
+    });
 
   // ===== NEW MODIFICATION BIDDING EVENTS =====
 
@@ -468,6 +501,36 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       });
     } else {
       socket.emit('dice-factory-error', { error: result.error });
+    }
+  });
+
+  // Reserve modification
+  socket.on('dice-factory-reserve-modification', (data) => {
+    const { modificationId } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory') {
+      socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
+      return;
+    }
+    const result = game.factorySystem.reserveModification(socket.id, modificationId);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+      // Emit turn-modifications-update to all players in the lobby
+      const lobby = lobbies.get(socket.lobbySlug);
+      if (lobby) {
+        const turnModifications = game.factorySystem.getCurrentTurnModifications();
+        const deckStatus = game.factorySystem.getDeckStatus();
+        lobby.players.forEach(player => {
+          if (player.isConnected && !botSystem.isBot(player.id)) {
+            io.to(player.id).emit('turn-modifications-update', {
+              modifications: turnModifications,
+              deckStatus: deckStatus
+            });
+          }
+        });
+      }
+    } else {
+      socket.emit('dice-factory-error', { error: result.message });
     }
   });
 
@@ -580,8 +643,8 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
   });
 
   // End turn
-  socket.on('dice-factory-end-turn', () => {
-    console.log('🎲 DICE FACTORY END-TURN:', socket.id);
+  socket.on('dice-factory-end-turn', (data = {}) => {
+    console.log('🎲 DICE FACTORY END-TURN:', socket.id, data);
     const game = games.get(socket.lobbySlug);
     
     if (!game || game.state.type !== 'dice-factory') {
@@ -589,7 +652,7 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       return;
     }
     
-    const result = game.setPlayerReady(socket.id);
+    const result = game.setPlayerReady(socket.id, data.dividendChoice);
     console.log('✅ setPlayerReady result:', result);
     
     if (result.success) {
@@ -620,15 +683,34 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
 
   // Undo action
   socket.on('dice-factory-undo', () => {
+    console.log('🟠 RECEIVED dice-factory-undo event from player:', socket.id); // DEBUG
     const game = games.get(socket.lobbySlug);
-    
     if (!game || game.state.type !== 'dice-factory') {
+      console.log('❌ No game found or wrong type for undo'); // DEBUG
       return;
     }
-    
+    console.log('🟠 Calling game.undoLastAction for player:', socket.id); // DEBUG
     const result = game.undoLastAction(socket.id);
     if (result.success) {
+      const turnModifications = game.factorySystem.getCurrentTurnModifications();
+      console.log('🟢 (pre-broadcast) currentTurnModifications after undo:', JSON.stringify(turnModifications, null, 2)); // DEBUG
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+      // Emit turn-modifications-update to all players in the lobby
+      const lobby = lobbies.get(socket.lobbySlug);
+      if (lobby) {
+        const turnModifications = game.factorySystem.getCurrentTurnModifications();
+        const deckStatus = game.factorySystem.getDeckStatus();
+        console.log('🟢 FINAL currentTurnModifications before emit:', JSON.stringify(turnModifications, null, 2)); // DEBUG
+        lobby.players.forEach(player => {
+          if (player.isConnected && !botSystem.isBot(player.id)) {
+            console.log(`📤 Sending turn-modifications-update to player ${player.name} (${player.id})`); // DEBUG
+            io.to(player.id).emit('turn-modifications-update', {
+              modifications: turnModifications,
+              deckStatus: deckStatus
+            });
+          }
+        });
+      }
     } else {
       socket.emit('dice-factory-error', { error: result.error });
     }
@@ -688,6 +770,66 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       socket.emit('dice-factory-error', { error: result.error });
     }
   });
+
+  // Dice Tower: Reroll all dice
+  socket.on('dice-factory-reroll-all', () => {
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory') return;
+    const player = game.state.players.find(p => p.id === socket.id);
+    if (!player || !player.modifications?.includes('dice_tower')) {
+      socket.emit('dice-factory-error', { error: 'You do not have the Dice Tower modification.' });
+      return;
+    }
+    // Only allow if it's the player's turn and not ready
+    if (player.isReady || game.state.phase !== 'playing') {
+      socket.emit('dice-factory-error', { error: 'You cannot reroll all dice right now.' });
+      return;
+    }
+    // Only allow once per turn
+    if (player._diceTowerUsedThisTurn) {
+      socket.emit('dice-factory-error', { error: 'You can only use Dice Tower once per turn.' });
+      return;
+    }
+    player._diceTowerUsedThisTurn = true;
+    // Reroll all dice
+    for (const die of player.dicePool) {
+      die.value = Math.floor(Math.random() * die.sides) + 1;
+    }
+    game.state.gameLog = require('../games/dice-factory/utils/GameLogger').logAction(
+      game.state.gameLog,
+      player.name,
+      'used Dice Tower to reroll all dice',
+      game.state.round
+    );
+    broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+  });
+
+  // Variable Dice Pool: Spend 10 pips to increase dice pool size
+  socket.on('dice-factory-increase-dice-pool', () => {
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory') return;
+    const player = game.state.players.find(p => p.id === socket.id);
+    if (!player || !player.modifications?.includes('variable_dice_pool')) {
+      socket.emit('dice-factory-error', { error: 'You do not have the Variable Dice Pool modification.' });
+      return;
+    }
+    if (player.freePips < 10) {
+      socket.emit('dice-factory-error', { error: 'Not enough free pips (need 10).' });
+      return;
+    }
+    player.freePips -= 10;
+    player.diceFloor += 1;
+    game.state.gameLog = require('../games/dice-factory/utils/GameLogger').logAction(
+      game.state.gameLog,
+      player.name,
+      'used Variable Dice Pool to increase dice pool size by 1',
+      game.state.round
+    );
+    broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+  });
+
+  // Reset Dice Tower usage at the start of each turn
+  // (Find the start-of-turn logic and add: player._diceTowerUsedThisTurn = false;)
 
   // Cleanup when player disconnects
   socket.on('disconnect', () => {

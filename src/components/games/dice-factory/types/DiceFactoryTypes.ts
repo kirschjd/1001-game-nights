@@ -63,6 +63,7 @@ export interface DiceFactoryGameState {
   firstRecruits?: Set<string>;
   firstStraight?: boolean;
   firstSet?: boolean;
+  variant?: string;
 }
 
 export interface DiceFactoryGameProps {
@@ -88,12 +89,14 @@ export interface DiceActionHandlers {
   handleRecruitDice: () => void;
   handleScoreStraight: () => void;
   handleScoreSet: () => void;
-  handleProcessDice: () => void;
+  handleProcessDice: (diceIds?: string[], arbitrageChoice?: 'pips' | 'points') => void;
   handlePipAction: (actionType: 'increase' | 'decrease' | 'reroll') => void;
   handleFactoryAction: (actionType: 'effect' | 'modification') => void;
-  handleEndTurn: () => void;
+  handleEndTurn: (dividendChoice?: 'pips' | 'points') => void;
   handleUndo: () => void;
   handleFlee: () => void;
+  handleRerollAllDice?: () => void;
+  handleIncreaseDicePool?: () => void;
 }
 
 export interface GameStateHelpers {

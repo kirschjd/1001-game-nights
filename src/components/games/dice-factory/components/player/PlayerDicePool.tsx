@@ -15,6 +15,7 @@ import {
 
 import { Socket } from 'socket.io-client';
 import PlayedEffects from './PlayedEffects';
+import { useModifiedCosts } from '../../hooks/useModifiedCosts';
 
 interface PlayerDicePoolProps {
   currentPlayer: Player;
@@ -44,7 +45,13 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
   socket
 }) => {
   const { canTakeActions, isDieSelectable, isExhausted } = helpers;
+  const [showDividendChoice, setShowDividendChoice] = useState(false);
   const [pendingEndTurn, setPendingEndTurn] = useState(false);
+  const [showArbitrageChoice, setShowArbitrageChoice] = useState(false);
+  const [pendingProcessDice, setPendingProcessDice] = useState<string[] | null>(null);
+
+  // Get modified costs from backend
+  const { costs } = useModifiedCosts({ socket: socket || null, currentPlayer });
 
   // Enhanced dice click handler - FIXED: Always allow selection
   const handleDiceClick = useCallback((dieId: string) => {
@@ -74,7 +81,14 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
       const clickedDie = currentPlayer.dicePool.find(d => d.id === dieId);
       if (clickedDie && isDieSelectable(clickedDie, 'process')) {
         // Small delay to allow selection to register first
-        setTimeout(() => actions.handleProcessDice(), 100);
+        setTimeout(() => {
+          if (currentPlayer.modifications?.includes('arbitrage')) {
+            setPendingProcessDice([dieId]);
+            setShowArbitrageChoice(true);
+          } else {
+            actions.handleProcessDice();
+          }
+        }, 100);
         return;
       }
     }
@@ -128,13 +142,57 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
 
     // Handle process mode - execute immediately if dice are selected
     if (mode === 'process' && selectedDice.length > 0) {
-      actions.handleProcessDice();
+      if (currentPlayer.modifications?.includes('arbitrage')) {
+        setPendingProcessDice([...selectedDice]);
+        setShowArbitrageChoice(true);
+      } else {
+        actions.handleProcessDice();
+      }
       return;
     }
     
     // Normal mode toggle
     onActionModeChange(mode);
   }, [selectedDice, currentPlayer, actions, onActionModeChange]);
+
+  // Handler for end turn with Dividend mod
+  const handleEndTurnWithDividend = () => {
+    if (currentPlayer.modifications?.includes('dividend')) {
+      setShowDividendChoice(true);
+    } else {
+      actions.handleEndTurn();
+    }
+  };
+
+  // Handler for Dividend choice
+  const handleDividendChoice = (choice: 'pips' | 'points') => {
+    actions.handleEndTurn(choice);
+    setShowDividendChoice(false);
+    setPendingEndTurn(false);
+  };
+
+  // Handler for reroll all dice (Dice Tower)
+  const handleRerollAllDice = () => {
+    if (actions.handleRerollAllDice) {
+      actions.handleRerollAllDice();
+    }
+  };
+
+  // Handler for variable dice pool mod
+  const handleIncreaseDicePool = () => {
+    if (actions.handleIncreaseDicePool) {
+      actions.handleIncreaseDicePool();
+    }
+  };
+
+  // Handler for Arbitrage choice
+  const handleArbitrageChoice = (choice: 'pips' | 'points') => {
+    if (pendingProcessDice) {
+      actions.handleProcessDice(pendingProcessDice, choice);
+      setPendingProcessDice(null);
+      setShowArbitrageChoice(false);
+    }
+  };
 
   const renderDie = (die: Die) => {
     const isSelected = selectedDice.includes(die.id);
@@ -191,15 +249,18 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
   }, [currentPlayer]);
 
   /**
-   * Format cost display with modification indicator
+   * Check if player can afford an action considering Corporate Debt
    */
-  const formatCostDisplay = useCallback((actionType: string, baseCost: number) => {
-    const actualCost = getActualCost(actionType);
-    if (actualCost !== baseCost) {
-      return `${actualCost} pips (was ${baseCost})`;
-    }
-    return `${actualCost} pips`;
-  }, [getActualCost]);
+  const canAffordAction = useCallback((cost: number) => {
+    if (!currentPlayer) return false;
+    
+    const hasCorporateDebt = currentPlayer.modifications?.includes('corporate_debt');
+    const minimumPips = hasCorporateDebt ? -20 : 0;
+    
+    return currentPlayer.freePips - cost >= minimumPips;
+  }, [currentPlayer]);
+
+
   
   return (
     <div className={`bg-payne-grey/50 p-6 rounded-lg border border-uranian-blue/30 ${
@@ -302,35 +363,35 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => actions.handlePipAction('increase')}
-                        disabled={selectedDice.length !== 1 || currentPlayer.freePips < getActualCost('increase')}
+                        disabled={selectedDice.length !== 1 || !canAffordAction(costs.increase)}
                         className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
                       >
-                        +1 Value ({formatCostDisplay('increase', 4)})
+                        +1 Value ({costs.increase} pips)
                       </button>
                       <button
                         onClick={() => actions.handlePipAction('decrease')}
-                        disabled={selectedDice.length !== 1 || currentPlayer.freePips < getActualCost('decrease')}
+                        disabled={selectedDice.length !== 1 || !canAffordAction(costs.decrease)}
                         className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
                       >
-                        -1 Value ({formatCostDisplay('decrease', 3)})
+                        -1 Value ({costs.decrease} pips)
                       </button>
                       <button
                         onClick={() => actions.handlePipAction('reroll')}
-                        disabled={selectedDice.length !== 1 || currentPlayer.freePips < getActualCost('reroll')}
+                        disabled={selectedDice.length !== 1 || !canAffordAction(costs.reroll)}
                         className="bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
                       >
-                        Reroll ({formatCostDisplay('reroll', 2)})
+                        Reroll ({costs.reroll} pips)
                       </button>
                       <button
                         onClick={() => actions.handleFactoryAction('effect')}
-                        disabled={currentPlayer.freePips < 7}
+                        disabled={!canAffordAction(7)}
                         className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
                       >
                         Buy Effect (7 pips)
                       </button>
                       <button
                         onClick={() => actions.handleFactoryAction('modification')}
-                        disabled={currentPlayer.freePips < 9}
+                        disabled={!canAffordAction(9)}
                         className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm col-span-2 focus:outline-none"
                       >
                         Buy Modification (9 pips)
@@ -388,39 +449,49 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => actions.handlePipAction('increase')}
-                    disabled={selectedDice.length !== 1 || currentPlayer.freePips < 4}
+                    disabled={selectedDice.length !== 1 || !canAffordAction(costs.increase)}
                     className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
                   >
-                    +1 Value (4 pips)
+                    +1 Value ({costs.increase} pips)
                   </button>
                   <button
                     onClick={() => actions.handlePipAction('decrease')}
-                    disabled={selectedDice.length !== 1 || currentPlayer.freePips < 3}
+                    disabled={selectedDice.length !== 1 || !canAffordAction(costs.decrease)}
                     className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
                   >
-                    -1 Value (3 pips)
+                    -1 Value ({costs.decrease} pips)
                   </button>
                   <button
                     onClick={() => actions.handlePipAction('reroll')}
-                    disabled={selectedDice.length !== 1 || currentPlayer.freePips < 2}
+                    disabled={selectedDice.length !== 1 || !canAffordAction(costs.reroll)}
                     className="bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
                   >
-                    Reroll (2 pips)
+                    Reroll ({costs.reroll} pips)
                   </button>
                   <button
                     onClick={() => actions.handleFactoryAction('effect')}
-                    disabled={currentPlayer.freePips < 7}
+                    disabled={!canAffordAction(7)}
                     className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
                   >
                     Buy Effect (7 pips)
                   </button>
                   <button
                     onClick={() => actions.handleFactoryAction('modification')}
-                    disabled={currentPlayer.freePips < 9}
+                    disabled={!canAffordAction(9)}
                     className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm col-span-2 focus:outline-none"
                   >
                     Buy Modification (9 pips)
                   </button>
+                  {/* Variable Dice Pool Mod Action */}
+                  {currentPlayer.modifications?.includes('variable_dice_pool') && (
+                    <button
+                      onClick={handleIncreaseDicePool}
+                      disabled={!canAffordAction(10)}
+                      className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm col-span-2 focus:outline-none"
+                    >
+                      Increase Dice Pool (+1, 10 pips)
+                    </button>
+                  )}
                 </div>
                 <div className="text-xs text-uranian-blue">
                   Select exactly one die for value modification or reroll actions.
@@ -471,6 +542,17 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
                 </button>
               )}
 
+              {/* Reroll All Dice (Dice Tower) */}
+              {currentPlayer.modifications?.includes('dice_tower') && (
+                <button
+                  onClick={handleRerollAllDice}
+                  disabled={!helpers.canTakeActions()}
+                  className="bg-yellow-700 hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors font-semibold text-white focus:outline-none"
+                >
+                  🎲 Reroll All Dice (Dice Tower)
+                </button>
+              )}
+
               {/* End Turn Button */}
               {!pendingEndTurn ? (
                 <button
@@ -482,10 +564,7 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
               ) : (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => {
-                      actions.handleEndTurn();
-                      setPendingEndTurn(false);
-                    }}
+                    onClick={handleEndTurnWithDividend}
                     className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded transition-colors font-semibold text-white focus:outline-none"
                   >
                     Confirm End Turn
@@ -509,6 +588,48 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dividend Choice Modal */}
+      {showDividendChoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-xs w-full text-center">
+            <h3 className="text-lg font-bold mb-4">Dividend Mod: Convert unused dice to...</h3>
+            <button
+              onClick={() => handleDividendChoice('pips')}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold mr-2"
+            >
+              Free Pips
+            </button>
+            <button
+              onClick={() => handleDividendChoice('points')}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold"
+            >
+              Points
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Arbitrage Choice Modal */}
+      {showArbitrageChoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-xs w-full text-center">
+            <h3 className="text-lg font-bold mb-4">Arbitrage: Process dice for...</h3>
+            <button
+              onClick={() => handleArbitrageChoice('pips')}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold mr-2"
+            >
+              Free Pips
+            </button>
+            <button
+              onClick={() => handleArbitrageChoice('points')}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold"
+            >
+              Points (2× value)
+            </button>
           </div>
         </div>
       )}

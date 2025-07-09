@@ -67,7 +67,7 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
     };
 
     const handleDiceFactoryScored = (data: { type: string, points: number }) => {
-      console.log('Dice Factory scored:', data);
+  
       showMessage(`Scored ${data.points} points with ${data.type}!`, 'success');
     };
 

@@ -7,7 +7,8 @@ import { Socket } from 'socket.io-client';
 import AuctionModal from './AuctionModal';
 
 interface ModificationCard {
-  id: string;
+  id: string; // unique instance id
+  modTypeId: string; // type id
   modification: {
     id: string;
     name: string;
@@ -21,6 +22,7 @@ interface ModificationCard {
     amount: number;
   }>;
   winner: string | null;
+  reservations: Array<{ playerId: string; playerName: string }>;
 }
 
 interface DeckStatus {
@@ -39,6 +41,7 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
   currentPlayer, 
   gameState 
 }) => {
+
   const [currentTurnModifications, setCurrentTurnModifications] = useState<ModificationCard[]>([]);
   const [deckStatus, setDeckStatus] = useState<DeckStatus>({ cardsRemaining: 44, totalCards: 44 });
   const [bidAmounts, setBidAmounts] = useState<Record<string, number>>({});
@@ -56,14 +59,22 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
 
   // Socket event listeners
   useEffect(() => {
-    if (!socket) return;
+
+    if (!socket) {
+      
+      return;
+    }
+
+    
 
     const handleTurnModificationsUpdate = (data: { 
       modifications: ModificationCard[], 
       deckStatus: DeckStatus 
     }) => {
+
       setCurrentTurnModifications(data.modifications);
       setDeckStatus(data.deckStatus);
+      
     };
 
     const handleModificationBidPlaced = (data: { 
@@ -90,7 +101,7 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
       source: string 
     }) => {
       // Show notification that modification was purchased
-      console.log('Modification purchased:', data.modification.name);
+      
     };
 
     socket.on('turn-modifications-update', handleTurnModificationsUpdate);
@@ -98,13 +109,20 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
     socket.on('auction-phase-start', handleAuctionPhaseStart);
     socket.on('modification-purchased', handleModificationPurchased);
 
+    
+
     return () => {
+      
       socket.off('turn-modifications-update', handleTurnModificationsUpdate);
       socket.off('modification-bid-placed', handleModificationBidPlaced);
       socket.off('auction-phase-start', handleAuctionPhaseStart);
       socket.off('modification-purchased', handleModificationPurchased);
     };
   }, [socket]);
+
+  useEffect(() => {
+  
+  }, [currentTurnModifications]);
 
   const canTakeActions = () => {
     return currentPlayer && 
@@ -168,6 +186,31 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
     return hasMarketManipulation ? Math.max(0, baseCost - 4) : baseCost;
   };
 
+  const canAffordAction = (cost: number) => {
+    if (!currentPlayer) return false;
+    
+    const hasCorporateDebt = currentPlayer.modifications?.includes('corporate_debt');
+    const minimumPips = hasCorporateDebt ? -20 : 0;
+    
+    return currentPlayer.freePips - cost >= minimumPips;
+  };
+
+  const handleReserve = (modificationId: string) => {
+    if (!socket || !canTakeActions()) return;
+    const hasCorporateDebt = currentPlayer.modifications?.includes('corporate_debt');
+    const minimumPips = hasCorporateDebt ? -20 : 0;
+    if (currentPlayer.freePips - getModificationCost(9) < minimumPips) {
+      alert('Not enough pips to reserve modification');
+      return;
+    }
+    socket.emit('dice-factory-reserve-modification', { modificationId });
+  };
+
+  const handleUndoReserve = (modificationId: string) => {
+    if (!socket || !canTakeActions()) return;
+    socket.emit('dice-factory-undo-reserve-modification', { modificationId });
+  };
+
   if (!currentPlayer) {
     return (
       <div className="bg-midnight-green/50 p-4 rounded-lg border border-lion/30">
@@ -206,9 +249,15 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
               No modifications available this turn.
             </div>
           ) : currentTurnModifications.map((modCard) => {
-            const playerBid = getPlayerBid(modCard.id);
             const actualCost = getModificationCost(modCard.modification.cost);
-            
+            const isReservedByCurrent = modCard.reservations?.some(r => r.playerId === currentPlayer.id);
+            const hasCorporateDebt = currentPlayer.modifications?.includes('corporate_debt');
+            const minimumPips = hasCorporateDebt ? -20 : 0;
+            const canAffordReservation = currentPlayer.freePips - actualCost >= minimumPips;
+            const canReserve = canTakeActions() && !modCard.winner && !isReservedByCurrent && canAffordReservation;
+
+
+
             return (
               <div 
                 key={modCard.id} 
@@ -235,31 +284,28 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
                   {modCard.modification.description}
                 </div>
                 
-                {/* Bid Status */}
-                {playerBid !== null && (
-                  <div className="text-xs text-lion mb-2">
-                    Your bid: {playerBid} pips
+                {/* Reservation Markers */}
+                {modCard.reservations && modCard.reservations.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {modCard.reservations.map(r => (
+                      <span key={r.playerId} className={`text-xs px-2 py-1 rounded ${r.playerId === currentPlayer.id ? 'bg-uranian-blue/40 text-uranian-blue' : 'bg-lion/20 text-lion'}`}>{r.playerName}</span>
+                    ))}
                   </div>
                 )}
                 
-                {hasOtherBids(modCard.id) && (
-                  <div className="text-xs text-gray-400 mb-2">
-                    Other players have also bid on this
-                  </div>
-                )}
-                
-                {/* Action Button */}
-                {canTakeActions() && !modCard.winner ? (
+                {/* Action Buttons */}
+                {canReserve && (
                   <button
-                    onClick={() => handlePlaceBid(modCard.id)}
-                    disabled={currentPlayer.freePips < actualCost}
+                    onClick={() => handleReserve(modCard.id)}
+                    disabled={!canReserve}
                     className="w-full text-xs bg-lion hover:bg-lion-light disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded text-white transition-colors"
                   >
-                    {playerBid !== null ? 'Change Bid' : 'Place Bid'}
+                    Reserve
                   </button>
-                ) : (
+                )}
+                {!canReserve && !modCard.winner && (
                   <div className="text-xs text-gray-500 text-center py-2">
-                    Bidding closed
+                    {isReservedByCurrent ? 'Reserved' : 'Unavailable'}
                   </div>
                 )}
               </div>
@@ -279,7 +325,7 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
             {canTakeActions() ? (
               <button
                 onClick={handleBuyRandom}
-                disabled={currentPlayer.freePips < getModificationCost(9) || deckStatus.cardsRemaining === 0}
+                disabled={!canAffordAction(getModificationCost(9)) || deckStatus.cardsRemaining === 0}
                 className="bg-lion hover:bg-lion-light disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded text-white transition-colors"
               >
                 Buy Random
