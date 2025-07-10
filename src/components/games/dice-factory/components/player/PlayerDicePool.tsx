@@ -2,7 +2,7 @@
 // Version: 2.1.0 - Complete UI redesign per specifications
 // Updated: December 2024
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import DiceRenderer from './DiceRenderer';
 import { 
   Player, 
@@ -16,6 +16,98 @@ import {
 import { Socket } from 'socket.io-client';
 import PlayedEffects from './PlayedEffects';
 import { useModifiedCosts } from '../../hooks/useModifiedCosts';
+
+// ScorePreview component
+interface ScorePreviewProps {
+  selectedDice: Die[];
+  socket: Socket | null;
+  currentPlayer: Player;
+}
+
+const ScorePreview: React.FC<ScorePreviewProps> = ({ selectedDice, socket, currentPlayer }) => {
+  const [preview, setPreview] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedDice.length === 0) {
+      setPreview(null);
+      return;
+    }
+
+    setLoading(true);
+    const diceIds = selectedDice.map(die => die.id);
+    
+    socket?.emit('dice-factory-calculate-score-preview', { diceIds });
+    
+    const handleScorePreview = (data: any) => {
+      setPreview(data);
+      setLoading(false);
+    };
+
+    socket?.on('score-preview-calculated', handleScorePreview);
+    
+    return () => {
+      socket?.off('score-preview-calculated', handleScorePreview);
+    };
+  }, [selectedDice, socket]);
+
+  const handleScoreClick = () => {
+    if (!socket || selectedDice.length === 0) return;
+    
+    const diceIds = selectedDice.map(die => die.id);
+    
+    // Try straight first, then set
+    if (preview?.straight) {
+      socket.emit('dice-factory-score-straight', { diceIds });
+    } else if (preview?.set) {
+      socket.emit('dice-factory-score-set', { diceIds });
+    }
+  };
+
+  if (loading) {
+    return <div className="text-xs text-uranian-blue">Calculating...</div>;
+  }
+
+  if (!preview) {
+    return <div className="text-xs text-uranian-blue">Select dice to see scoring options</div>;
+  }
+
+  const hasValidScoring = preview.straight || preview.set;
+
+  if (!hasValidScoring) {
+    return (
+      <div className="text-xs text-uranian-blue">
+        {preview.notes.map((note: string, index: number) => (
+          <div key={index} className="text-orange-400">{note}</div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-xs text-uranian-blue space-y-1">
+      {preview.straight && (
+        <div>
+          <div className="font-medium text-green-400">Straight: {preview.straight.formula}</div>
+          <div className="text-gray-400">Values: {preview.straight.values.join('-')}</div>
+        </div>
+      )}
+      {preview.set && !preview.straight && (
+        <div>
+          <div className="font-medium text-teal-400">Set: {preview.set.formula}</div>
+          <div className="text-gray-400">{preview.set.diceCount} dice of value {preview.set.value}</div>
+        </div>
+      )}
+      {preview.notes.length > 0 && !preview.straight && !preview.set && (
+        <div className="text-orange-400">
+          {preview.notes.map((note: string, index: number) => (
+            <div key={index}>{note}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface PlayerDicePoolProps {
   currentPlayer: Player;
@@ -108,16 +200,24 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
       let allEligible = true;
       
       if (mode === 'recruit') {
-        const recruitTable: Record<number, number[]> = {
-          4: [1],
-          6: [1, 2],
-          8: [1, 2, 3],
-          10: [1, 2, 3, 4],
-          12: [1, 2, 3, 4, 5]
-        };
-        allEligible = selectedDiceObjects.every(die => 
-          recruitTable[die.sides]?.includes(die.value!) && die.value !== null
-        );
+        // Check for outsourcing modification - allows any die to recruit
+        const hasOutsourcing = currentPlayer?.modifications?.includes('outsourcing');
+        if (hasOutsourcing) {
+          allEligible = selectedDiceObjects.every(die => die.value !== null);
+        } else {
+          // Check for diversification modification - allows d4s to recruit on 2 as well as 1
+          const hasDiversification = currentPlayer?.modifications?.includes('diversification');
+          const recruitTable: Record<number, number[]> = {
+            4: hasDiversification ? [1, 2] : [1],
+            6: [1, 2],
+            8: [1, 2, 3],
+            10: [1, 2, 3, 4],
+            12: [1, 2, 3, 4, 5]
+          };
+          allEligible = selectedDiceObjects.every(die => 
+            recruitTable[die.sides]?.includes(die.value!) && die.value !== null
+          );
+        }
       } else if (mode === 'promote') {
         allEligible = selectedDiceObjects.every(die => 
           die.value === die.sides && die.value !== null
@@ -357,57 +457,9 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
               {/* Free Pips Button */}
               <button
                 onClick={() => handleActionModeChange(actionMode === 'freepips' ? null : 'freepips')}
-                className={`px-4 py-2 rounded transition-colors font-semibold focus:outline-none ${actionMode === 'freepips' && (
-                  <div className="bg-payne-grey/30 p-4 rounded border border-uranian-blue/20 space-y-3">
-                    <h6 className="text-sm font-semibold text-uranian-blue">Free Pip Actions</h6>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => actions.handlePipAction('increase')}
-                        disabled={selectedDice.length !== 1 || !canAffordAction(costs.increase)}
-                        className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
-                      >
-                        +1 Value ({costs.increase} pips)
-                      </button>
-                      <button
-                        onClick={() => actions.handlePipAction('decrease')}
-                        disabled={selectedDice.length !== 1 || !canAffordAction(costs.decrease)}
-                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
-                      >
-                        -1 Value ({costs.decrease} pips)
-                      </button>
-                      <button
-                        onClick={() => actions.handlePipAction('reroll')}
-                        disabled={selectedDice.length !== 1 || !canAffordAction(costs.reroll)}
-                        className="bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
-                      >
-                        Reroll ({costs.reroll} pips)
-                      </button>
-                      <button
-                        onClick={() => actions.handleFactoryAction('effect')}
-                        disabled={!canAffordAction(7)}
-                        className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
-                      >
-                        Buy Effect (7 pips)
-                      </button>
-                      <button
-                        onClick={() => actions.handleFactoryAction('modification')}
-                        disabled={!canAffordAction(9)}
-                        className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm col-span-2 focus:outline-none"
-                      >
-                        Buy Modification (9 pips)
-                      </button>
-                    </div>
-                    <div className="text-xs text-uranian-blue">
-                      Select exactly one die for value modification or reroll actions.
-                      {(currentPlayer.modifications?.includes('improved_rollers') || 
-                        currentPlayer.modifications?.includes('due_diligence')) && (
-                        <div className="mt-1 text-lion">
-                          💡 Modified costs due to your factory modifications!
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}`}
+                className={`px-4 py-2 rounded transition-colors font-semibold focus:outline-none ${
+                  actionMode === 'freepips' ? 'bg-lion text-white' : 'bg-payne-grey hover:bg-payne-grey-light text-white border border-uranian-blue/30'
+                }`}
               >
                 💎 Free Pips
               </button>
@@ -468,33 +520,16 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
                   >
                     Reroll ({costs.reroll} pips)
                   </button>
-                  <button
-                    onClick={() => actions.handleFactoryAction('effect')}
-                    disabled={!canAffordAction(7)}
-                    className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm focus:outline-none"
-                  >
-                    Buy Effect (7 pips)
-                  </button>
-                  <button
-                    onClick={() => actions.handleFactoryAction('modification')}
-                    disabled={!canAffordAction(9)}
-                    className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm col-span-2 focus:outline-none"
-                  >
-                    Buy Modification (9 pips)
-                  </button>
-                  {/* Variable Dice Pool Mod Action */}
-                  {currentPlayer.modifications?.includes('variable_dice_pool') && (
-                    <button
-                      onClick={handleIncreaseDicePool}
-                      disabled={!canAffordAction(10)}
-                      className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 rounded transition-colors font-semibold text-white text-sm col-span-2 focus:outline-none"
-                    >
-                      Increase Dice Pool (+1, 10 pips)
-                    </button>
-                  )}
+
                 </div>
                 <div className="text-xs text-uranian-blue">
                   Select exactly one die for value modification or reroll actions.
+                  {(currentPlayer.modifications?.includes('improved_rollers') || 
+                    currentPlayer.modifications?.includes('due_diligence')) && (
+                    <div className="mt-1 text-lion">
+                      💡 Modified costs due to your factory modifications!
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -505,24 +540,28 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
                 <h6 className="text-sm font-semibold text-uranian-blue">Scoring Options</h6>
                 <div className="text-xs text-uranian-blue mb-3">
                   <div><strong>Straights:</strong> 3+ consecutive dice values (1-2-3, 2-3-4, etc.) = highest value × dice count</div>
-                  <div><strong>Sets:</strong> 4+ dice with same value = value × (dice count + 1)</div>
+                  <div><strong>Sets:</strong> 3+ dice with same value = value × (dice count + 1)</div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={actions.handleScoreStraight}
-                    disabled={selectedDice.length < 3}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors font-semibold text-white text-sm flex-1 focus:outline-none"
-                  >
-                    Score Straight ({selectedDice.length} selected)
-                  </button>
-                  <button
-                    onClick={actions.handleScoreSet}
-                    disabled={selectedDice.length < 4}
-                    className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors font-semibold text-white text-sm flex-1 focus:outline-none"
-                  >
-                    Score Set ({selectedDice.length} selected)
-                  </button>
-                </div>
+                
+                {/* Score Preview */}
+                {selectedDice.length > 0 && (
+                  <div className="bg-payne-grey/20 p-3 rounded border border-uranian-blue/10">
+                    <div className="text-xs text-uranian-blue font-medium mb-2">Score Preview:</div>
+                    <ScorePreview 
+                      selectedDice={currentPlayer.dicePool.filter(die => selectedDice.includes(die.id))}
+                      socket={socket || null}
+                      currentPlayer={currentPlayer}
+                    />
+                  </div>
+                )}
+                
+                <button
+                  onClick={actions.handleScore}
+                  disabled={selectedDice.length < 3}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors font-semibold text-white text-sm w-full focus:outline-none"
+                >
+                  Score ({selectedDice.length} selected)
+                </button>
               </div>
             )}
           </div>
@@ -550,6 +589,17 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
                   className="bg-yellow-700 hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors font-semibold text-white focus:outline-none"
                 >
                   🎲 Reroll All Dice (Dice Tower)
+                </button>
+              )}
+
+              {/* Variable Dice Pool Mod Action */}
+              {currentPlayer.modifications?.includes('variable_dice_pool') && (
+                <button
+                  onClick={handleIncreaseDicePool}
+                  disabled={!canAffordAction(10) || !helpers.canTakeActions()}
+                  className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors font-semibold text-white focus:outline-none"
+                >
+                  📈 Increase Dice Pool (+1, 10 pips)
                 </button>
               )}
 

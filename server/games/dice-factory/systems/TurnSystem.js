@@ -418,6 +418,14 @@ class TurnSystem {
     if (activePlayers.length === 1) {
       return { shouldEnd: true, reason: 'Only one player remains' };
     }
+    
+    // Check experimental turn limit
+    if (this.gameState.variant === 'experimental' && this.gameState.experimentalTurnLimit) {
+      if (this.gameState.round > this.gameState.experimentalTurnLimit) {
+        return { shouldEnd: true, reason: 'Turn limit reached' };
+      }
+    }
+    
     // Other end conditions can be added here
     return { shouldEnd: false, reason: '' };
   }

@@ -47,7 +47,7 @@ const PIP_COSTS = {
 const GAME_DEFAULTS = {
   INITIAL_DICE_COUNT: 4,
   INITIAL_DIE_SIDES: 4,
-  INITIAL_FREE_PIPS: 0,
+  INITIAL_FREE_PIPS: 9,
   INITIAL_SCORE: 0,
   INITIAL_DICE_FLOOR: 4,
   COLLAPSE_DICE: [4, 6, 8] // d4, d6, d8 for collapse check
@@ -56,7 +56,7 @@ const GAME_DEFAULTS = {
 // Scoring constants
 const SCORING = {
   MIN_STRAIGHT_LENGTH: 3,   // Minimum dice for straight
-  MIN_SET_SIZE: 4,          // Minimum dice for set
+  MIN_SET_SIZE: 3,          // Minimum dice for set
   PROCESS_MULTIPLIER: 2     // Free pips = 2x die value when processing
 };
 

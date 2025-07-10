@@ -340,11 +340,11 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
 
         {/* Bidding Instructions */}
         <div className="mt-4 text-xs text-gray-400 bg-payne-grey/30 p-3 rounded">
-          <h5 className="font-semibold mb-1">Bidding Rules:</h5>
+          <h5 className="font-semibold mb-1">Reservation Rules:</h5>
           <ul className="space-y-1">
-            <li>• Bid any amount of pips on available modifications</li>
-            <li>• If only you bid on a card, you get it automatically</li>
-            <li>• Multiple bidders trigger a blind auction at turn end</li>
+            <li>• Spend 9 pips to reserve a modification</li>
+            <li>• If only you reserve a card, you get it automatically</li>
+            <li>• Multiple reservers trigger a blind auction at turn end</li>
             <li>• Tied auction bids result in card being discarded</li>
             <li>• Auction losers get their pips refunded</li>
           </ul>

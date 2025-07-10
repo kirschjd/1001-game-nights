@@ -14,7 +14,7 @@ const FactorySystem = require('./systems/FactorySystem');
 const TurnSystem = require('./systems/TurnSystem');
 
 class DiceFactoryGame {
-  constructor(players, variant = 'standard') {
+  constructor(players, variant = 'standard', experimentalTurnLimit = 11) {
     // Initialize game state
     this.state = {
       type: 'dice-factory',
@@ -30,6 +30,7 @@ class DiceFactoryGame {
       firstRecruits: new Set(),
       firstStraight: false,
       firstSet: false,
+      experimentalTurnLimit: experimentalTurnLimit,
       players: players.map((p) => ({
         id: p.id,
         name: p.name,
@@ -290,6 +291,146 @@ class DiceFactoryGame {
       error: result.success ? undefined : result.message,
       points: result.points 
     };
+  }
+
+  /**
+   * Calculate score preview for selected dice
+   * @param {string} playerId - Player ID
+   * @param {Array} diceIds - Array of die IDs to score
+   * @returns {Object} - {success: boolean, preview?: Object, error?: string}
+   */
+  calculateScorePreview(playerId, diceIds) {
+    const player = this.state.players.find(p => p.id === playerId);
+    if (!player) {
+      return { success: false, error: 'Player not found' };
+    }
+
+    if (!this.canPlayerAct(playerId)) {
+      return { success: false, error: 'Not your turn or you have already ended your turn' };
+    }
+
+    // Get the selected dice
+    const selectedDice = player.dicePool.filter(die => diceIds.includes(die.id));
+    if (selectedDice.length === 0) {
+      return { success: false, error: 'No valid dice selected' };
+    }
+
+    // Calculate possible scoring options
+    const preview = {
+      straight: null,
+      set: null,
+      notes: []
+    };
+
+    // Check for straight (3+ consecutive values)
+    if (selectedDice.length >= 3) {
+      const values = selectedDice.map(die => die.value).sort((a, b) => a - b);
+      const uniqueValues = [...new Set(values)];
+      
+      if (uniqueValues.length >= 3) {
+        // Find longest consecutive sequence
+        let maxLength = 0;
+        let maxStart = 0;
+        
+        for (let i = 0; i < uniqueValues.length - 2; i++) {
+          let length = 1;
+          for (let j = i + 1; j < uniqueValues.length; j++) {
+            if (uniqueValues[j] === uniqueValues[j-1] + 1) {
+              length++;
+            } else {
+              break;
+            }
+          }
+          if (length > maxLength) {
+            maxLength = length;
+            maxStart = i;
+          }
+        }
+
+        if (maxLength >= 3) {
+          const straightValues = uniqueValues.slice(maxStart, maxStart + maxLength);
+          const straightDice = selectedDice.filter(die => straightValues.includes(die.value));
+          const highestValue = Math.max(...straightValues);
+          
+          // Calculate base points
+          let points = highestValue * straightDice.length;
+          
+          // Apply modifications
+          let formula = `${highestValue} × ${straightDice.length} = ${points}`;
+          let bonusPoints = 0;
+          
+          // Check for Synergy modification
+          if (player.modifications?.includes('synergy')) {
+            const effectiveDice = straightDice.length + 1;
+            bonusPoints = highestValue;
+            points += bonusPoints;
+            formula += ` + ${bonusPoints} (Synergy) = ${points}`;
+          }
+          
+          preview.straight = {
+            type: 'straight',
+            diceCount: straightDice.length,
+            values: straightValues,
+            highestValue: highestValue,
+            basePoints: highestValue * straightDice.length,
+            bonusPoints: bonusPoints,
+            totalPoints: points,
+            formula: formula,
+            dice: straightDice
+          };
+        }
+      }
+    }
+
+    // Check for set (3+ same value)
+    if (selectedDice.length >= 3) {
+      const valueCounts = {};
+      selectedDice.forEach(die => {
+        valueCounts[die.value] = (valueCounts[die.value] || 0) + 1;
+      });
+
+      const setValue = Object.keys(valueCounts).find(value => valueCounts[value] >= 3);
+      if (setValue) {
+        const setDice = selectedDice.filter(die => die.value === parseInt(setValue));
+        const value = parseInt(setValue);
+        
+        // Calculate base points
+        let points = value * (setDice.length + 1);
+        
+        // Apply modifications
+        let formula = `${value} × (${setDice.length} + 1) = ${points}`;
+        let bonusPoints = 0;
+        
+        // Check for Synergy modification
+        if (player.modifications?.includes('synergy')) {
+          const effectiveDice = setDice.length + 1;
+          bonusPoints = value;
+          points += bonusPoints;
+          formula += ` + ${bonusPoints} (Synergy) = ${points}`;
+        }
+        
+        preview.set = {
+          type: 'set',
+          diceCount: setDice.length,
+          value: value,
+          basePoints: value * (setDice.length + 1),
+          bonusPoints: bonusPoints,
+          totalPoints: points,
+          formula: formula,
+          dice: setDice
+        };
+      }
+    }
+
+    // Add notes about scoring rules
+    if (selectedDice.length < 3) {
+      preview.notes.push('Need at least 3 dice for scoring');
+    }
+    if (selectedDice.length >= 3 && !preview.straight && !preview.set) {
+      preview.notes.push('Selected dice do not form a valid straight (3+ consecutive values) or set (3+ same value)');
+    }
+
+    return { success: true, preview };
   }
 
   // ===== FACTORY OPERATIONS =====

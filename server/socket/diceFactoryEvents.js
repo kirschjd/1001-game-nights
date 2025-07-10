@@ -382,6 +382,29 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
+  // Calculate score preview
+  socket.on('dice-factory-calculate-score-preview', (data) => {
+    const game = games.get(socket.lobbySlug);
+    
+    if (!game || game.state.type !== 'dice-factory') {
+      socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
+      return;
+    }
+    
+    const player = game.state.players.find(p => p.id === socket.id);
+    if (!player) {
+      socket.emit('dice-factory-error', { error: 'Player not found' });
+      return;
+    }
+    
+    const result = game.calculateScorePreview(socket.id, data.diceIds);
+    if (result.success) {
+      socket.emit('score-preview-calculated', result.preview);
+    } else {
+      socket.emit('dice-factory-error', { error: result.error });
+    }
+  });
+
   // Process dice
   socket.on('dice-factory-process', (data) => {
     const game = games.get(socket.lobbySlug);
@@ -830,6 +853,84 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
 
   // Reset Dice Tower usage at the start of each turn
   // (Find the start-of-turn logic and add: player._diceTowerUsedThisTurn = false;)
+
+  // Calculate score preview for selected dice
+  socket.on('dice-factory-calculate-score', (data) => {
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory') {
+      socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
+      return;
+    }
+    const player = game.state.players.find(p => p.id === socket.id);
+    if (!player) {
+      socket.emit('dice-factory-error', { error: 'Player not found' });
+      return;
+    }
+    const diceIds = data.diceIds;
+    if (!Array.isArray(diceIds) || diceIds.length === 0) {
+      socket.emit('score-preview', { type: 'invalid', formula: '', points: 0, notes: 'No dice selected.' });
+      return;
+    }
+    const DiceHelpers = require('../games/dice-factory/utils/DiceHelpers');
+    const ScoringSystem = require('../games/dice-factory/systems/ScoringSystem');
+    const ValidationRules = require('../games/dice-factory/data/ValidationRules');
+    // Create a fake game state for preview
+    const fakeGameState = { ...game.state, gameLog: [], round: game.state.round };
+    const scoring = new ScoringSystem(fakeGameState);
+    const selectedDice = DiceHelpers.findDiceByIds(player.dicePool, diceIds);
+    let result = { type: 'invalid', formula: '', points: 0, notes: '' };
+    // Try straight
+    const hasVerticalIntegration = player.modifications?.includes('vertical_integration');
+    const straightValidation = ValidationRules.validateStraight(selectedDice, hasVerticalIntegration);
+    if (straightValidation.isValid) {
+      const basePoints = straightValidation.points;
+      const synergy = player.modifications?.includes('synergy');
+      let formula = `highest × dice count`;
+      let notes = '';
+      let points = basePoints;
+      if (synergy) {
+        formula = `highest × (dice count + 1)`;
+        notes = 'Synergy: +1 die';
+        points = Math.max(...selectedDice.map(d => d.value)) * (selectedDice.length + 1);
+      }
+      result = {
+        type: 'straight',
+        formula,
+        points,
+        notes
+      };
+    } else {
+      // Try set
+      const hasJointVenture = player.modifications?.includes('joint_venture');
+      const setValidation = ValidationRules.validateSet(selectedDice, hasJointVenture);
+      if (setValidation.isValid) {
+        const basePoints = setValidation.points;
+        const synergy = player.modifications?.includes('synergy');
+        let formula = 'value × (dice count + 1)';
+        let notes = '';
+        let points = basePoints;
+        if (synergy) {
+          formula = 'value × (dice count + 2)';
+          notes = 'Synergy: +1 die';
+          points = selectedDice[0].value * (selectedDice.length + 2);
+        }
+        result = {
+          type: 'set',
+          formula,
+          points,
+          notes
+        };
+      } else {
+        result = {
+          type: 'invalid',
+          formula: '',
+          points: 0,
+          notes: straightValidation.reason || setValidation.reason || 'Not a valid set or straight.'
+        };
+      }
+    }
+    socket.emit('score-preview', result);
+  });
 
   // Cleanup when player disconnects
   socket.on('disconnect', () => {

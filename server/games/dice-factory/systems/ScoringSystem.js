@@ -79,17 +79,7 @@ class ScoringSystem {
     // Apply factory effects/modifications that might affect scoring
     points = this.applyScoreModifiers(player, 'straight', points, straightDice);
 
-    // Check for first straight bonus
-    if (!this.gameState.firstStraight) {
-      this.gameState.firstStraight = true;
-      points += 5;
-      this.gameState.gameLog = require('../utils/GameLogger').logAction(
-        this.gameState.gameLog,
-        player.name,
-        'earned 5 bonus points for first straight of the game',
-        this.gameState.round
-      );
-    }
+
 
     // Remove dice from pool and add points
     let diceToRemove = diceIds;
@@ -158,17 +148,7 @@ class ScoringSystem {
     // Apply factory effects/modifications that might affect scoring
     points = this.applyScoreModifiers(player, 'set', points, setDice);
   
-    // Check for first set bonus
-    if (!this.gameState.firstSet) {
-      this.gameState.firstSet = true;
-      points += 5;
-      this.gameState.gameLog = require('../utils/GameLogger').logAction(
-        this.gameState.gameLog,
-        player.name,
-        'earned 5 bonus points for first set of the game',
-        this.gameState.round
-      );
-    }
+
   
     // Remove dice from pool and add points
     let diceToRemove = diceIds;

@@ -133,6 +133,34 @@ export const useDiceActions = ({
     showMessage(`Scoring set with ${selectedDice.length} dice`, 'info');
   }, [socket, selectedDice, setSelectedDice, setActionMode, showMessage]);
 
+  const handleScore = useCallback(() => {
+    if (!socket || selectedDice.length < 3) return;
+    
+    // Calculate preview first to determine best scoring option
+    socket.emit('dice-factory-calculate-score-preview', {
+      diceIds: selectedDice
+    });
+    
+    // Listen for the preview response and then score
+    const handlePreviewResponse = (preview: any) => {
+      if (preview.straight) {
+        socket.emit('dice-factory-score-straight', { diceIds: selectedDice });
+        showMessage(`Scoring straight with ${selectedDice.length} dice`, 'info');
+      } else if (preview.set) {
+        socket.emit('dice-factory-score-set', { diceIds: selectedDice });
+        showMessage(`Scoring set with ${selectedDice.length} dice`, 'info');
+      } else {
+        showMessage('No valid scoring combination available', 'error');
+      }
+      
+      setSelectedDice([]);
+      setActionMode(null);
+      socket.off('score-preview-calculated', handlePreviewResponse);
+    };
+    
+    socket.on('score-preview-calculated', handlePreviewResponse);
+  }, [socket, selectedDice, setSelectedDice, setActionMode, showMessage]);
+
   const handleProcessDice = useCallback((diceIds?: string[], arbitrageChoice?: 'pips' | 'points') => {
     const ids = diceIds ?? selectedDice;
     if (!socket || ids.length === 0) return;
@@ -222,6 +250,7 @@ export const useDiceActions = ({
     handleRecruitDice,
     handleScoreStraight,
     handleScoreSet,
+    handleScore,
     handleProcessDice,
     handlePipAction,
     handleFactoryAction,

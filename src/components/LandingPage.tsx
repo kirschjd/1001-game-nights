@@ -3,14 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [showComments, setShowComments] = useState(false);
-  const [showBugs, setShowBugs] = useState(false);
-  const [comment, setComment] = useState('');
-  const [bugs, setBugs] = useState([
-    { id: 1, text: 'Fix lobby title editing', completed: false },
-    { id: 2, text: 'Improve mobile responsiveness', completed: false },
-    { id: 3, text: 'Add game reconnection logic', completed: false }
-  ]);
+
 
   const generateLobbySlug = (): string => {
     const words = [
@@ -33,39 +26,9 @@ const LandingPage: React.FC = () => {
     navigate('/explore');
   };
 
-  const handleSubmitComment = async () => {
-    if (!comment.trim()) return;
-    
-    try {
-      await fetch('/api/comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: comment })
-      });
-      setComment('');
-      setShowComments(false);
-      alert('Comment submitted! Thank you for your feedback.');
-    } catch (error) {
-      alert('Failed to submit comment. Please try again.');
-    }
-  };
 
-  const toggleBug = (id: number) => {
-    setBugs(bugs.map(bug => 
-      bug.id === id ? { ...bug, completed: !bug.completed } : bug
-    ));
-  };
 
-  const addBug = () => {
-    const newBugText = prompt('Enter new bug description:');
-    if (newBugText && newBugText.trim()) {
-      setBugs([...bugs, {
-        id: Math.max(...bugs.map(b => b.id)) + 1,
-        text: newBugText.trim(),
-        completed: false
-      }]);
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-payne-grey-dark text-white relative">
@@ -107,7 +70,7 @@ const LandingPage: React.FC = () => {
 
       {/* Main Actions */}
       <main className="container mx-auto px-4 max-w-4xl relative z-10">
-        <div className="grid md:grid-cols-2 gap-8 mb-16">
+        <div className="flex flex-col gap-8 mb-16 max-w-2xl mx-auto">
           {/* Create New Lobby */}
           <div className="bg-payne-grey/20 backdrop-blur-md rounded-2xl p-8 hover:bg-lion/20 transition-all duration-300 hover:transform hover:scale-105 border border-payne-grey/30">
             <div className="text-center">
@@ -143,116 +106,32 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Features Section */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-8 text-lion-light">Platform Features</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-payne-grey/20 rounded-xl p-6 border border-payne-grey/30">
-              <div className="text-4xl mb-4">⚡</div>
-              <h3 className="text-xl font-semibold mb-2 text-lion">Real-time Multiplayer</h3>
-              <p className="text-gray-400">
-                Powered by Socket.io for instant updates and smooth gameplay
-              </p>
-            </div>
-            <div className="bg-payne-grey/20 rounded-xl p-6 border border-payne-grey/30">
-              <div className="text-4xl mb-4">🔗</div>
-              <h3 className="text-xl font-semibold mb-2 text-lion">Easy Lobby Sharing</h3>
-              <p className="text-gray-400">
-                Share unique 3-word URLs with friends to join your games
-              </p>
-            </div>
-            <div className="bg-payne-grey/20 rounded-xl p-6 border border-payne-grey/30">
-              <div className="text-4xl mb-4">🎮</div>
-              <h3 className="text-xl font-semibold mb-2 text-lion">Multiple Games</h3>
-              <p className="text-gray-400">
-                War, Dice Factory, and more games coming soon
-              </p>
-            </div>
-          </div>
-        </div>
+
 
         {/* Footer Actions */}
         <div className="flex justify-center gap-4 mb-8">
           <button
-            onClick={() => setShowComments(!showComments)}
+            onClick={() => window.open('https://nam11.safelinks.protection.outlook.com/?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2F1-i9-0fwq5D19Z82_pFol3ZvRJe1xHbQOeP0avzCx6Xo%2Fedit%3Fusp%3Ddrivesdk&data=05%7C02%7Cjkirschenheiter%40fedsig.com%7Ca196274490134a53b03208ddb5a60e1e%7Ca76e6f68d11b4ed58958c89cdfc498d3%7C0%7C0%7C638866447023093978%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=i4EkwhtXeyAbYfQZvOw7wKbe3KadxZucaL2BkdsNGBY%3D&reserved=0', '_blank')}
             className="bg-payne-grey hover:bg-payne-grey-light px-6 py-3 rounded-lg transition-colors border border-payne-grey-light"
           >
-            💬 Feedback
+            📋 Requests
           </button>
           <button
-            onClick={() => setShowBugs(!showBugs)}
+            onClick={() => window.open('https://nam11.safelinks.protection.outlook.com/?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2F1-HMDnvSZb4nph4F-uWe18YTNxxpzzkGNKkd4kIPa210%2Fedit%3Fusp%3Ddrivesdk&data=05%7C02%7Cjkirschenheiter%40fedsig.com%7Ca196274490134a53b03208ddb5a60e1e%7Ca76e6f68d11b4ed58958c89cdfc498d3%7C0%7C0%7C638866447023069340%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=uKMZxcmyFxNSmH6Y5q%2Fk2HL6Pc9zeN4q5wcH7Q0ZSkU%3D&reserved=0', '_blank')}
             className="bg-payne-grey hover:bg-payne-grey-light px-6 py-3 rounded-lg transition-colors border border-payne-grey-light"
           >
             🐛 Bug Tracker
           </button>
         </div>
 
-        {/* Comments Section */}
-        {showComments && (
-          <div className="bg-payne-grey/20 backdrop-blur-md rounded-xl p-6 mb-8 border border-payne-grey/30">
-            <h3 className="text-2xl font-bold mb-4 text-lion-light">Submit Feedback</h3>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your thoughts, suggestions, or report issues..."
-              className="w-full h-32 p-4 bg-payne-grey/30 rounded-lg border border-payne-grey text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-lion"
-            />
-            <div className="flex gap-4 mt-4">
-              <button
-                onClick={handleSubmitComment}
-                className="bg-lion hover:bg-lion-dark px-6 py-2 rounded-lg transition-colors text-white font-semibold"
-              >
-                Submit
-              </button>
-              <button
-                onClick={() => setShowComments(false)}
-                className="bg-payne-grey hover:bg-payne-grey-dark px-6 py-2 rounded-lg transition-colors text-white"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
 
-        {/* Bug Tracker Section */}
-        {showBugs && (
-          <div className="bg-payne-grey/20 backdrop-blur-md rounded-xl p-6 mb-8 border border-payne-grey/30">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-lion-light">Development Checklist</h3>
-              <button
-                onClick={addBug}
-                className="bg-lion hover:bg-lion-dark px-4 py-2 rounded-lg text-sm transition-colors text-white font-semibold"
-              >
-                Add Task
-              </button>
-            </div>
-            <div className="space-y-2">
-              {bugs.map(bug => (
-                <div
-                  key={bug.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg ${
-                    bug.completed ? 'bg-lion/20 border border-lion/30' : 'bg-payne-grey/30 border border-payne-grey'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={bug.completed}
-                    onChange={() => toggleBug(bug.id)}
-                    className="w-5 h-5 text-lion focus:ring-lion"
-                  />
-                  <span className={bug.completed ? 'line-through text-gray-400' : 'text-white'}>
-                    {bug.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+
+
       </main>
 
       {/* Footer */}
       <footer className="text-center py-8 text-gray-400 relative z-10">
-        <p>Created by John Kirschenheiter • Powered by Claude and Railway.app</p>
+        <p>Created by John Kirschenheiter</p>
       </footer>
     </div>
   );

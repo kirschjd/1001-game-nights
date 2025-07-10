@@ -17,7 +17,8 @@ const GameHeader: React.FC<GameHeaderProps> = ({ gameState }) => {
     lastCollapseRoll, 
     phase, 
     winner,
-    variant
+    variant,
+    experimentalTurnLimit
   } = gameState;
 
   // Game completion message
@@ -36,21 +37,19 @@ const GameHeader: React.FC<GameHeaderProps> = ({ gameState }) => {
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/30">
-            <div className="text-2xl font-bold text-uranian-blue">{round} / 11</div>
+            <div className="text-2xl font-bold text-uranian-blue">{round} / {experimentalTurnLimit || 11}</div>
             <div className="text-sm text-gray-400">Round</div>
           </div>
           <div className="bg-payne-grey/50 p-4 rounded-lg border border-pink-400/30">
             <div className="text-2xl font-bold text-pink-400">Experimental Mode</div>
-            <div className="text-sm text-gray-400">11 Rounds Max</div>
+            <div className="text-sm text-gray-400">{experimentalTurnLimit || 11} Rounds Max</div>
           </div>
           <div className="bg-payne-grey/50 p-4 rounded-lg border border-uranian-blue/30">
             <div className="text-2xl font-bold text-lion">Highest Score Wins</div>
             <div className="text-sm text-gray-400">No Collapse</div>
           </div>
         </div>
-        <div className="bg-pink-900/40 border border-pink-400 p-4 rounded-lg text-center">
-          <span className="text-pink-300 font-semibold">Experimental mode: The game ends after 11 rounds. The player with the most points wins. The collapse system is disabled.</span>
-        </div>
+
       </div>
     );
   }

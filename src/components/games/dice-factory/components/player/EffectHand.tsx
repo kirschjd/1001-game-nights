@@ -52,17 +52,12 @@ const EffectHand: React.FC<EffectHandProps> = ({
     socket.emit('dice-factory-play-effect', { effectId });
   };
 
-  const totalValue = effectsInHand.reduce((sum, effect) => sum + effect.cost, 0);
-
   return (
     <div className="bg-payne-grey/30 border border-lion/30 rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-md font-semibold text-lion">
           🎴 Hand
         </h4>
-        <div className="text-sm text-gray-400">
-          Value: {totalValue}🪙
-        </div>
       </div>
 
       {effectsInHand.length === 0 ? (
@@ -82,9 +77,6 @@ const EffectHand: React.FC<EffectHandProps> = ({
                   {effect.name}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">
-                    {effect.cost}🪙
-                  </span>
                   {canTakeActions() && (
                     <button
                       onClick={() => handlePlayEffect(effect.id)}

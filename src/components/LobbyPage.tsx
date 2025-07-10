@@ -35,6 +35,7 @@ const LobbyPage: React.FC = () => {
   const [selectedVariant, setSelectedVariant] = useState('regular');
   const [botStyles, setBotStyles] = useState<any[]>([]);
   const [selectedDFVariant, setSelectedDFVariant] = useState('standard');
+  const [experimentalTurnLimit, setExperimentalTurnLimit] = useState(11);
 
   useEffect(() => {
     const newSocket = io(process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
@@ -147,7 +148,11 @@ const LobbyPage: React.FC = () => {
         });
       } else {
         // Start Dice Factory with variant support
-        socket.emit('start-game', { slug, variant: selectedDFVariant });
+        socket.emit('start-game', { 
+          slug, 
+          variant: selectedDFVariant,
+          experimentalTurnLimit: selectedDFVariant === 'experimental' ? experimentalTurnLimit : undefined
+        });
       }
     }
   };
@@ -463,14 +468,32 @@ const LobbyPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Game Mode
                 </label>
-                <select
-                  value={selectedDFVariant}
-                  onChange={e => setSelectedDFVariant(e.target.value)}
-                  className="px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
-                >
-                  <option value="standard">Standard</option>
-                  <option value="experimental">Experimental</option>
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedDFVariant}
+                    onChange={e => setSelectedDFVariant(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="experimental">Experimental</option>
+                  </select>
+                  {selectedDFVariant === 'experimental' && (
+                    <select
+                      value={experimentalTurnLimit}
+                      onChange={e => setExperimentalTurnLimit(Number(e.target.value))}
+                      className="px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
+                    >
+                      <option value={8}>8 turns</option>
+                      <option value={9}>9 turns</option>
+                      <option value={10}>10 turns</option>
+                      <option value={11}>11 turns</option>
+                      <option value={12}>12 turns</option>
+                      <option value={13}>13 turns</option>
+                      <option value={14}>14 turns</option>
+                      <option value={15}>15 turns</option>
+                    </select>
+                  )}
+                </div>
                 <div className="text-xs text-gray-400 mt-1">
                   <strong>Standard:</strong> Classic Dice Factory rules.<br/>
                   <strong>Experimental:</strong> New or test mechanics (see release notes).
@@ -563,45 +586,111 @@ const LobbyPage: React.FC = () => {
             /* Dice Factory Rules */
             <div className={`p-6 rounded-lg border ${gameColorClasses}`}>
               <h2 className="text-2xl font-bold mb-4 text-uranian-blue">🎲 Dice Factory</h2>
+              <p className="text-lg font-semibold text-uranian-blue mb-4">"A Game of Odds and Industriousness"</p>
               
               <div className="space-y-4 text-gray-300">
                 <p className="text-lg">
-                  Manage your dice production facility to score points through clever combinations 
-                  before the factory collapses!
+                  The game's purpose is to score points. This is done by scoring tricks.
                 </p>
                 
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">📋 How to Play</h3>
-                  <ol className="space-y-2 text-sm">
-                    <li><strong>1.</strong> Start with 4 four-sided dice (d4)</li>
-                    <li><strong>2.</strong> Each turn: Roll dice and perform actions</li>
-                    <li><strong>3.</strong> <strong>Score Straights:</strong> 3+ consecutive dice values</li>
-                    <li><strong>4.</strong> <strong>Score Sets:</strong> 4+ dice of the same value</li>
-                    <li><strong>5.</strong> <strong>Promote:</strong> Use pip values to upgrade dice to larger sizes</li>
-                    <li><strong>6.</strong> <strong>Recruit:</strong> Roll specific values to gain new dice</li>
-                    <li><strong>7.</strong> When collapse begins, decide to flee with points or risk staying</li>
-                    <li><strong>8.</strong> Crushed players score 0 points!</li>
-                  </ol>
+                  <h3 className="text-lg font-semibold text-white mb-2">🎲 Dice Pool</h3>
+                  <p className="text-sm mb-2">
+                    Tricks are made from each players' dice pool. Each player starts with a minimum dice pool of 4d4. 
+                    A player's dice minimum dice pool determines the number of die they cannot go below. The dice pool 
+                    is what a player rolls at the beginning of their turn. If a players dice pool falls below their 
+                    minimum dice pool, they will automatically recruit up to the minimum dice pool.
+                  </p>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">🎲 Game Info</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><strong>Players:</strong> 3-5 players</div>
-                    <div><strong>Duration:</strong> 45-60 minutes</div>
-                    <div><strong>Difficulty:</strong> High</div>
-                    <div><strong>Strategy:</strong> Engine Building</div>
+                  <h3 className="text-lg font-semibold text-white mb-2">📋 Standard Actions</h3>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <h4 className="font-semibold text-uranian-blue">Promotion</h4>
+                      <p>A die can be promoted to a die of one larger size. This is done can only be done on a die with max pips. This exhausts the die.</p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-uranian-blue">Recruitment</h4>
+                      <p>Dice can be recruited into the dice pool by rolling a number corresponding to the recruitment table:</p>
+                      <div className="bg-payne-grey/30 p-3 rounded mt-2 text-xs">
+                        <div><strong>D4:</strong> Roll 1 → D4</div>
+                        <div><strong>D6:</strong> Roll 1,2 → D6, D4</div>
+                        <div><strong>D8:</strong> Roll 1,2,3 → D8, D6, D4</div>
+                        <div><strong>D10:</strong> Roll 1,2,3,4 → D10, D8, D6, D4</div>
+                        <div><strong>D12:</strong> Roll 1,2,3,4,5 → D12, D10, D8, D6, D4</div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-uranian-blue">Processing</h4>
+                      <p>Dice can be processed for free pips. Doing so removes the die from the dice pool. The player immediately gets free pips equal to 2× the rolled value.</p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-uranian-blue">Scoring</h4>
+                      <p>Tricks can be straights or sets.</p>
+                      <ul className="mt-1 space-y-1">
+                        <li>• <strong>Straights:</strong> 3+ dice in increasing order = (highest #) × (# of dice)</li>
+                        <li>• <strong>Sets:</strong> 3+ dice of the same value = (number on dice) × (# of dice + 1)</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">⚙️ Key Mechanics</h3>
-                  <ul className="space-y-1 text-sm">
-                    <li>• <strong>Factory Effects:</strong> Modify gameplay rules</li>
-                    <li>• <strong>Collapse System:</strong> Adds tension and timing decisions</li>
-                    <li>• <strong>Dice Progression:</strong> d4 → d6 → d8 → d10 → d12 → d20</li>
-                    <li>• <strong>Resource Management:</strong> Balance pips, actions, and risks</li>
-                  </ul>
+                  <h3 className="text-lg font-semibold text-white mb-2">💰 Standard Pip Actions</h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>Increase 1 die by 1: <strong>4 pips</strong></div>
+                    <div>Decrease 1 die by 1: <strong>3 pips</strong></div>
+                    <div>Reroll a die: <strong>2 pips</strong></div>
+                    <div>Factory Effects: <strong>7 pips</strong></div>
+                    <div>Factory Modification: <strong>9 pips</strong></div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">🏭 Factory System</h3>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <h4 className="font-semibold text-uranian-blue">Factory Effects</h4>
+                      <p>Powerful one-time effects that go to your hand when bought and can be played on later turns.</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-uranian-blue">Factory Modifications</h4>
+                      <p>Permanently change rules for the player that bought them. Effects persist immediately.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">💥 Ending the Game</h3>
+                  {selectedDFVariant === 'experimental' ? (
+                    <p className="text-sm">
+                      The game ends after a set number of turns. Players compete to score the most points within 
+                      the time limit, with no factory collapse mechanics.
+                    </p>
+                  ) : (
+                    <p className="text-sm">
+                      The factory begins to collapse when the turn indicator exceeds the collapse dice (1d6, 1d8, 1d10). 
+                      Each turn 1 is added to the turn counter and the collapse dice are rolled and added. If the sum is 
+                      less than the turn counter, the collapse begins. Players can choose to stay or flee. When a player 
+                      flees, their point total is locked and a collapse die is removed. If the turn counter ≤ 0, any 
+                      remaining players are crushed and their score goes to 0.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">🔄 Turn Structure</h3>
+                  <ol className="space-y-1 text-sm">
+                    <li><strong>1.</strong> Roll collapse dice</li>
+                    <li><strong>2.</strong> Play Factory Effects</li>
+                    <li><strong>3.</strong> Dice are rolled</li>
+                    <li><strong>4.</strong> Perform Dice actions</li>
+                    <li><strong>5.</strong> Check for collapse</li>
+                  </ol>
                 </div>
               </div>
             </div>

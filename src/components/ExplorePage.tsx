@@ -44,15 +44,16 @@ const ExplorePage: React.FC = () => {
       name: 'Dice Factory',
       players: '3-5 players',
       duration: '45-60 minutes',
-      description: 'Manage your dice production facility to score points through clever combinations before the factory collapses.',
+      description: '"A Game of Odds and Industriousness" - Score points by creating tricks from your dice pool before the factory collapses.',
       rules: [
         'Start with 4 four-sided dice (d4)',
         'Roll dice each turn and perform actions:',
-        '• Score Straights: 3+ consecutive dice values',
-        '• Score Sets: 4+ dice of the same value',
+        '• Score Straights: 3+ consecutive dice values = (highest value) × (dice count)',
+        '• Score Sets: 3+ dice of same value = (value) × (dice count + 1)',
         '• Promote dice to larger sizes using pip values',
         '• Recruit new dice by rolling specific values',
-        'Factory effects modify gameplay rules',
+        '• Process dice for free pips (2× rolled value)',
+        'Factory effects and modifications change rules',
         'When collapse begins, decide to flee with points or risk staying',
         'Crushed players score 0 points!'
       ],
@@ -60,7 +61,8 @@ const ExplorePage: React.FC = () => {
         '⚙️ Complex engine-building mechanics',
         '🎲 Dynamic dice management system',
         '💥 Thrilling collapse mechanics',
-        '🧠 Strategic depth and planning'
+        '🧠 Strategic depth and planning',
+        '🏭 Factory effects and modifications'
       ],
       status: 'available'
     }

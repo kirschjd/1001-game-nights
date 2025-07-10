@@ -47,17 +47,12 @@ const OwnedModifications: React.FC<OwnedModificationsProps> = ({
     };
   }, [socket]);
 
-  const totalValue = modifications.reduce((sum, mod) => sum + mod.cost, 0);
-
   return (
     <div className="bg-payne-grey/30 border border-uranian-blue/30 rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-md font-semibold text-uranian-blue">
           🏭 Factory Items Owned
         </h4>
-        <div className="text-sm text-gray-400">
-          Value: {totalValue}🪙
-        </div>
       </div>
 
       {modifications.length === 0 ? (
@@ -75,9 +70,6 @@ const OwnedModifications: React.FC<OwnedModificationsProps> = ({
               <div className="flex items-center justify-between">
                 <span className="font-medium text-uranian-blue-light">
                   {mod.name}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {mod.cost}🪙
                 </span>
               </div>
               <p className="text-sm text-gray-300 mt-1">

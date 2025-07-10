@@ -64,6 +64,7 @@ export interface DiceFactoryGameState {
   firstStraight?: boolean;
   firstSet?: boolean;
   variant?: string;
+  experimentalTurnLimit?: number;
 }
 
 export interface DiceFactoryGameProps {
@@ -89,6 +90,7 @@ export interface DiceActionHandlers {
   handleRecruitDice: () => void;
   handleScoreStraight: () => void;
   handleScoreSet: () => void;
+  handleScore: () => void;
   handleProcessDice: (diceIds?: string[], arbitrageChoice?: 'pips' | 'points') => void;
   handlePipAction: (actionType: 'increase' | 'decrease' | 'reroll') => void;
   handleFactoryAction: (actionType: 'effect' | 'modification') => void;

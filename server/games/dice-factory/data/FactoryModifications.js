@@ -352,6 +352,29 @@ function applyModification(gameState, playerId, modId) {
     case 'dice_pool_upgrade':
       // Change minimum dice type from d4 to d6
       player.minimumDieSize = 6;
+      
+      // Upgrade all existing d4s to d6s
+      const DiceHelpers = require('../utils/DiceHelpers');
+      let upgradedCount = 0;
+      for (let i = 0; i < player.dicePool.length; i++) {
+        if (player.dicePool[i].sides === 4) {
+          // Create a new d6 with the same value
+          const newDie = DiceHelpers.createDie(6, player.dicePool[i].value);
+          player.dicePool[i] = newDie;
+          upgradedCount++;
+        }
+      }
+      
+      // Log the upgrade
+      if (upgradedCount > 0) {
+        const logAction = require('../utils/GameLogger').logAction;
+        gameState.gameLog = logAction(
+          gameState.gameLog,
+          player.name,
+          `upgraded ${upgradedCount} d4s to d6s with Dice Pool Upgrade`,
+          gameState.round
+        );
+      }
       break;
       
     // Most modifications are passive and don't need immediate application
