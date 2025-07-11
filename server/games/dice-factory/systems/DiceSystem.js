@@ -48,87 +48,64 @@ class DiceSystem {
  * @returns {Object} - {success: boolean, message: string}
  */
   recruitDice(playerId, diceIds) {
-  
-  
-  const player = this.gameState.players.find(p => p.id === playerId);
-  
-  if (!player) {
-    console.error('Player not found:', playerId);
-    return { success: false, message: 'Player not found' };
-  }
+    const player = this.gameState.players.find(p => p.id === playerId);
+    if (!player) {
+      console.error('Player not found:', playerId);
+      return { success: false, message: 'Player not found' };
+    }
+    const recruitingDice = findDiceByIds(player.dicePool, diceIds);
+    if (recruitingDice.length !== diceIds.length) {
+      console.error('Some dice not found in pool');
+      return { success: false, message: 'Some dice not found in pool' };
+    }
 
-  const recruitingDice = findDiceByIds(player.dicePool, diceIds);
-  
-  
-  if (recruitingDice.length !== diceIds.length) {
-    console.error('Some dice not found in pool');
-    return { success: false, message: 'Some dice not found in pool' };
-  }
-
-  // Outsourcing mod: allow recruitment regardless of value, always recruit same size
-  const hasOutsourcing = player.modifications?.includes('outsourcing');
-  let newDice = [];
-  if (hasOutsourcing) {
-    for (const die of recruitingDice) {
-      if (die.value === null) {
-        return { success: false, message: 'All dice must have values to recruit' };
+    // Outsourcing mod: allow recruitment regardless of value, always recruit same size, but only once per turn
+    const hasOutsourcing = player.modifications?.includes('outsourcing');
+    let newDice = [];
+    if (hasOutsourcing && !player._outsourcingUsedThisTurn) {
+      // Only allow one die to use outsourcing per turn
+      if (recruitingDice.length > 1) {
+        return { success: false, message: 'With Outsourcing, you may only recruit with one die at a time.' };
       }
-      // Always recruit a die of the same size
+      const die = recruitingDice[0];
+      if (die.value === null) {
+        return { success: false, message: 'Die must have a value to recruit' };
+      }
       const DiceHelpers = require('../utils/DiceHelpers');
       newDice.push(DiceHelpers.createDie(die.sides));
+      player._outsourcingUsedThisTurn = true;
+    } else {
+      // Validate recruitment
+      const hasDiversification = player.modifications?.includes('diversification');
+      const validation = validateRecruitment(recruitingDice, hasDiversification);
+      if (!validation.isValid) {
+        return { success: false, message: validation.reason };
+      }
+      // Use the recruited dice from validation result
+      const DiceHelpers = require('../utils/DiceHelpers');
+      for (const recruitedDieData of validation.recruited) {
+        newDice.push(DiceHelpers.createDie(recruitedDieData.sides));
+      }
     }
-  } else {
-    // Validate recruitment
-    const hasDiversification = player.modifications?.includes('diversification');
-    const validation = validateRecruitment(recruitingDice, hasDiversification);
-    
-    if (!validation.isValid) {
-      return { success: false, message: validation.reason };
+
+    // Add recruited dice to pool (recruiting dice stay in pool but get exhausted)
+    player.dicePool = addDiceToPool(player.dicePool, newDice);
+    if (!player.exhaustedDice) {
+      player.exhaustedDice = [];
     }
-    // Use the recruited dice from validation result
-    const DiceHelpers = require('../utils/DiceHelpers');
-    for (const recruitedDieData of validation.recruited) {
-      newDice.push(DiceHelpers.createDie(recruitedDieData.sides));
-    }
-  }
-  
-
-  // Add recruited dice to pool (recruiting dice stay in pool but get exhausted)
-  player.dicePool = addDiceToPool(player.dicePool, newDice);
-
-  // FIXED: Exhaust the recruiting dice
-  if (!player.exhaustedDice) {
-    player.exhaustedDice = [];
-  }
-  player.exhaustedDice.push(...diceIds);
-  
-
-  // Log recruitment
-  this.gameState.gameLog = logRecruitment(
-    this.gameState.gameLog,
-    player.name,
-    recruitingDice,
-    newDice,
-    this.gameState.round
-  );
-
-  // Check for first recruitment bonus
-  if (!this.gameState.firstRecruits.has(playerId)) {
-    this.gameState.firstRecruits.add(playerId);
-    player.freePips += 3;
-    this.gameState.gameLog = logAction(
+    player.exhaustedDice.push(...diceIds);
+    // Log recruitment
+    this.gameState.gameLog = logRecruitment(
       this.gameState.gameLog,
       player.name,
-      'earned 3 bonus pips for first recruitment',
+      recruitingDice,
+      newDice,
       this.gameState.round
     );
-  }
-
-  
-  return { 
-    success: true, 
-    message: `Recruited ${newDice.length} dice` 
-  };
+    return { 
+      success: true, 
+      message: `Recruited ${newDice.length} dice` 
+    };
   }
 
   /**

@@ -1,4 +1,4 @@
-// Enhanced Dice Factory Bot Handler with Pass Bot Implementation
+// Enhanced Dice Factory Bot Handler with Pass Bot and Easy Bot Implementation
 // server/games/bots/DiceFactoryBotHandler.js
 
 class DiceFactoryBotHandler {
@@ -15,34 +15,10 @@ class DiceFactoryBotHandler {
         difficulty: 'easy'
       },
       {
-        id: 'random',
-        name: 'Random Player',
-        description: 'Makes random valid moves',
+        id: 'easy',
+        name: 'Easy Bot',
+        description: 'Scores if possible, then recruits and promotes aggressively',
         difficulty: 'easy'
-      },
-      {
-        id: 'greedy',
-        name: 'Greedy Scorer',
-        description: 'Always goes for immediate points',
-        difficulty: 'easy'
-      },
-      {
-        id: 'balanced',
-        name: 'Balanced Player',
-        description: 'Balances scoring with dice development',
-        difficulty: 'medium'
-      },
-      {
-        id: 'engine-builder',
-        name: 'Engine Builder',
-        description: 'Focuses on building dice before scoring',
-        difficulty: 'medium'
-      },
-      {
-        id: 'strategic',
-        name: 'Strategic Master',
-        description: 'Makes optimal long-term decisions',
-        difficulty: 'hard'
       }
     ];
   }
@@ -55,11 +31,7 @@ class DiceFactoryBotHandler {
   generateBotName(style) {
     const namesByStyle = {
       'pass': ['Lazy Larry', 'Pass Pat', 'Skip Sam', 'Idle Ian', 'Sleepy Sue'],
-      'random': ['Chaotic Chen', 'Random Ray', 'Wild Will', 'Unpredictable Uma'],
-      'greedy': ['Grabby Grace', 'Instant Ian', 'Hasty Hannah', 'Quick Quinn'],
-      'balanced': ['Steady Sam', 'Measured Mike', 'Balanced Beth', 'Even Eve'],
-      'engine-builder': ['Builder Bob', 'Patient Pat', 'Planner Pam', 'Setup Steve'],
-      'strategic': ['Master Maya', 'Genius Gary', 'Tactical Tina', 'Brilliant Ben']
+      'easy': ['Simple Sam', 'Easy Eddie', 'Basic Bob', 'Straightforward Sue', 'Simple Simon']
     };
     
     const names = namesByStyle[style] || ['Dice Bot'];
@@ -73,13 +45,8 @@ class DiceFactoryBotHandler {
    * @returns {Array} - Array of bot players that need to act
    */
   getPendingBots(gameState, botSystem) {
-    console.log('🔍 CHECKING PENDING BOTS:');
-    console.log('Game phase:', gameState.phase);
-    console.log('Total players:', gameState.players.length);
-    
     // Check if it's a bot's turn and they haven't acted yet
     if (gameState.phase !== 'playing') {
-      console.log('❌ Game not in playing phase');
       return [];
     }
     
@@ -88,18 +55,8 @@ class DiceFactoryBotHandler {
       const notReady = !p.isReady;
       const notFled = !p.hasFled;
       
-      console.log(`Player ${p.name} (${p.id}):`, {
-        isBot,
-        notReady,
-        notFled,
-        isPending: isBot && notReady && notFled
-      });
-      
       return isBot && notReady && notFled;
     });
-    
-    console.log(`🤖 Found ${pendingBots.length} pending bots:`, 
-      pendingBots.map(p => `${p.name} (${p.id})`));
     
     return pendingBots;
   }
@@ -114,14 +71,10 @@ class DiceFactoryBotHandler {
     // Dice Factory bots need different thinking times
     const baseDelays = {
       'pass': 500,           // Pass bots are very quick
-      'random': 1000,        // Quick random decisions
-      'greedy': 1500,        // Quick greedy decisions
-      'balanced': 2500,      // Moderate thinking
-      'engine-builder': 3000, // Longer planning
-      'strategic': 4000      // Deep strategic thinking
+      'easy': 1500           // Easy bots need time to think about actions
     };
 
-    const baseDelay = baseDelays[botPlayer.style] || 2000;
+    const baseDelay = baseDelays[botPlayer.botStyle] || 2000;
     const randomDelay = Math.random() * 1000; // Add some randomness
 
     return baseDelay + randomDelay;
@@ -134,37 +87,19 @@ class DiceFactoryBotHandler {
    * @returns {Object} - Action object
    */
   getBotAction(bot, gameState) {
-    console.log(`🤖 BOT ACTION REQUEST for ${bot.name} (${bot.id}) style: ${bot.style}`);
-    
     const botPlayer = gameState.players.find(p => p.id === bot.id);
     if (!botPlayer) {
-      console.log(`❌ Bot player ${bot.id} not found in game state`);
       return null;
     }
 
-    console.log(`✅ Bot player found: ${botPlayer.name}, isReady: ${botPlayer.isReady}`);
-
-    switch (bot.style) {
+    switch (bot.botStyle) {
       case 'pass':
         return this.getPassAction(botPlayer, gameState);
         
-      case 'random':
-        return this.getRandomAction(botPlayer, gameState);
-        
-      case 'greedy':
-        return this.getGreedyAction(botPlayer, gameState);
-        
-      case 'balanced':
-        return this.getBalancedAction(botPlayer, gameState);
-        
-      case 'engine-builder':
-        return this.getEngineBuilderAction(botPlayer, gameState);
-        
-      case 'strategic':
-        return this.getStrategicAction(botPlayer, gameState);
+      case 'easy':
+        return this.getEasyAction(botPlayer, gameState);
         
       default:
-        console.log(`⚠️ Unknown bot style: ${bot.style}, defaulting to pass`);
         return this.getPassAction(botPlayer, gameState);
     }
   }
@@ -176,92 +111,209 @@ class DiceFactoryBotHandler {
    * @returns {Object} - End turn action
    */
   getPassAction(botPlayer, gameState) {
-    console.log(`🏃 Pass bot ${botPlayer.name} ending turn immediately`);
     return { 
       action: 'end-turn' 
     };
   }
 
   /**
-   * Random bot action logic
+   * Easy bot action logic - score, recruit, promote, then pass
    * @param {Object} botPlayer - Bot player data
    * @param {Object} gameState - Game state
    * @returns {Object} - Action
    */
-  getRandomAction(botPlayer, gameState) {
-    // TODO: Implement when full Dice Factory actions are needed
-    // For now, just pass
-    console.log(`🎲 Random bot ${botPlayer.name} passing (TODO: implement random actions)`);
-    return this.getPassAction(botPlayer, gameState);
+  getEasyAction(botPlayer, gameState) {
+    // 1. First, try to score if possible (main goal)
+    const scoringAction = this.findBestScoringAction(botPlayer, gameState);
+    if (scoringAction) {
+      return scoringAction;
+    }
+    
+    // 2. Try to promote dice (free action if at max value)
+    const promoteAction = this.findPromoteAction(botPlayer, gameState);
+    if (promoteAction) {
+      return promoteAction;
+    }
+    
+    // 3. Try to recruit dice (free action)
+    const recruitAction = this.findRecruitAction(botPlayer, gameState);
+    if (recruitAction) {
+      return recruitAction;
+    }
+    
+    // 4. If no actions possible, end turn
+    return { action: 'end-turn' };
   }
 
   /**
-   * Greedy bot action logic - prioritizes immediate scoring
+   * Find the best scoring action for the bot
    * @param {Object} botPlayer - Bot player data
    * @param {Object} gameState - Game state
-   * @returns {Object} - Action
+   * @returns {Object|null} - Best scoring action or null
    */
-  getGreedyAction(botPlayer, gameState) {
-    // TODO: Implement greedy scoring logic
-    // For now, just pass
-    console.log(`💰 Greedy bot ${botPlayer.name} passing (TODO: implement greedy strategy)`);
-    return this.getPassAction(botPlayer, gameState);
+  findBestScoringAction(botPlayer, gameState) {
+    const dicePool = botPlayer.dicePool || [];
+    
+    // Filter out dice with null values (unusable dice)
+    const usableDice = dicePool.filter(die => die.value !== null);
+    
+    if (usableDice.length < 3) {
+      return null;
+    }
+    
+    // Find all possible scoring combinations using only usable dice
+    const scoringCombinations = this.findScoringCombinations(usableDice);
+    
+    if (scoringCombinations.length === 0) return null;
+    
+    // Sort by points (highest first)
+    scoringCombinations.sort((a, b) => b.points - a.points);
+    
+    const bestCombination = scoringCombinations[0];
+    
+    return {
+      action: bestCombination.type === 'straight' ? 'score-straight' : 'score-set',
+      diceIds: bestCombination.diceIds
+    };
   }
 
   /**
-   * Balanced bot action logic
+   * Find all possible scoring combinations
+   * @param {Array} dicePool - Player's dice pool
+   * @returns {Array} - Array of scoring combinations with points
+   */
+  findScoringCombinations(dicePool) {
+    const combinations = [];
+    
+    // Check for straights (consecutive values)
+    for (let start = 1; start <= 6; start++) {
+      const straight = [];
+      for (let i = 0; i < 3; i++) {
+        const value = start + i;
+        const die = dicePool.find(d => d.value === value);
+        if (die) {
+          straight.push(die);
+        } else {
+          break;
+        }
+      }
+      if (straight.length >= 3) {
+        combinations.push({
+          type: 'straight',
+          diceIds: straight.map(d => d.id),
+          points: straight.length * 2
+        });
+      }
+    }
+    
+    // Check for sets (same value)
+    const valueCounts = {};
+    dicePool.forEach(die => {
+      valueCounts[die.value] = (valueCounts[die.value] || 0) + 1;
+    });
+    
+    Object.entries(valueCounts).forEach(([value, count]) => {
+      if (count >= 3) {
+        const setDice = dicePool.filter(d => d.value === parseInt(value)).slice(0, count);
+        combinations.push({
+          type: 'set',
+          diceIds: setDice.map(d => d.id),
+          points: count * parseInt(value)
+        });
+      }
+    });
+    
+    return combinations;
+  }
+
+  /**
+   * Find recruitment action for the bot
    * @param {Object} botPlayer - Bot player data
    * @param {Object} gameState - Game state
-   * @returns {Object} - Action
+   * @returns {Object|null} - Recruitment action or null
    */
-  getBalancedAction(botPlayer, gameState) {
-    // TODO: Implement balanced strategy
-    // For now, just pass
-    console.log(`⚖️ Balanced bot ${botPlayer.name} passing (TODO: implement balanced strategy)`);
-    return this.getPassAction(botPlayer, gameState);
+  findRecruitAction(botPlayer, gameState) {
+    const dicePool = botPlayer.dicePool || [];
+    
+    // Filter out dice with null values (unusable dice) and exhausted dice
+    const usableDice = dicePool.filter(die => {
+      const hasValue = die.value !== null;
+      const notExhausted = !botPlayer.exhaustedDice || !botPlayer.exhaustedDice.includes(die.id);
+      return hasValue && notExhausted;
+    });
+    
+    const recruitmentTable = {
+      4: [1],           // d4 recruits on rolling 1
+      6: [1, 2],        // d6 recruits on rolling 1 or 2
+      8: [1, 2, 3],     // d8 recruits on rolling 1, 2, or 3
+      10: [1, 2, 3, 4], // d10 recruits on rolling 1, 2, 3, or 4
+      12: [1, 2, 3, 4, 5] // d12 recruits on rolling 1, 2, 3, 4, or 5
+    };
+    
+    // Find dice that can recruit (only usable and non-exhausted dice)
+    const recruitableDice = usableDice.filter(die => {
+      const recruitValues = recruitmentTable[die.sides] || [];
+      const canRecruit = recruitValues.includes(die.value);
+      return canRecruit;
+    });
+    
+    if (recruitableDice.length === 0) return null;
+    
+    // Just recruit the first available die
+    return {
+      action: 'recruit',
+      diceIds: [recruitableDice[0].id]
+    };
   }
 
   /**
-   * Engine builder bot action logic - focuses on dice development
+   * Find promotion action for the bot
    * @param {Object} botPlayer - Bot player data
    * @param {Object} gameState - Game state
-   * @returns {Object} - Action
+   * @returns {Object|null} - Promotion action or null
    */
-  getEngineBuilderAction(botPlayer, gameState) {
-    // TODO: Implement engine building strategy
-    // For now, just pass
-    console.log(`🏗️ Engine builder bot ${botPlayer.name} passing (TODO: implement building strategy)`);
-    return this.getPassAction(botPlayer, gameState);
+  findPromoteAction(botPlayer, gameState) {
+    const dicePool = botPlayer.dicePool || [];
+    const freePips = botPlayer.freePips || 0;
+    
+    // Filter out dice with null values (unusable dice) and exhausted dice
+    const usableDice = dicePool.filter(die => {
+      const hasValue = die.value !== null;
+      const notExhausted = !botPlayer.exhaustedDice || !botPlayer.exhaustedDice.includes(die.id);
+      return hasValue && notExhausted;
+    });
+    
+    if (freePips < 2) {
+      return null;
+    }
+    
+    // Find dice that can be promoted (only usable and non-exhausted dice, not already max size AND at max value)
+    const promotableDice = usableDice.filter(die => {
+      const canPromote = die.sides < 12 && die.value === die.sides;
+      return canPromote;
+    });
+    
+    if (promotableDice.length === 0) return null;
+    
+    // Promote the first available die
+    return {
+      action: 'promote',
+      diceIds: [promotableDice[0].id]
+    };
   }
 
   /**
-   * Strategic bot action logic - optimal play
-   * @param {Object} botPlayer - Bot player data
-   * @param {Object} gameState - Game state
-   * @returns {Object} - Action
-   */
-  getStrategicAction(botPlayer, gameState) {
-    // TODO: Implement advanced strategic logic
-    // For now, just pass
-    console.log(`🧠 Strategic bot ${botPlayer.name} passing (TODO: implement strategic logic)`);
-    return this.getPassAction(botPlayer, gameState);
-  }
-
-  /**
-   * Analyze game state for strategic decisions
-   * @param {Object} gameState - Game state
-   * @returns {Object} - Analysis data
+   * Analyze game state for bot decision making
+   * @param {Object} gameState - Current game state
+   * @returns {Object} - Analysis results
    */
   analyzeGameState(gameState) {
-    // TODO: Implement game state analysis
-    // - Opponent threats
-    // - Collapse proximity
-    // - Point potential
-    // - Resource availability
+    // Basic analysis for future bot implementations
     return {
-      collapseRisk: 'low',
-      scoringOpportunity: 'medium',
-      developmentNeeded: true
+      phase: gameState.phase,
+      round: gameState.round,
+      playerCount: gameState.players.length,
+      activePlayers: gameState.players.filter(p => !p.hasFled).length
     };
   }
 }

@@ -5,8 +5,9 @@ class BotPlayer {
   constructor(id, name, style, gameType) {
     this.id = id;
     this.name = name;
-    this.style = style; // 'random', 'always-play', 'conservative', 'aggressive', etc.
-    this.gameType = gameType; // 'war', 'dice-factory', etc.
+    this.botStyle = style; // Use botStyle for consistency
+    this.style = style;     // Keep style for backward compatibility
+    this.gameType = gameType;
     this.isBot = true;
     this.isConnected = true; // Bots are always "connected"
     this.metadata = {}; // Game-specific data storage
@@ -47,6 +48,8 @@ class BotSystem {
    * @returns {BotPlayer} - The created bot
    */
   createBot(style, gameType) {
+    console.log(`🤖 Creating bot with style: ${style}, gameType: ${gameType}`);
+    
     const botId = `bot_${gameType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const handler = this.gameHandlers.get(gameType);
@@ -55,7 +58,13 @@ class BotSystem {
     const bot = new BotPlayer(botId, name, style, gameType);
     this.bots.set(botId, bot);
     
-    console.log(`Created ${style} bot for ${gameType}: ${name} (${botId})`);
+    console.log(`🤖 Created bot:`, {
+      id: bot.id,
+      name: bot.name,
+      style: bot.style,
+      gameType: bot.gameType
+    });
+    
     return bot;
   }
 
@@ -107,11 +116,8 @@ class BotSystem {
    * @param {string} botId - Bot ID to execute turn for
    */
   executeBotTurn(io, lobbySlug, game, lobbies, botId) {
-  console.log(`🤖 Executing bot turn for ${botId}`);
-  
   const bot = this.getBot(botId);
   if (!bot) {
-    console.log(`❌ Bot ${botId} not found`);
     return;
   }
 
@@ -119,11 +125,8 @@ class BotSystem {
   const action = this.getBotAction(botId, gameState);
   
   if (!action) {
-    console.log(`❌ No action returned for bot ${botId}`);
     return;
   }
-
-  console.log(`🎮 Bot ${bot.name} taking action:`, action);
 
   // Execute the action on the game
   let result;
@@ -134,8 +137,6 @@ class BotSystem {
   }
 
   if (result.success) {
-    console.log(`✅ Bot ${bot.name} action successful`);
-    
     // Broadcast update to all human players
     const lobby = lobbies.get(lobbySlug);
     if (lobby) {
@@ -146,8 +147,11 @@ class BotSystem {
         }
       });
     }
-  } else {
-    console.log(`❌ Bot ${bot.name} action failed:`, result.error);
+    
+    // Schedule next actions (for dice-factory games)
+    if (game.state.type === 'dice-factory') {
+      this.scheduleDiceFactoryBotsIfNeeded(io, lobbySlug, game, lobbies);
+    }
   }
   }
 
@@ -256,6 +260,33 @@ class BotSystem {
   getBotMetadata(botId) {
     const bot = this.getBot(botId);
     return bot ? bot.metadata : {};
+  }
+
+  /**
+   * Schedule dice factory bot actions if needed
+   * @param {Object} io - Socket.io instance
+   * @param {string} lobbySlug - Lobby slug
+   * @param {Object} game - Game instance
+   * @param {Map} lobbies - Lobbies map
+   */
+  scheduleDiceFactoryBotsIfNeeded(io, lobbySlug, game, lobbies) {
+    if (game.state.phase !== 'playing') {
+      return;
+    }
+    
+    const pendingBots = game.getPendingBotPlayers ? 
+      game.getPendingBotPlayers().filter(p => this.isBot(p.id)) : 
+      [];
+    
+    if (pendingBots.length > 0) {
+      pendingBots.forEach((botPlayer, index) => {
+        setTimeout(() => {
+          if (!botPlayer.isReady && !botPlayer.hasFled) {
+            this.executeBotTurn(io, lobbySlug, game, lobbies, botPlayer.id);
+          }
+        }, index * 1000);
+      });
+    }
   }
 }
 

@@ -188,40 +188,22 @@ function resolveAllAuctions(io, lobbySlug, game, lobbies) {
  * @param {Map} lobbies - Lobbies map
  */
 function scheduleDiceFactoryBotsIfNeeded(io, lobbySlug, game, lobbies) {
-  console.log('🔍 CHECKING FOR PENDING DICE FACTORY BOTS...');
-  
   if (game.state.phase !== 'playing') {
-    console.log('❌ Game not in playing phase:', game.state.phase);
     return;
   }
-  
-  const allPlayers = game.state.players;
-  console.log('👥 All players in game:');
-  allPlayers.forEach(p => {
-    console.log(`  ${p.name} (${p.id}): isBot=${botSystem.isBot(p.id)}, isReady=${p.isReady}, hasFled=${p.hasFled}`);
-  });
   
   const pendingBots = game.getPendingBotPlayers ? 
     game.getPendingBotPlayers().filter(p => botSystem.isBot(p.id)) : 
     [];
   
-  console.log(`🤖 Found ${pendingBots.length} pending bots`);
-  
   if (pendingBots.length > 0) {
     pendingBots.forEach((botPlayer, index) => {
-      console.log(`⏰ Scheduling bot ${botPlayer.name} (${botPlayer.id}) - ${index * 1000}ms delay`);
-      
       setTimeout(() => {
         if (!botPlayer.isReady && !botPlayer.hasFled) {
-          console.log(`🎮 Executing bot turn for ${botPlayer.name}`);
           botSystem.executeBotTurn(io, lobbySlug, game, lobbies, botPlayer.id);
-        } else {
-          console.log(`⚠️ Bot ${botPlayer.name} no longer needs action`);
         }
       }, index * 1000);
     });
-  } else {
-    console.log('✅ No pending bots found');
   }
 }
 
@@ -667,16 +649,13 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
 
   // End turn
   socket.on('dice-factory-end-turn', (data = {}) => {
-    console.log('🎲 DICE FACTORY END-TURN:', socket.id, data);
     const game = games.get(socket.lobbySlug);
     
     if (!game || game.state.type !== 'dice-factory') {
-      console.log('❌ No game found or wrong type');
       return;
     }
     
     const result = game.setPlayerReady(socket.id, data.dividendChoice);
-    console.log('✅ setPlayerReady result:', result);
     
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
@@ -706,27 +685,21 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
 
   // Undo action
   socket.on('dice-factory-undo', () => {
-    console.log('🟠 RECEIVED dice-factory-undo event from player:', socket.id); // DEBUG
     const game = games.get(socket.lobbySlug);
     if (!game || game.state.type !== 'dice-factory') {
-      console.log('❌ No game found or wrong type for undo'); // DEBUG
       return;
     }
-    console.log('🟠 Calling game.undoLastAction for player:', socket.id); // DEBUG
     const result = game.undoLastAction(socket.id);
     if (result.success) {
       const turnModifications = game.factorySystem.getCurrentTurnModifications();
-      console.log('🟢 (pre-broadcast) currentTurnModifications after undo:', JSON.stringify(turnModifications, null, 2)); // DEBUG
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
       // Emit turn-modifications-update to all players in the lobby
       const lobby = lobbies.get(socket.lobbySlug);
       if (lobby) {
         const turnModifications = game.factorySystem.getCurrentTurnModifications();
         const deckStatus = game.factorySystem.getDeckStatus();
-        console.log('🟢 FINAL currentTurnModifications before emit:', JSON.stringify(turnModifications, null, 2)); // DEBUG
         lobby.players.forEach(player => {
           if (player.isConnected && !botSystem.isBot(player.id)) {
-            console.log(`📤 Sending turn-modifications-update to player ${player.name} (${player.id})`); // DEBUG
             io.to(player.id).emit('turn-modifications-update', {
               modifications: turnModifications,
               deckStatus: deckStatus
@@ -787,7 +760,6 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
       
-      console.log('🎮 NEW GAME STARTED - Scheduling initial bots');
       scheduleDiceFactoryBotsIfNeeded(io, socket.lobbySlug, game, lobbies);
     } else {
       socket.emit('dice-factory-error', { error: result.error });

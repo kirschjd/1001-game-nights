@@ -60,7 +60,6 @@ export interface DiceFactoryGameState {
   players: Player[];
   currentPlayer?: Player;
   exhaustedDice?: string[];
-  firstRecruits?: Set<string>;
   firstStraight?: boolean;
   firstSet?: boolean;
   variant?: string;

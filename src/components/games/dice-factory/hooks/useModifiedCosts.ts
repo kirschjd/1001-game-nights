@@ -38,7 +38,6 @@ export const useModifiedCosts = ({ socket, currentPlayer }: UseModifiedCostsProp
     if (!socket) return;
 
     const handleModifiedCostsUpdate = (updatedCosts: ModifiedCosts) => {
-      console.log('💰 Received modified costs:', updatedCosts);
       setCosts(updatedCosts);
     };
 

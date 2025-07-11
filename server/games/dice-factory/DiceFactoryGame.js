@@ -27,7 +27,6 @@ class DiceFactoryGame {
       winner: null,
       lastCollapseRoll: null,
       gameLog: [],
-      firstRecruits: new Set(),
       firstStraight: false,
       firstSet: false,
       experimentalTurnLimit: experimentalTurnLimit,
@@ -700,14 +699,11 @@ class DiceFactoryGame {
   if (!player.actionHistory || player.actionHistory.length === 0) {
     return { success: false, error: 'No actions to undo' };
   }
-  console.log('🟠 undoLastAction: actionHistory =', JSON.stringify(player.actionHistory, null, 2)); // DEBUG
   // Remove the current state (last action result)
   const lastAction = player.actionHistory.pop();
-  console.log('🟠 undoLastAction: lastAction =', JSON.stringify(lastAction, null, 2)); // DEBUG
   
   // Handle reservation undo
   if (lastAction.type === 'reserve_modification' && lastAction.modificationId) {
-    console.log('🟠 RESERVATION UNDO: Triggering reservation undo logic'); // DEBUG
     this.factorySystem.undoReserveModification(playerId, lastAction.modificationId, lastAction.cost);
     this.state.gameLog = require('./utils/GameLogger').logAction(
       this.state.gameLog,
@@ -952,7 +948,6 @@ class DiceFactoryGame {
     this.state.winner = null;
     this.state.lastCollapseRoll = null;
     this.state.gameLog = [];
-    this.state.firstRecruits.clear();
     this.state.firstStraight = false;
     this.state.firstSet = false;
 

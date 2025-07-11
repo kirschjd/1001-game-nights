@@ -203,6 +203,8 @@ class TurnSystem {
     player._arbitrageUsedThisTurn = false;
     // Reset roller derby usage
     player._rollerDerbyUsedThisTurn = false;
+    // Reset outsourcing usage
+    player._outsourcingUsedThisTurn = false;
   
     // Ensure minimum dice pool
     const minDiceCheck = require('../data/ValidationRules').validateMinimumDicePool(player);

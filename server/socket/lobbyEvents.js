@@ -272,26 +272,17 @@ function registerLobbyEvents(io, socket, lobbies, games) {
 
     console.log(`🤖 Scheduling ${pendingBots.length} dice factory bots from lobby events`);
 
-    botSystem.scheduleBotActions(
-      lobbySlug, 
-      game.getGameState(), 
-      (botId, action) => {
-        // Handle bot action
-        const result = game.setPlayerReady(botId);
-        if (result.success) {
-          // Broadcast update
-          const lobby = lobbies.get(lobbySlug);
-          if (lobby) {
-            lobby.players.forEach(player => {
-              if (player.isConnected && !botSystem.isBot(player.id)) {
-                const playerView = game.getPlayerView(player.id);
-                io.to(player.id).emit('game-state-updated', playerView);
-              }
-            });
-          }
+    // Use the bot system's executeBotTurn method instead of just ending turn
+    pendingBots.forEach((botPlayer, index) => {
+      setTimeout(() => {
+        if (!botPlayer.isReady && !botPlayer.hasFled) {
+          console.log(`🎮 Executing bot turn for ${botPlayer.name}`);
+          botSystem.executeBotTurn(io, lobbySlug, game, lobbies, botPlayer.id);
+        } else {
+          console.log(`⚠️ Bot ${botPlayer.name} no longer needs action`);
         }
-      }
-    );
+      }, index * 1000);
+    });
   }
 
   // Handle player disconnection
@@ -342,7 +333,12 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     const gameType = lobby.gameType || 'dice-factory';
     const bot = botSystem.createBot(botStyle, gameType);
     bot.name = botName;
-    bot.botStyle = botStyle;
+    
+    console.log(`🎯 BOT CREATED WITH STYLE:`, {
+      botStyle: bot.botStyle,
+      style: bot.style,
+      requestedStyle: botStyle
+    });
 
     console.log('🎯 BOT CREATED:', {
       botId: bot.id,
