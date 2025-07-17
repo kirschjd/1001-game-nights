@@ -266,7 +266,7 @@ useEffect(() => {
           />
           <div>
             <h1 className="text-2xl font-bold text-lion-light">
-              🎮 Playing: {gameState.type === 'war' ? 
+              Playing: {gameState.type === 'war' ? 
                 (gameState as WarGameState).variantDisplayName || 'War' : 
                 gameState.type === 'dice-factory' ? 'Dice Factory' : 
                 gameState.type}

@@ -58,8 +58,8 @@ const LandingPage: React.FC = () => {
               alt="Home Icon"
               className="w-16 h-16 rounded-lg mr-4 border-2 border-lion"
             />
-            <h1 className="text-6xl font-bold bg-gradient-to-r from-lion via-lion-light to-tea-rose bg-clip-text text-transparent">
-              🎲 1001 Game Nights 🎮
+            <h1 className="text-6xl font-bold text-white text-shadow" style={{lineHeight: '1.1'}}>
+              1001 Game Nights
             </h1>
           </div>
           <p className="text-xl text-gray-300">
