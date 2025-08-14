@@ -53,6 +53,7 @@ A modern web platform for hosting and playing multiplayer games with friends—f
 ├── node_modules/                   # Dependencies
 ├── src/                            # Frontend React app
 └── server/                         # Backend Node.js server
+```
 ### Frontend (src/)
 ```
 App.css
