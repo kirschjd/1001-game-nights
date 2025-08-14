@@ -7,8 +7,6 @@ A modern web platform for hosting and playing multiplayer games with friends—f
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- npm (or yarn)
 
 ### Installation
 
@@ -40,17 +38,130 @@ A modern web platform for hosting and playing multiplayer games with friends—f
 
 ```
 1001-game-nights/
-├── server/           # Node.js backend (Express + Socket.io)
-│   ├── games/        # Game logic (modular)
-│   ├── routes/       # REST API endpoints
-│   ├── socket/       # Socket.io event handlers
-│   └── index.js      # Server entry point
-├── src/              # React frontend (TypeScript)
-│   ├── components/   # Pages & game UIs
-│   └── index.tsx     # React entry
-├── public/           # Static assets
-├── package.json      # Scripts & dependencies
-└── README.md
+├── package.json                    # Dependencies & scripts
+├── tailwind.config.js              # Tailwind CSS config
+├── tsconfig.json                   # TypeScript config (excludes old/)
+├── .gitignore                      # Git ignore (includes **/old/**)
+├── README.md                       # Project documentation
+├── public/                         # Static assets
+│   ├── index.html                  # HTML template
+│   └── assets/                     # Game assets
+│       ├── icon-dice-factory.jpg   # Game icons
+│       ├── icon-war.jpg
+│       └── icon-home.jpg
+├── build/                          # Production build output
+├── node_modules/                   # Dependencies
+├── src/                            # Frontend React app
+└── server/                         # Backend Node.js server
+### Frontend (src/)
+```
+App.css
+App.tsx
+index.css
+index.tsx
+tree_src.txt
+
+components/
+   ExplorePage.tsx
+   GamePage.tsx
+   LandingPage.tsx
+   LobbyPage.tsx
+   games/
+      dice-factory/
+         DiceFactoryGame.tsx
+         index.ts
+         components/
+            game/
+               GameHeader.tsx
+               GameLog.tsx
+            market/
+               ActiveFactoryEffects.tsx
+               ActiveFactoryModifications.tsx
+               AuctionModal.tsx
+            player/
+               DiceRenderer.tsx
+               EffectHand.tsx
+               OwnedModifications.tsx
+               PlayedEffects.tsx
+               PlayerDicePool.tsx
+               PlayerList.tsx
+         hooks/
+            useDiceActions.ts
+            useGameState.ts
+         old/
+            DiceFactoryGame.bak
+         types/
+            DiceFactoryTypes.ts
+      war/
+         EnhancedWarGame.tsx
+         EnhancedWarSetup.tsx
+         index.ts
+         WarGame.tsx
+         components/
+         hooks/
+            useWarActions.ts
+            useWarGame.ts
+         old/
+            WarGame.bak
+         types/
+            WarTypes.ts
+         utils/
+            cardHelpers.ts
+```
+
+### Backend (server/)
+```
+index.bak
+index.js
+tree_server.txt
+
+games/
+   bots/
+      BotSystem.js
+      DiceFactoryBotHandler.js
+      index.js
+      WarBotHandler.js
+   dice-factory/
+      DiceFactoryGame.js
+      index.js
+      data/
+         FactoryEffects.js
+         FactoryModifications.js
+         GameConstants.js
+         ValidationRules.js
+      old/
+         dice-factory.bak
+      systems/
+         CollapseSystem.js
+         DiceSystem.js
+         FactorySystem.js
+         ScoringSystem.js
+         TurnSystem.js
+      utils/
+         DiceHelpers.js
+         GameLogger.js
+   war/
+      EnhancedWarGame.js
+      index.js
+      WarGame.js
+      events/
+         basicWarEvents.js
+         enhancedWarEvents.js
+         index.js
+      old/
+         war.bak
+      utils/
+         warConstants.js
+      variants/
+         VariantRegistry.js
+routes/
+   api.js
+socket/
+   diceFactoryEvents.js
+   lobbyEvents.js
+   socketHandler.js
+   warEvents.js
+```
 ```
 
 ---
@@ -58,12 +169,12 @@ A modern web platform for hosting and playing multiplayer games with friends—f
 ## 🎮 Features
 
 - **Real-time multiplayer** with Socket.io
-- **Dynamic lobby creation** (unique 3-word URLs)
+- **Dynamic lobby creation** 
 - **Leader-based lobby control**
 - **Player reconnection** and state recovery
 - **Bot player support** for all games
 - **Game selection and modular game logic**
-- **Responsive UI** (Tailwind CSS)
+- **Responsive UI** 
 - **Comment/feedback system**
 - **Bug tracking checklist**
 
@@ -79,50 +190,23 @@ A modern web platform for hosting and playing multiplayer games with friends—f
 - Fast-paced, casual gameplay
 
 ### Dice Factory
-- 3–5 players (or bots)
+- 2–6 players (or bots)
 - Complex dice management, resource and risk balancing
-- Modular systems: Dice, Scoring, Collapse, Factory Effects
-- d4 → d20 dice progression, factory upgrades, and collapse events
+- Modular systems: Dice, Scoring, Factory Modifications
+- d4 → d12 dice progression, factory upgrades, and collapse events
 - Strategic, longer-form gameplay
 
 ---
 
 ## 🧩 Architecture Overview
 
-- **Backend:** Node.js + Express, modular game logic, Socket.io for real-time events, REST API for comments/lobbies, in-memory data (DB planned)
-- **Frontend:** React 18 + TypeScript, modular game UIs, custom hooks for state/actions, Tailwind CSS
-- **Bots:** Pluggable bot system for all games
-- **Game logic:** Each game implements `initialize`, `processAction`, `getPlayerView`, `isGameComplete`
-
----
-
 ## 🔌 API & Socket Events
 
-### REST API
-- `POST /api/comments` — Submit user comments
-- `GET /api/comments` — Retrieve comments (admin)
-- `GET /api/lobbies/:slug` — Get lobby info
+## REST API
 
-### Socket.io Events (examples)
-- `join-lobby` — Player joins a lobby
-- `update-lobby-title` — Leader updates lobby title
-- `update-player-name` — Player changes their name
-- `change-leader` — Transfer lobby leadership
-- `start-game` — Leader starts the game
-- `game-action` — Player submits a game action
-- `reconnect` — Player reconnects to lobby/game
-
----
+## Socket.io Events (examples)
 
 ## 🛠️ Technical Stack
-
-- **Frontend:** React 18, TypeScript, Tailwind CSS
-- **Backend:** Node.js, Express, Socket.io
-- **Bots:** Modular bot system (Node.js)
-- **Database:** In-memory (persistent DB planned)
-- **Deployment:** Railway.app, or any Node.js host
-
----
 
 ## 📝 Contributing
 
