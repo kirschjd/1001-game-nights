@@ -47,6 +47,17 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
     toggleActionMode
   } = useGameState();
 
+  // Tremor state for error popup
+  const [tremor, setTremor] = React.useState(false);
+
+  useEffect(() => {
+    if (message && messageType === 'error') {
+      setTremor(true);
+      const timeout = setTimeout(() => setTremor(false), 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [message, messageType]);
+
   const diceActions = useDiceActions({
     gameState,
     socket,
@@ -180,15 +191,21 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-payne-grey-dark text-white relative">
+  <div className={`min-h-screen bg-payne-grey-dark text-white relative${tremor ? ' tremor' : ''}`}>
       {/* Subtle texture overlay */}
       <div className="absolute inset-0 opacity-40" style={{
         backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
         backgroundSize: '20px 20px'
       }}></div>
-      
+
+      {/* Popup for invalid actions */}
+      {message && messageType === 'error' && (
+        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 bg-red-700 text-white px-6 py-3 rounded-lg shadow-lg border border-red-400 animate-fade-in">
+          <span className="font-semibold">Invalid Action:</span> {message}
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto p-6 space-y-6 relative z-10">
-        
         {/* Game Header */}
         <GameHeader 
           gameState={gameState}
@@ -196,7 +213,6 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
 
         {/* Main Content Layout */}
         <div className="space-y-6">
-          
           {/* Player's Dice Pool - "Your Factory" */}
           {currentPlayer && (
             <PlayerDicePool
@@ -213,7 +229,7 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
               socket={socket}
             />
           )}
-          
+
           {/* Factory Items and Hand - Side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Factory Items Owned */}
@@ -234,7 +250,6 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
 
           {/* Factory Effects and Modifications - Market/Bidding */}
           <div className="space-y-6">
-
             {/* Active Factory Effects Panel */}
             <ActiveFactoryEffects 
               effects={activeEffects || []} 
@@ -255,7 +270,6 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
               currentPlayerId={currentPlayer?.id || ''}
               phase={phase}
             />
-            
             <GameLog gameLog={gameLog} />
           </div>
         </div>
