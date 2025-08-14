@@ -666,7 +666,7 @@ const LobbyPage: React.FC = () => {
 
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">💥 Ending the Game</h3>
-                  {selectedDFVariant === 'experimental' ? (
+                  {lobby.gameOptions?.variant === 'experimental' ? (
                     <p className="text-sm">
                       The game ends after a set number of turns. Players compete to score the most points within 
                       the time limit, with no factory collapse mechanics.
