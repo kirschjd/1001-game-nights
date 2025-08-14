@@ -156,18 +156,19 @@ class FactorySystem {
       return { success: false, message: 'Modification deck is empty' };
     }
 
-    // Calculate cost (9 pips, reduced by Market Manipulation if player has it)
-    const baseCost = 9;
-    const actualCost = getActualModificationCost(player, 'dummy_mod'); // Uses Market Manipulation check
-
-    if (player.freePips < actualCost) {
-      return { success: false, message: 'Not enough pips' };
-    }
-
     // Draw from top of deck
     const { drawnCards, remainingDeck } = drawFromDeck(this.gameState.modificationDeck, 1);
     const modificationId = drawnCards[0];
     const modification = getModificationById(modificationId);
+
+    // Calculate cost (9 pips, reduced by Market Manipulation if player has it)
+    const actualCost = getActualModificationCost(player, modificationId);
+
+    if (player.freePips < actualCost) {
+      // Put the card back and shuffle
+      this.gameState.modificationDeck = [modificationId, ...remainingDeck];
+      return { success: false, message: 'Not enough pips' };
+    }
 
     if (!modification) {
       return { success: false, message: 'Invalid modification drawn' };
