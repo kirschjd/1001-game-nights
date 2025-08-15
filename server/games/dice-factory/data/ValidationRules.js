@@ -100,40 +100,50 @@ function validateProcessing(dice) {
  * @returns {Object} - {isValid: boolean, reason: string, points?: number}
  */
 function validateStraight(dice, verticalIntegration = false) {
+  // LOGGING: Start validation
+  console.log('[validateStraight] Dice:', dice.map(d => `d${d.sides}:${d.value}`), 'verticalIntegration:', verticalIntegration);
   if (dice.length < SCORING.MIN_STRAIGHT_LENGTH) {
+    console.log('[validateStraight] Failed: Not enough dice');
     return { 
       isValid: false, 
       reason: `Need at least ${SCORING.MIN_STRAIGHT_LENGTH} dice for a straight` 
     };
   }
-  
   for (const die of dice) {
     if (die.value === null) {
+      console.log('[validateStraight] Failed: Die missing value', die);
       return { isValid: false, reason: 'All dice must have values to score' };
     }
   }
-  
+  // Ensure all dice have unique values
+  const values = dice.map(d => d.value);
+  const uniqueValues = new Set(values);
+  if (uniqueValues.size !== values.length) {
+    console.log('[validateStraight] Failed: Duplicate values', values);
+    return { isValid: false, reason: 'All dice in a straight must have unique values' };
+  }
   // Sort dice by value
-  const sortedValues = dice.map(d => d.value).sort((a, b) => a - b);
-  
-  // Check if values form a consecutive sequence (with optional one gap)
+  const sortedValues = values.sort((a, b) => a - b);
+  // Count gaps between consecutive values
   let gaps = 0;
   for (let i = 1; i < sortedValues.length; i++) {
-    if (sortedValues[i] !== sortedValues[i-1] + 1) {
-      gaps++;
-      if (!verticalIntegration || gaps > 1) {
-        return { isValid: false, reason: verticalIntegration ? 'With Vertical Integration, only one gap is allowed in a straight' : 'Dice values must be consecutive for a straight' };
-      }
-      // Check that the gap is exactly 1 (not larger)
-      if (verticalIntegration && sortedValues[i] - sortedValues[i-1] > 2) {
-        return { isValid: false, reason: 'With Vertical Integration, gaps must be exactly 1 (e.g., 1-3 is valid, 1-4 is not)' };
-      }
+    const diff = sortedValues[i] - sortedValues[i-1];
+    if (diff !== 1) {
+      gaps += diff - 1;
     }
   }
-  
+  console.log('[validateStraight] Sorted values:', sortedValues, 'Gaps:', gaps);
+  if (!verticalIntegration && gaps > 0) {
+    console.log('[validateStraight] Failed: Gaps not allowed');
+    return { isValid: false, reason: 'Dice values must be consecutive for a straight' };
+  }
+  if (verticalIntegration && gaps > 1) {
+    console.log('[validateStraight] Failed: Too many gaps');
+    return { isValid: false, reason: 'With Vertical Integration, only one missing number is allowed in a straight' };
+  }
   // Calculate points: highest value * number of dice
   const points = Math.max(...sortedValues) * dice.length;
-  
+  console.log('[validateStraight] Success: Points:', points);
   return { isValid: true, reason: '', points };
 }
 

@@ -361,13 +361,27 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
 
   // Score straight
   socket.on('dice-factory-score-straight', (data) => {
+    console.log('[Socket] dice-factory-score-straight called:', {
+      playerId: socket.id,
+      lobbySlug: socket.lobbySlug,
+      diceIds: data.diceIds,
+      data
+    });
+    // Log dice values for scoring
+    if (game && game.state && Array.isArray(data.diceIds)) {
+      const player = game.state.players.find(p => p.id === socket.id);
+      if (player) {
+        const dice = player.dicePool.filter(die => data.diceIds.includes(die.id));
+        console.log('[Socket] dice-factory-score-straight dice values:', dice.map(d => `d${d.sides}:${d.value}`));
+      }
+    }
     const game = games.get(socket.lobbySlug);
-    
     if (!game || game.state.type !== 'dice-factory') {
+      console.log('[Socket] dice-factory-score-straight: No game or wrong type');
       return;
     }
-    
     const result = game.scoreStraight(socket.id, data.diceIds);
+    console.log('[Socket] dice-factory-score-straight result:', result);
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
       scheduleDiceFactoryBotsIfNeeded(io, socket.lobbySlug, game, lobbies);
@@ -408,6 +422,14 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       return;
     }
     
+    // Log dice values for preview
+    if (game && game.state && Array.isArray(data.diceIds)) {
+      const player = game.state.players.find(p => p.id === socket.id);
+      if (player) {
+        const dice = player.dicePool.filter(die => data.diceIds.includes(die.id));
+        console.log('[Socket] dice-factory-calculate-score-preview dice values:', dice.map(d => `d${d.sides}:${d.value}`));
+      }
+    }
     const result = game.calculateScorePreview(socket.id, data.diceIds);
     if (result.success) {
       socket.emit('score-preview-calculated', result.preview);

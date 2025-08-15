@@ -53,11 +53,11 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({ selectedDice, socket, curre
 
   const handleScoreClick = () => {
     if (!socket || selectedDice.length === 0) return;
-    
     const diceIds = selectedDice.map(die => die.id);
-    
     // Try straight first, then set
     if (preview?.straight) {
+      socket.emit('dice-factory-score-straight', { diceIds });
+    } else if (preview?.gapStraight) {
       socket.emit('dice-factory-score-straight', { diceIds });
     } else if (preview?.set) {
       socket.emit('dice-factory-score-set', { diceIds });
@@ -92,13 +92,19 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({ selectedDice, socket, curre
           <div className="text-gray-400">Values: {preview.straight.values.join('-')}</div>
         </div>
       )}
-      {preview.set && !preview.straight && (
+      {preview.gapStraight && (
+        <div>
+          <div className="font-medium text-yellow-400">Straight (Vertical Integration, gap at {preview.gapStraight.gapValue}): {preview.gapStraight.formula}</div>
+          <div className="text-gray-400">Values: {preview.gapStraight.values.join('-')}</div>
+        </div>
+      )}
+      {preview.set && !preview.straight && !preview.gapStraight && (
         <div>
           <div className="font-medium text-teal-400">Set: {preview.set.formula}</div>
           <div className="text-gray-400">{preview.set.diceCount} dice of value {preview.set.value}</div>
         </div>
       )}
-      {preview.notes.length > 0 && !preview.straight && !preview.set && (
+      {preview.notes.length > 0 && !preview.straight && !preview.set && !preview.gapStraight && (
         <div className="text-orange-400">
           {preview.notes.map((note: string, index: number) => (
             <div key={index}>{note}</div>
