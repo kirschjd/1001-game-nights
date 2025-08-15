@@ -215,6 +215,35 @@ function scheduleDiceFactoryBotsIfNeeded(io, lobbySlug, game, lobbies) {
  * @param {Map} games - Games storage
  */
 function registerDiceFactoryEvents(io, socket, lobbies, games) {
+  // Handle discarding a modification to add a new one
+  socket.on('dice-factory-discard-modification', (data) => {
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory') {
+      socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
+      return;
+    }
+    const player = game.state.players.find(p => p.id === socket.id);
+    if (!player) {
+      socket.emit('dice-factory-error', { error: 'Player not found' });
+      return;
+    }
+    // Remove the selected modification
+    player.modifications = (player.modifications || []).filter(modId => modId !== data.discardId);
+    // Add the new modification
+    if (data.newModificationId) {
+      player.modifications.push(data.newModificationId);
+      game.factorySystem.applyModification(player.id, data.newModificationId);
+    }
+    broadcastPlayerFactoryItems(io, player.id, game);
+    broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    // Always include requireDiscard if player still has >3 mods after discard
+    const requireDiscard = (player.modifications?.length || 0) > 3;
+    socket.emit('modification-purchased', {
+      modification: data.newModificationId,
+      source: 'discard',
+      requireDiscard
+    });
+  });
 
   // ===== EXISTING DICE EVENTS =====
 
@@ -561,7 +590,8 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
 
       socket.emit('modification-purchased', {
         modification: result.modification,
-        source: 'deck'
+        source: 'deck',
+        requireDiscard: result.requireDiscard || false
       });
 
       scheduleDiceFactoryBotsIfNeeded(io, socket.lobbySlug, game, lobbies);

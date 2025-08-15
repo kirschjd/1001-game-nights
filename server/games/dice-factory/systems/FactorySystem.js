@@ -147,49 +147,25 @@ class FactorySystem {
    */
   purchaseRandomModification(playerId) {
     const player = this.gameState.players.find(p => p.id === playerId);
-    
-    if (!player) {
-      return { success: false, message: 'Player not found' };
-    }
-
-    if (this.gameState.modificationDeck.length === 0) {
-      return { success: false, message: 'Modification deck is empty' };
-    }
-
-    // Draw from top of deck
+    if (!player) return { success: false, message: 'Player not found' };
+    if (this.gameState.modificationDeck.length === 0) return { success: false, message: 'Modification deck is empty' };
     const { drawnCards, remainingDeck } = drawFromDeck(this.gameState.modificationDeck, 1);
     const modificationId = drawnCards[0];
     const modification = getModificationById(modificationId);
-
-    // Calculate cost (9 pips, reduced by Market Manipulation if player has it)
     const actualCost = getActualModificationCost(player, modificationId);
-
     if (player.freePips < actualCost) {
-      // Put the card back and shuffle
       this.gameState.modificationDeck = [modificationId, ...remainingDeck];
       return { success: false, message: 'Not enough pips' };
     }
-
-    if (!modification) {
-      return { success: false, message: 'Invalid modification drawn' };
-    }
-
-    // Check if player already has this modification and it's not stackable
+    if (!modification) return { success: false, message: 'Invalid modification drawn' };
     if (!modification.stackable && player.modifications?.includes(modificationId)) {
-      // Put the card back and shuffle
       this.gameState.modificationDeck = [modificationId, ...remainingDeck];
       return { success: false, message: 'Drew a modification you already own (not stackable)' };
     }
-
-    // Purchase successful
     this.gameState.modificationDeck = remainingDeck;
     player.freePips -= actualCost;
     player.modifications.push(modificationId);
-
-    // Apply modification immediately
     this.applyModification(playerId, modificationId);
-
-    // Log purchase
     this.gameState.gameLog = logFactoryPurchase(
       this.gameState.gameLog,
       player.name,
@@ -198,12 +174,16 @@ class FactorySystem {
       actualCost,
       this.gameState.round
     );
-
-    return { 
-      success: true, 
-      message: `Purchased ${modification.name} from deck`,
-      modification: modification
-    };
+    // If player now has more than 3 mods, trigger discard flow
+    if ((player.modifications?.length || 0) > 3) {
+      return {
+        success: true,
+        requireDiscard: true,
+        message: 'You must discard a modification before keeping another.',
+        modification: modification
+      };
+    }
+    return { success: true, message: `Purchased ${modification.name} from deck`, modification: modification };
   }
 
   /**
@@ -213,13 +193,11 @@ class FactorySystem {
   resolveModificationAuctions() {
     const auctions = [];
     for (const modCard of this.gameState.currentTurnModifications) {
-      // Reservation-based logic
       if (modCard.reservations && modCard.reservations.length > 0) {
         if (modCard.reservations.length === 1) {
-          // Single reserver: award modification
           const reserver = this.gameState.players.find(p => p.id === modCard.reservations[0].playerId);
           if (reserver) {
-            reserver.modifications.push(modCard.modTypeId); // Give the player the type, not the instance id
+            reserver.modifications.push(modCard.modTypeId);
             modCard.winner = reserver.id;
             this.applyModification(reserver.id, modCard.modTypeId);
             this.gameState.gameLog = logFactoryPurchase(
@@ -227,12 +205,19 @@ class FactorySystem {
               reserver.name,
               'modification (reserved)',
               modCard.modification.name,
-              0, // Cost already paid
+              0,
               this.gameState.round
             );
+            if ((reserver.modifications?.length || 0) > 3) {
+              modCard.requireDiscard = true;
+              modCard.pendingDiscard = {
+                playerId: reserver.id,
+                modTypeId: modCard.modTypeId,
+                modification: modCard.modification
+              };
+            }
           }
         } else {
-          // Multiple reservers: trigger auction
           auctions.push({
             modificationId: modCard.id,
             modification: modCard.modification,
@@ -240,7 +225,6 @@ class FactorySystem {
           });
         }
       }
-      // If no reservations, do nothing (mod is discarded)
     }
     return { success: true, auctions };
   }
@@ -253,14 +237,9 @@ class FactorySystem {
    */
   resolveBlindAuction(modificationId, blindBids) {
     const modCard = this.gameState.currentTurnModifications.find(card => card.id === modificationId);
-    if (!modCard) {
-      return { success: false, message: 'Modification not found in current turn' };
-    }
-
-    // Find highest bid
+    if (!modCard) return { success: false, message: 'Modification not found in current turn' };
     let highestBid = -1;
     let winners = [];
-    
     Object.entries(blindBids).forEach(([playerId, bidAmount]) => {
       if (bidAmount > highestBid) {
         highestBid = bidAmount;
@@ -269,9 +248,7 @@ class FactorySystem {
         winners.push(playerId);
       }
     });
-
     if (winners.length === 0 || highestBid === 0) {
-      // No valid bids
       this.gameState.gameLog = logAction(
         this.gameState.gameLog,
         'SYSTEM',
@@ -280,9 +257,7 @@ class FactorySystem {
       );
       return { success: true, winner: null };
     }
-
     if (winners.length > 1) {
-      // Tie - nobody gets it
       this.gameState.gameLog = logAction(
         this.gameState.gameLog,
         'SYSTEM',
@@ -291,16 +266,9 @@ class FactorySystem {
       );
       return { success: true, winner: null };
     }
-
-    // Single winner
     const winnerId = winners[0];
     const winner = this.gameState.players.find(p => p.id === winnerId);
-    
-    if (!winner) {
-      return { success: false, message: 'Winner not found' };
-    }
-
-    // Validate winner can still afford the bid
+    if (!winner) return { success: false, message: 'Winner not found' };
     if (winner.freePips < highestBid) {
       this.gameState.gameLog = logAction(
         this.gameState.gameLog,
@@ -310,15 +278,10 @@ class FactorySystem {
       );
       return { success: true, winner: null };
     }
-
-    // Award modification to winner
     winner.freePips -= highestBid;
     winner.modifications.push(modCard.modTypeId);
     modCard.winner = winnerId;
-
-    // Apply modification
     this.applyModification(winnerId, modCard.modTypeId);
-
     this.gameState.gameLog = logFactoryPurchase(
       this.gameState.gameLog,
       winner.name,
@@ -327,9 +290,23 @@ class FactorySystem {
       highestBid,
       this.gameState.round
     );
-
-    return { 
-      success: true, 
+    if ((winner.modifications?.length || 0) > 3) {
+      modCard.requireDiscard = true;
+      modCard.pendingDiscard = {
+        playerId: winnerId,
+        modTypeId: modCard.modTypeId,
+        modification: modCard.modification,
+        bidAmount: highestBid
+      };
+      return {
+        success: true,
+        requireDiscard: true,
+        message: 'You must discard a modification before keeping another.',
+        modification: modCard.modification
+      };
+    }
+    return {
+      success: true,
       winner: {
         playerId: winnerId,
         playerName: winner.name,
@@ -713,5 +690,4 @@ class FactorySystem {
     return { success: true, message: 'Reservation undone' };
   }
 }
-
 module.exports = FactorySystem;

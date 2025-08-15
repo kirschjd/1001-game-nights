@@ -187,10 +187,12 @@ const LobbyPage: React.FC = () => {
   const isLeader = lobby && socket && lobby.leaderId === socket.id;
 
   // Get game-specific colors
-  const gameColor = lobby?.gameType === 'war' ? 'tea-rose' : 'uranian-blue';
+  const gameColor = lobby?.gameType === 'war' ? 'tea-rose' : lobby?.gameType === 'henhur' ? 'amber-400' : 'uranian-blue';
   const gameColorClasses = lobby?.gameType === 'war' 
     ? 'border-tea-rose/30 bg-tea-rose/10' 
-    : 'border-uranian-blue/30 bg-uranian-blue/10';
+    : lobby?.gameType === 'henhur' 
+      ? 'border-amber-400/30 bg-amber-400/10' 
+      : 'border-uranian-blue/30 bg-uranian-blue/10';
 
   if (!lobby) {
     return (
@@ -220,7 +222,7 @@ const LobbyPage: React.FC = () => {
             <div>
               <h1 className="text-3xl font-bold mb-1 text-lion-light">🎮 {lobby.title}</h1>
               <p className="text-gray-300">
-                Playing: {lobby.gameType === 'war' ? 'War' : 'Dice Factory'}
+                Playing: {lobby.gameType === 'war' ? 'War' : lobby.gameType === 'dice-factory' ? 'Dice Factory' : lobby.gameType === 'henhur' ? 'HenHur' : lobby.gameType}
               </p>
             </div>
           </div>
@@ -429,6 +431,7 @@ const LobbyPage: React.FC = () => {
                 >
                   <option value="war">War</option>
                   <option value="dice-factory">Dice Factory</option>
+                  <option value="henhur">HenHur</option>
                 </select>
                 <img 
                   src={`/assets/icon-${lobby.gameType}.jpg`} 
@@ -471,7 +474,13 @@ const LobbyPage: React.FC = () => {
                 <div className="flex gap-2">
                   <select
                     value={selectedDFVariant}
-                    onChange={e => setSelectedDFVariant(e.target.value)}
+                    onChange={e => {
+                      const newVariant = e.target.value;
+                      setSelectedDFVariant(newVariant);
+                      if (socket && isLeader) {
+                        socket.emit('update-df-variant', { slug, variant: newVariant });
+                      }
+                    }}
                     className="flex-1 px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
                   >
                     <option value="standard">Standard</option>
@@ -582,17 +591,40 @@ const LobbyPage: React.FC = () => {
                 </div>
               </div>
             </div>
+          ) : lobby.gameType === 'henhur' ? (
+            <div className={`p-6 rounded-lg border ${gameColorClasses}`}>
+              <h2 className="text-2xl font-bold mb-4 text-amber-400">🐓 HenHur</h2>
+              <p className="text-lg font-semibold text-amber-400 mb-4">This is a placeholder for the HenHur game. Rules and features will be added soon!</p>
+              <div className="space-y-4 text-gray-300">
+                <p className="text-lg">A new game framework. Stay tuned for updates and gameplay details.</p>
+              </div>
+            </div>
           ) : (
             /* Dice Factory Rules */
             <div className={`p-6 rounded-lg border ${gameColorClasses}`}>
               <h2 className="text-2xl font-bold mb-4 text-uranian-blue">🎲 Dice Factory</h2>
-              <p className="text-lg font-semibold text-uranian-blue mb-4">"A Game of Odds and Industriousness"</p>
-              
+              {(() => {
+                // Use local variant for leader, lobby variant for others
+                const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.variant || 'standard';
+                return (
+                  <p className="text-lg font-semibold text-uranian-blue mb-4">
+                    {variant === 'experimental'
+                      ? 'Experimental Mode: Compete for points in a fixed number of turns. No collapse mechanics.'
+                      : 'Standard Mode: A Game of Odds and Industriousness'}
+                  </p>
+                );
+              })()}
               <div className="space-y-4 text-gray-300">
-                <p className="text-lg">
-                  The game's purpose is to score points. This is done by scoring tricks.
-                </p>
-                
+                {(() => {
+                  const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.variant || 'standard';
+                  return (
+                    <p className="text-lg">
+                      {variant === 'experimental'
+                        ? 'Score as many points as possible before the turn limit is reached. The player with the highest score wins.'
+                        : "The game's purpose is to score points. This is done by scoring tricks."}
+                    </p>
+                  );
+                })()}
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">🎲 Dice Pool</h3>
                   <p className="text-sm mb-2">
@@ -602,15 +634,13 @@ const LobbyPage: React.FC = () => {
                     minimum dice pool, they will automatically recruit up to the minimum dice pool.
                   </p>
                 </div>
-
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">📋 Standard Actions</h3>
                   <div className="space-y-3 text-sm">
                     <div>
                       <h4 className="font-semibold text-uranian-blue">Promotion</h4>
-                      <p>A die can be promoted to a die of one larger size. This is done can only be done on a die with max pips. This exhausts the die.</p>
+                      <p>A die can be promoted to a die of one larger size. This can only be done on a die with max pips. This exhausts the die.</p>
                     </div>
-                    
                     <div>
                       <h4 className="font-semibold text-uranian-blue">Recruitment</h4>
                       <p>Dice can be recruited into the dice pool by rolling a number corresponding to the recruitment table:</p>
@@ -622,12 +652,10 @@ const LobbyPage: React.FC = () => {
                         <div><strong>D12:</strong> Roll 1,2,3,4,5 → D12, D10, D8, D6, D4</div>
                       </div>
                     </div>
-                    
                     <div>
                       <h4 className="font-semibold text-uranian-blue">Processing</h4>
                       <p>Dice can be processed for free pips. Doing so removes the die from the dice pool. The player immediately gets free pips equal to 2× the rolled value.</p>
                     </div>
-                    
                     <div>
                       <h4 className="font-semibold text-uranian-blue">Scoring</h4>
                       <p>Tricks can be straights or sets.</p>
@@ -638,7 +666,6 @@ const LobbyPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">💰 Standard Pip Actions</h3>
                   <div className="grid grid-cols-2 gap-2 text-sm">
@@ -649,7 +676,6 @@ const LobbyPage: React.FC = () => {
                     <div>Factory Modification: <strong>9 pips</strong></div>
                   </div>
                 </div>
-
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">🏭 Factory System</h3>
                   <div className="space-y-2 text-sm">
@@ -663,25 +689,26 @@ const LobbyPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">💥 Ending the Game</h3>
-                  {lobby.gameOptions?.variant === 'experimental' ? (
-                    <p className="text-sm">
-                      The game ends after a set number of turns. Players compete to score the most points within 
-                      the time limit, with no factory collapse mechanics.
-                    </p>
-                  ) : (
-                    <p className="text-sm">
-                      The factory begins to collapse when the turn indicator exceeds the collapse dice (1d6, 1d8, 1d10). 
-                      Each turn 1 is added to the turn counter and the collapse dice are rolled and added. If the sum is 
-                      less than the turn counter, the collapse begins. Players can choose to stay or flee. When a player 
-                      flees, their point total is locked and a collapse die is removed. If the turn counter ≤ 0, any 
-                      remaining players are crushed and their score goes to 0.
-                    </p>
-                  )}
+                  {(() => {
+                    const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.variant || 'standard';
+                    return variant === 'experimental' ? (
+                      <p className="text-sm">
+                        The game ends after a set number of turns. Players compete to score the most points within 
+                        the time limit, with no factory collapse mechanics.
+                      </p>
+                    ) : (
+                      <p className="text-sm">
+                        The factory begins to collapse when the turn indicator exceeds the collapse dice (1d6, 1d8, 1d10). 
+                        Each turn 1 is added to the turn counter and the collapse dice are rolled and added. If the sum is 
+                        less than the turn counter, the collapse begins. Players can choose to stay or flee. When a player 
+                        flees, their point total is locked and a collapse die is removed. If the turn counter ≤ 0, any 
+                        remaining players are crushed and their score goes to 0.
+                      </p>
+                    );
+                  })()}
                 </div>
-
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">🔄 Turn Structure</h3>
                   <ol className="space-y-1 text-sm">

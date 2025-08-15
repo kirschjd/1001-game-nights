@@ -14,6 +14,17 @@ const { botSystem } = require('../games/bots');
  * @param {Map} games - Games storage
  */
 function registerLobbyEvents(io, socket, lobbies, games) {
+  // Update Dice Factory variant (leader only)
+  socket.on('update-df-variant', (data) => {
+    const { slug, variant } = data;
+    const lobby = lobbies.get(slug);
+    if (!lobby || lobby.leaderId !== socket.id) {
+      console.log(`❌ DF variant update denied for ${socket.id} (not leader of ${slug})`);
+      return;
+    }
+    lobby.gameOptions.variant = variant;
+    io.to(slug).emit('lobby-updated', lobby);
+  });
 
   // Player joins or rejoins a lobby
   socket.on('join-lobby', (data) => {

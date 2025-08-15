@@ -65,6 +65,21 @@ const ExplorePage: React.FC = () => {
         '🏭 Factory effects and modifications'
       ],
       status: 'available'
+    },
+    {
+      id: 'henhur',
+      name: 'HenHur',
+      players: '2-6 players',
+      duration: 'TBD',
+      description: 'A new game framework. Rules and features coming soon!',
+      rules: [
+        'Game rules will be added soon.'
+      ],
+      features: [
+        '🆕 Blank framework for future development',
+        '🚧 More features coming soon'
+      ],
+      status: 'available'
     }
   ];
 
@@ -120,10 +135,10 @@ const ExplorePage: React.FC = () => {
       <main className="container mx-auto px-6 py-8 max-w-6xl relative z-10">
         <div className="grid gap-8">
           {games.map((game) => {
-            const gameColor = game.id === 'war' ? 'tea-rose' : 'uranian-blue';
-            const gameBorderColor = game.id === 'war' ? 'border-tea-rose/30' : 'border-uranian-blue/30';
-            const gameAccentColor = game.id === 'war' ? 'bg-tea-rose/10' : 'bg-uranian-blue/10';
-            const gameButtonColor = game.id === 'war' ? 'bg-tea-rose hover:bg-tea-rose-light' : 'bg-uranian-blue hover:bg-uranian-blue-light';
+            const gameColor = game.id === 'war' ? 'tea-rose' : game.id === 'henhur' ? 'amber-400' : 'uranian-blue';
+            const gameBorderColor = game.id === 'war' ? 'border-tea-rose/30' : game.id === 'henhur' ? 'border-amber-400/30' : 'border-uranian-blue/30';
+            const gameAccentColor = game.id === 'war' ? 'bg-tea-rose/10' : game.id === 'henhur' ? 'bg-amber-400/10' : 'bg-uranian-blue/10';
+            const gameButtonColor = game.id === 'war' ? 'bg-tea-rose hover:bg-tea-rose-light' : game.id === 'henhur' ? 'bg-amber-400 hover:bg-amber-300' : 'bg-uranian-blue hover:bg-uranian-blue-light';
 
             return (
               <div
