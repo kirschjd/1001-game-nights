@@ -20,8 +20,8 @@ class ScoringSystem {
     if (selectedDice.length === 0) return { straights: [], sets: [], notes: ['No valid dice selected'] };
     const hasVerticalIntegration = player.modifications?.includes('vertical_integration');
     const hasJointVenture = player.modifications?.includes('joint_venture');
-    const straights = this.findPossibleStraights(selectedDice, hasVerticalIntegration);
-    const sets = this.findPossibleSets(selectedDice, hasJointVenture);
+  const straights = this.findPossibleStraights(selectedDice, hasVerticalIntegration);
+  const sets = this.findPossibleSets(selectedDice, hasJointVenture);
     const notes = [];
     if (selectedDice.length < 3) notes.push('Need at least 3 dice for scoring');
     if (selectedDice.length >= 3 && straights.length === 0 && sets.length === 0) {
@@ -78,24 +78,19 @@ class ScoringSystem {
    */
   scoreStraight(playerId, diceIds) {
     const player = this.gameState.players.find(p => p.id === playerId);
-    console.log('[scoreStraight] Player:', playerId, 'Dice IDs:', diceIds);
     if (!player) {
       console.log('[scoreStraight] Failed: Player not found');
       return { success: false, message: 'Player not found' };
     }
     const straightDice = require('../utils/DiceHelpers').findDiceByIds(player.dicePool, diceIds);
-    console.log('[scoreStraight] Dice:', straightDice.map(d => `d${d.sides}:${d.value}`));
     if (straightDice.length !== diceIds.length) {
       console.log('[scoreStraight] Failed: Some dice not found in pool');
       return { success: false, message: 'Some dice not found in pool' };
     }
     // Validate straight
     const hasVerticalIntegration = player.modifications?.includes('vertical_integration');
-    console.log('[scoreStraight] Vertical Integration:', hasVerticalIntegration);
     const validation = require('../data/ValidationRules').validateStraight(straightDice, hasVerticalIntegration);
-    console.log('[scoreStraight] Validation result:', validation);
     if (!validation.isValid) {
-      console.log('[scoreStraight] Failed: Validation reason:', validation.reason);
       return { success: false, message: validation.reason };
     }
     let points = validation.points;
@@ -128,7 +123,6 @@ class ScoringSystem {
       points,
       this.gameState.round
     );
-    console.log('[scoreStraight] Success: Scored', points, 'points');
     return { 
       success: true, 
       message: `Scored ${points} points with straight`,

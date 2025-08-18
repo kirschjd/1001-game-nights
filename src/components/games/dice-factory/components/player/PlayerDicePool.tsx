@@ -12,7 +12,6 @@ import {
   GameStateHelpers,
   MessageType
 } from '../../types/DiceFactoryTypes';
-
 import { Socket } from 'socket.io-client';
 import PlayedEffects from './PlayedEffects';
 import { useModifiedCosts } from '../../hooks/useModifiedCosts';
@@ -51,18 +50,6 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({ selectedDice, socket, curre
     };
   }, [selectedDice, socket]);
 
-  const handleScoreClick = () => {
-    if (!socket || selectedDice.length === 0) return;
-    const diceIds = selectedDice.map(die => die.id);
-    // Try straight first, then set
-    if (preview?.straight) {
-      socket.emit('dice-factory-score-straight', { diceIds });
-    } else if (preview?.gapStraight) {
-      socket.emit('dice-factory-score-straight', { diceIds });
-    } else if (preview?.set) {
-      socket.emit('dice-factory-score-set', { diceIds });
-    }
-  };
 
   if (loading) {
     return <div className="text-xs text-uranian-blue">Calculating...</div>;
@@ -72,7 +59,7 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({ selectedDice, socket, curre
     return <div className="text-xs text-uranian-blue">Select dice to see scoring options</div>;
   }
 
-  const hasValidScoring = preview.straight || preview.set;
+  const hasValidScoring = (preview.straights && preview.straights.length > 0) || (preview.sets && preview.sets.length > 0);
 
   if (!hasValidScoring) {
     return (
@@ -86,25 +73,24 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({ selectedDice, socket, curre
 
   return (
     <div className="text-xs text-uranian-blue space-y-1">
-      {preview.straight && (
-        <div>
-          <div className="font-medium text-green-400">Straight: {preview.straight.formula}</div>
-          <div className="text-gray-400">Values: {preview.straight.values.join('-')}</div>
+      {/* Show all possible straights */}
+      {preview.straights && preview.straights.length > 0 && preview.straights.map((straight: any, idx: number) => (
+        <div key={idx}>
+          <div className="font-medium text-green-400">Straight: {straight.description || ''} {straight.points ? `(${straight.points} pts)` : ''}</div>
+          {straight.formula && <div className="text-gray-400">{straight.formula}</div>}
+          <div className="text-gray-400">Values: {straight.dice && straight.dice.map((d: any) => d.value).join('-')}</div>
         </div>
-      )}
-      {preview.gapStraight && (
-        <div>
-          <div className="font-medium text-yellow-400">Straight (Vertical Integration, gap at {preview.gapStraight.gapValue}): {preview.gapStraight.formula}</div>
-          <div className="text-gray-400">Values: {preview.gapStraight.values.join('-')}</div>
+      ))}
+      {/* Show all possible sets */}
+      {preview.sets && preview.sets.length > 0 && preview.sets.map((set: any, idx: number) => (
+        <div key={idx}>
+          <div className="font-medium text-teal-400">Set: {set.points ? `(${set.points} pts)` : ''}</div>
+          {set.formula && <div className="text-gray-400">{set.formula}</div>}
+          <div className="text-gray-400">{set.diceCount} dice of value {set.value}</div>
         </div>
-      )}
-      {preview.set && !preview.straight && !preview.gapStraight && (
-        <div>
-          <div className="font-medium text-teal-400">Set: {preview.set.formula}</div>
-          <div className="text-gray-400">{preview.set.diceCount} dice of value {preview.set.value}</div>
-        </div>
-      )}
-      {preview.notes.length > 0 && !preview.straight && !preview.set && !preview.gapStraight && (
+      ))}
+      {/* Show notes if no valid scoring */}
+      {preview.notes && preview.notes.length > 0 && (
         <div className="text-orange-400">
           {preview.notes.map((note: string, index: number) => (
             <div key={index}>{note}</div>
@@ -142,6 +128,13 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
   gameState,
   socket
 }) => {
+  // Score button handler
+  const handleScoreClick = () => {
+  if (!socket) return;
+  socket.emit('dice-factory-score-straight', { diceIds: selectedDice });
+  };
+  // Score button handler (now in PlayerDicePool scope)
+  // Score button handler (now in PlayerDicePool scope)
   const { canTakeActions, isDieSelectable, isExhausted } = helpers;
   const [showDividendChoice, setShowDividendChoice] = useState(false);
   const [pendingEndTurn, setPendingEndTurn] = useState(false);
@@ -190,7 +183,7 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
         return;
       }
     }
-  }, [actionMode, currentPlayer.dicePool, isDieSelectable, actions, onDiceClick]);
+  }, [actionMode, currentPlayer.dicePool, currentPlayer.modifications, isDieSelectable, actions, onDiceClick]);
 
   // Enhanced action mode handler with auto-execution and validation
   const handleActionModeChange = useCallback((mode: ActionMode) => {
@@ -333,26 +326,6 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
     );
   };
 
-  /**
-   * Get the actual pip cost for actions based on player's modifications
-   */
-  const getActualCost = useCallback((actionType: string) => {
-    if (!currentPlayer) return 0;
-
-    const hasImprovedRollers = currentPlayer.modifications?.includes('improved_rollers');
-    const hasDueDiligence = currentPlayer.modifications?.includes('due_diligence');
-
-    switch (actionType) {
-      case 'increase':
-        return hasDueDiligence ? 3 : 4; // Due Diligence reduces from 4 to 3
-      case 'decrease':
-        return 3; // No modifications affect this
-      case 'reroll':
-        return hasImprovedRollers ? 1 : 2; // Improved Rollers reduces from 2 to 1
-      default:
-        return 0;
-    }
-  }, [currentPlayer]);
 
   /**
    * Check if player can afford an action considering Corporate Debt
@@ -562,7 +535,7 @@ const PlayerDicePool: React.FC<PlayerDicePoolProps> = ({
                 )}
                 
                 <button
-                  onClick={actions.handleScore}
+                  onClick={handleScoreClick}
                   disabled={selectedDice.length < 3}
                   className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors font-semibold text-white text-sm w-full focus:outline-none"
                 >
