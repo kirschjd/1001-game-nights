@@ -7,6 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
 import { EnhancedWarGame } from './games/war';
 import DiceFactoryGame from './games/dice-factory';
+import HenHurGame from './games/henhur';
 
 interface WarGameState {
   type: string;
@@ -304,8 +305,18 @@ useEffect(() => {
           />
         )}
 
+        {gameState.type === 'henhur' && (
+          <HenHurGame
+            variant={(gameState as any).variant || 'standard'}
+            socket={socket}
+            slug={slug}
+            playerName={playerName}
+            isLeader={isLeader}
+          />
+        )}
+
         {/* Fallback for unknown game types */}
-        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && (
+        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && (
           <div className="text-center p-8">
             <h2 className="text-2xl font-bold mb-4 text-red-400">Unknown Game Type</h2>
             <p className="text-gray-400 mb-4">Game type "{gameState.type}" is not supported.</p>

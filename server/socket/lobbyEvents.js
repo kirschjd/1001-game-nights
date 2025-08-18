@@ -26,6 +26,18 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     io.to(slug).emit('lobby-updated', lobby);
   });
 
+  // Update HenHur variant (leader only)
+  socket.on('update-henhur-variant', (data) => {
+    const { slug, variant } = data;
+    const lobby = lobbies.get(slug);
+    if (!lobby || lobby.leaderId !== socket.id) {
+      console.log(`❌ HenHur variant update denied for ${socket.id} (not leader of ${slug})`);
+      return;
+    }
+    lobby.gameOptions.henhurVariant = variant;
+    io.to(slug).emit('lobby-updated', lobby);
+  });
+
   // Player joins or rejoins a lobby
   socket.on('join-lobby', (data) => {
     const { slug, playerName } = data;
@@ -210,7 +222,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     }
 
     const connectedPlayers = lobby.players.filter(p => p.isConnected);
-    if (connectedPlayers.length < 2) {
+    if (lobby.gameType !== 'henhur' && connectedPlayers.length < 2) {
       socket.emit('error', { message: 'Need at least 2 players to start' });
       return;
     }
@@ -241,6 +253,16 @@ function registerLobbyEvents(io, socket, lobbies, games) {
           gamePlayer.botStyle = lobbyPlayer.botStyle;
         }
       });
+    } else if (lobby.gameType === 'henhur') {
+      // Start HenHur game (blank screen for now)
+      const HenHurGame = require('../games/henhur').HenHurGame;
+      const henhurVariant = clientVariant || lobby.gameOptions?.henhurVariant || 'standard';
+      game = new HenHurGame({ players: connectedPlayers, variant: henhurVariant });
+      game.initialize();
+      game.start();
+      // Store variant on game state for client views
+      if (!game.state) game.state = {};
+      game.state.variant = henhurVariant;
     } else {
       socket.emit('error', { message: 'Invalid game type' });
       return;
@@ -426,6 +448,26 @@ function registerLobbyEvents(io, socket, lobbies, games) {
       bot.botStyle = newStyle;
       io.to(slug).emit('lobby-updated', lobby);
     }
+  });
+
+  // Handle HenHur debug actions from clients
+  socket.on('henhur-debug-action', (data) => {
+    const { slug, player, action } = data || {};
+    console.log(`🐞 HenHur debug action received from ${player || socket.id} in ${slug}: ${action}`);
+
+    if (!slug) {
+      console.warn('henhur-debug-action missing slug');
+      return;
+    }
+
+    const lobby = lobbies.get(slug);
+    if (!lobby) {
+      console.warn(`henhur-debug-action: lobby not found: ${slug}`);
+      return;
+    }
+
+    // Broadcast a simple debug event to the lobby so clients (or server admins) can react
+    io.to(slug).emit('henhur-debug', { player: player || socket.playerName || socket.id, action, from: socket.id, timestamp: Date.now() });
   });
 }
 

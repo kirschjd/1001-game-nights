@@ -35,6 +35,7 @@ const LobbyPage: React.FC = () => {
   const [selectedVariant, setSelectedVariant] = useState('regular');
   const [botStyles, setBotStyles] = useState<any[]>([]);
   const [selectedDFVariant, setSelectedDFVariant] = useState('standard');
+  const [selectedHenhurVariant, setSelectedHenhurVariant] = useState('standard');
   const [experimentalTurnLimit, setExperimentalTurnLimit] = useState(11);
 
   useEffect(() => {
@@ -87,6 +88,10 @@ const LobbyPage: React.FC = () => {
     if (socket && lobby?.gameType) {
       console.log('Game type changed to:', lobby.gameType);
       socket.emit('get-bot-styles');
+    }
+    // Sync henhur variant from lobby for non-leaders
+    if (lobby?.gameType === 'henhur' && lobby.gameOptions) {
+      setSelectedHenhurVariant(lobby.gameOptions.henhurVariant || 'standard');
     }
   }, [socket, lobby?.gameType]);
 
@@ -146,13 +151,23 @@ const LobbyPage: React.FC = () => {
           variant: selectedVariant
           // Removed: bots array - use existing lobby bots only
         });
-      } else {
+      } else if (lobby.gameType === 'dice-factory') {
         // Start Dice Factory with variant support
         socket.emit('start-game', { 
           slug, 
           variant: selectedDFVariant,
           experimentalTurnLimit: selectedDFVariant === 'experimental' ? experimentalTurnLimit : undefined
         });
+      } else if (lobby.gameType === 'henhur') {
+        // Start HenHur and include selected variant
+        socket.emit('start-game', {
+          slug,
+          variant: selectedHenhurVariant
+        });
+      } else {
+        // Unknown game type
+        socket.emit('error', { message: 'Invalid game type' });
+        return;
       }
     }
   };
@@ -507,6 +522,29 @@ const LobbyPage: React.FC = () => {
                   <strong>Standard:</strong> Classic Dice Factory rules.<br/>
                   <strong>Experimental:</strong> New or test mechanics (see release notes).
                 </div>
+              </div>
+            )}
+
+            {/* HenHur Variant Selection */}
+            {lobby.gameType === 'henhur' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">HenHur Mode</label>
+                <select
+                  value={selectedHenhurVariant}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSelectedHenhurVariant(v);
+                    if (socket && isLeader) {
+                      socket.emit('update-henhur-variant', { slug, variant: v });
+                    }
+                  }}
+                  disabled={!isLeader}
+                  className="w-full px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-lion"
+                >
+                  <option value="standard">Standard</option>
+                  <option value="debug">Debug</option>
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Standard: normal play. Debug: additional logs and controls for testing.</p>
               </div>
             )}
           </div>

@@ -2,6 +2,16 @@
 // Created: August 2025
 
 class HenHurGame {
+  // Returns a minimal player view for frontend display
+  getPlayerView(playerId) {
+    return {
+      type: 'henhur',
+  started: this.state.started,
+  players: this.options.players || [],
+  variant: this.options.variant || (this.state && this.state.variant) || 'standard',
+  message: 'HenHur game started. Blank screen.'
+    };
+  }
   constructor(options = {}) {
     // Placeholder for game state
     this.state = {};
