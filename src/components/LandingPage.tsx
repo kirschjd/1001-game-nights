@@ -1,21 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { generateLobbySlug } from '../utils/lobbyUtils';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-
-
-  const generateLobbySlug = (): string => {
-    const words = [
-      'horse', 'hat', 'wickerbasket', 'blue', 'mountain', 'river', 'coffee', 'laptop',
-      'sunset', 'garden', 'book', 'candle', 'forest', 'ocean', 'pizza', 'guitar',
-      'rainbow', 'cloud', 'bicycle', 'camera', 'thunder', 'whisper', 'diamond', 'feather',
-      'knight', 'dragon', 'castle', 'magic', 'crystal', 'shadow', 'flame', 'frost'
-    ];
-    
-    const shuffled = words.sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 3).join('-');
-  };
 
   const handleNewLobby = () => {
     const slug = generateLobbySlug();

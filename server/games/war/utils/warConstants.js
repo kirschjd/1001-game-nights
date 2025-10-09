@@ -1,6 +1,15 @@
 // server/games/war/utils/warConstants.js
 // War game constants and configuration
 
+const {
+  CARD_NAMES,
+  CARD_EMOJIS,
+  getCardName: sharedGetCardName,
+  getCardEmoji: sharedGetCardEmoji,
+  isValidCard: sharedIsValidCard,
+  generateRandomCard: sharedGenerateRandomCard
+} = require('../../../../shared/war/cardUtils');
+
 const WAR_CONSTANTS = {
   // Game Rules
   WINNING_SCORE: 5,
@@ -25,22 +34,8 @@ const WAR_CONSTANTS = {
     KING: 13
   },
   
-  // Card Names
-  CARD_NAMES: {
-    1: 'Ace',
-    2: '2',
-    3: '3', 
-    4: '4',
-    5: '5',
-    6: '6',
-    7: '7',
-    8: '8',
-    9: '9',
-    10: '10',
-    11: 'Jack',
-    12: 'Queen',
-    13: 'King'
-  },
+  // Card Names (using shared constants)
+  CARD_NAMES,
   
   // Game Phases
   PHASES: {
@@ -75,14 +70,8 @@ const WAR_CONSTANTS = {
   
   // UI Constants
   UI: {
-    CARD_EMOJIS: {
-      1: '🎯',   // Ace
-      11: '👑',  // Jack
-      12: '👑',  // Queen  
-      13: '👑',  // King
-      DEFAULT: '🃏'
-    },
-    
+    CARD_EMOJIS, // Using shared constants
+
     DIFFICULTY_COLORS: {
       easy: '#22c55e',     // green
       medium: '#f59e0b',   // yellow
@@ -91,45 +80,11 @@ const WAR_CONSTANTS = {
   }
 };
 
-/**
- * Get card name by value
- * @param {number} cardValue - Card value (1-13)
- * @returns {string} - Card name
- */
-function getCardName(cardValue) {
-  return WAR_CONSTANTS.CARD_NAMES[cardValue] || cardValue.toString();
-}
-
-/**
- * Get card emoji by value
- * @param {number} cardValue - Card value (1-13)
- * @returns {string} - Card emoji
- */
-function getCardEmoji(cardValue) {
-  if (cardValue === 1) return WAR_CONSTANTS.UI.CARD_EMOJIS[1];
-  if (cardValue >= 11) return WAR_CONSTANTS.UI.CARD_EMOJIS[11];
-  if (cardValue >= 8) return '💎';
-  return WAR_CONSTANTS.UI.CARD_EMOJIS.DEFAULT;
-}
-
-/**
- * Check if card value is valid
- * @param {number} cardValue - Card value to check
- * @returns {boolean} - True if valid
- */
-function isValidCard(cardValue) {
-  return Number.isInteger(cardValue) && 
-         cardValue >= WAR_CONSTANTS.CARDS.ACE && 
-         cardValue <= WAR_CONSTANTS.CARDS.KING;
-}
-
-/**
- * Generate random card value
- * @returns {number} - Random card value (1-13)
- */
-function generateRandomCard() {
-  return Math.floor(Math.random() * 13) + 1;
-}
+// Re-export shared card utilities
+const getCardName = sharedGetCardName;
+const getCardEmoji = sharedGetCardEmoji;
+const isValidCard = sharedIsValidCard;
+const generateRandomCard = sharedGenerateRandomCard;
 
 /**
  * Get difficulty color for UI

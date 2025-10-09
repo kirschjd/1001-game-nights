@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Socket } from 'socket.io-client';
+import { getCardName, getCardEmoji } from './utils/cardHelpers';
 
 interface Player {
   id: string;
@@ -73,20 +74,6 @@ const EnhancedWarGame: React.FC<EnhancedWarGameProps> = ({
     }
   };
 
-  const getCardName = (cardValue: number): string => {
-    const cardNames: { [key: number]: string } = {
-      1: 'Ace', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7',
-      8: '8', 9: '9', 10: '10', 11: 'Jack', 12: 'Queen', 13: 'King'
-    };
-    return cardNames[cardValue] || cardValue.toString();
-  };
-
-  const getCardEmoji = (cardValue: number): string => {
-    if (cardValue === 1) return '🎯'; // Ace
-    if (cardValue >= 11) return '👑'; // Face cards
-    if (cardValue >= 8) return '💎'; // High cards
-    return '🃏'; // Low cards
-  };
 
   const renderPlayer = (player: Player, isCurrentPlayer: boolean = false) => {
     const hasActed = player.action !== null;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Socket } from 'socket.io-client';
+import { getCardName } from './utils/cardHelpers';
 
 interface WarPlayer {
   id: string;
@@ -46,13 +47,6 @@ const WarGame: React.FC<WarGameProps> = ({ gameState, socket, isLeader }) => {
     }
   };
 
-  const getCardName = (cardValue: number) => {
-    const cardNames: { [key: number]: string } = {
-      1: 'Ace', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7',
-      8: '8', 9: '9', 10: '10', 11: 'Jack', 12: 'Queen', 13: 'King'
-    };
-    return cardNames[cardValue] || cardValue.toString();
-  };
 
   const getCardColor = (cardValue: number) => {
     // Hearts and Diamonds are red, Clubs and Spades are black

@@ -1,10 +1,21 @@
 // 1001 Game Nights - Lobby Socket Events
-// Version: 2.0.1 - Fixed leader reconnection logic and bot scheduling
+// Version: 2.0.2 - Refactored to use helper functions
 // Updated: December 2024
 
-const WarGame = require('../games/war');
-const DiceFactoryGame = require('../games/dice-factory');
 const { botSystem } = require('../games/bots');
+const {
+  createLobby,
+  handlePlayerReconnection,
+  addNewPlayer,
+  createLobbyUpdate,
+  validateLeaderPermission,
+  scheduleInactiveLobbyCleanup
+} = require('./helpers/lobbyHelpers');
+const {
+  createGame,
+  broadcastGameStart,
+  scheduleDiceFactoryBotsIfNeeded
+} = require('./helpers/gameInitHelpers');
 
 /**
  * Register lobby-related socket events
@@ -18,10 +29,11 @@ function registerLobbyEvents(io, socket, lobbies, games) {
   socket.on('update-df-variant', (data) => {
     const { slug, variant } = data;
     const lobby = lobbies.get(slug);
-    if (!lobby || lobby.leaderId !== socket.id) {
-      console.log(`❌ DF variant update denied for ${socket.id} (not leader of ${slug})`);
+
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
       return;
     }
+
     lobby.gameOptions.variant = variant;
     io.to(slug).emit('lobby-updated', lobby);
   });
@@ -30,10 +42,11 @@ function registerLobbyEvents(io, socket, lobbies, games) {
   socket.on('update-henhur-variant', (data) => {
     const { slug, variant } = data;
     const lobby = lobbies.get(slug);
-    if (!lobby || lobby.leaderId !== socket.id) {
-      console.log(`❌ HenHur variant update denied for ${socket.id} (not leader of ${slug})`);
+
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
       return;
     }
+
     lobby.gameOptions.henhurVariant = variant;
     io.to(slug).emit('lobby-updated', lobby);
   });
@@ -41,7 +54,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
   // Player joins or rejoins a lobby
   socket.on('join-lobby', (data) => {
     const { slug, playerName } = data;
-    
+
     if (!slug || !playerName) {
       socket.emit('error', { message: 'Missing slug or player name' });
       return;
@@ -52,70 +65,17 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     // Get or create lobby
     let lobby = lobbies.get(slug);
     if (!lobby) {
-      lobby = {
-        slug,
-        title: `${playerName}'s Game Night`,
-        leaderId: socket.id,
-        gameType: 'dice-factory',
-        gameOptions: {},
-        players: [],
-        created: Date.now(),
-        lastActivity: Date.now()
-      };
+      lobby = createLobby(slug, playerName, socket.id);
       lobbies.set(slug, lobby);
       console.log(`✨ Created new lobby: ${slug} with leader: ${socket.id}`);
     }
 
-    // Check if player is already in lobby (reconnection)
-    let existingPlayer = lobby.players.find(p => p.name === playerName);
-    
-    if (existingPlayer) {
-      // Player reconnecting - update their socket ID
-      const oldSocketId = existingPlayer.id;
-      const wasLeader = lobby.leaderId === oldSocketId; // Check if they were the leader
-      
-      console.log(`🔄 Player ${playerName} reconnecting. Old ID: ${oldSocketId}, New ID: ${socket.id}`);
-      console.log(`👑 Was leader? ${wasLeader} (lobby.leaderId: ${lobby.leaderId})`);
-      
-      existingPlayer.id = socket.id;
-      existingPlayer.isConnected = true;
-      
-      // CRITICAL FIX: Preserve leader status on reconnection
-      if (wasLeader) {
-        lobby.leaderId = socket.id;
-        console.log(`✅ Leader ${playerName} reconnected and preserved leader status. New leaderId: ${socket.id}`);
-      } else {
-        console.log(`✅ Player ${playerName} reconnected to ${slug}`);
-      }
-      
-      // Update socket ID in active game if it exists
-      const game = games.get(slug);
-      if (game && game.state && game.state.players) {
-        const gamePlayer = game.state.players.find(p => p.id === oldSocketId);
-        if (gamePlayer) {
-          gamePlayer.id = socket.id;
-          console.log(`🎮 Updated game player socket ID: ${oldSocketId} → ${socket.id}`);
-        } else {
-          // Fallback: try to find by name
-          const gamePlayerByName = game.state.players.find(p => p.name === playerName);
-          if (gamePlayerByName) {
-            gamePlayerByName.id = socket.id;
-            console.log(`🎮 Updated game player socket ID by name: ${playerName} → ${socket.id}`);
-          } else {
-            console.log(`⚠️ Warning: Could not find game player ${playerName} to update socket ID`);
-          }
-        }
-      }
-    } else {
+    // Check if player is reconnecting or new
+    const reconnectionResult = handlePlayerReconnection(lobby, playerName, socket.id, games);
+
+    if (!reconnectionResult.isReconnection) {
       // New player joining
-      const newPlayer = {
-        id: socket.id,
-        name: playerName,
-        isConnected: true,
-        joinedAt: Date.now()
-      };
-      lobby.players.push(newPlayer);
-      console.log(`👥 Player ${playerName} joined lobby ${slug}`);
+      addNewPlayer(lobby, playerName, socket.id);
     }
 
     // Store lobby info on socket
@@ -129,15 +89,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     console.log(`📊 Final lobby state - leaderId: ${lobby.leaderId}, players: ${lobby.players.length}`);
 
     // Send lobby state to all players
-    const lobbyUpdate = {
-      slug: lobby.slug,
-      title: lobby.title,
-      players: lobby.players,
-      leaderId: lobby.leaderId,
-      gameType: lobby.gameType,
-      gameOptions: lobby.gameOptions
-    };
-    
+    const lobbyUpdate = createLobbyUpdate(lobby);
     console.log(`📡 Broadcasting lobby-updated with leaderId: ${lobbyUpdate.leaderId}`);
     io.to(slug).emit('lobby-updated', lobbyUpdate);
 
@@ -153,12 +105,11 @@ function registerLobbyEvents(io, socket, lobbies, games) {
   socket.on('update-lobby-title', (data) => {
     const { slug, newTitle } = data;
     const lobby = lobbies.get(slug);
-    
-    if (!lobby || lobby.leaderId !== socket.id) {
-      console.log(`❌ Title update denied for ${socket.id} (not leader of ${slug})`);
+
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
       return;
     }
-    
+
     lobby.title = newTitle;
     io.to(slug).emit('lobby-updated', lobby);
   });
@@ -182,12 +133,11 @@ function registerLobbyEvents(io, socket, lobbies, games) {
   socket.on('update-game-type', (data) => {
     const { slug, gameType } = data;
     const lobby = lobbies.get(slug);
-    
-    if (!lobby || lobby.leaderId !== socket.id) {
-      console.log(`❌ Game type update denied for ${socket.id} (not leader of ${slug})`);
+
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
       return;
     }
-    
+
     lobby.gameType = gameType;
     io.to(slug).emit('lobby-updated', lobby);
   });
@@ -196,12 +146,11 @@ function registerLobbyEvents(io, socket, lobbies, games) {
   socket.on('change-leader', (data) => {
     const { slug, newLeaderId } = data;
     const lobby = lobbies.get(slug);
-    
-    if (!lobby || lobby.leaderId !== socket.id) {
-      console.log(`❌ Leader change denied for ${socket.id} (not current leader of ${slug})`);
+
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
       return;
     }
-    
+
     const newLeader = lobby.players.find(p => p.id === newLeaderId);
     if (newLeader) {
       const oldLeaderId = lobby.leaderId;
@@ -215,9 +164,8 @@ function registerLobbyEvents(io, socket, lobbies, games) {
   socket.on('start-game', (data) => {
     const { slug, variant: clientVariant, experimentalTurnLimit } = data;
     const lobby = lobbies.get(slug);
-    
-    if (!lobby || lobby.leaderId !== socket.id) {
-      console.log(`❌ Game start denied for ${socket.id} (not leader of ${slug})`);
+
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
       return;
     }
 
@@ -227,44 +175,12 @@ function registerLobbyEvents(io, socket, lobbies, games) {
       return;
     }
 
-    // Create appropriate game instance
+    // Create appropriate game instance using helper
     let game;
-    
-    if (lobby.gameType === 'war') {
-      game = new WarGame(connectedPlayers);
-      game.dealCards();
-    } else if (lobby.gameType === 'dice-factory') {
-      // Support variants for Dice Factory
-      const variant = clientVariant || lobby.gameVariant || 'standard';
-      game = new DiceFactoryGame(connectedPlayers, variant, experimentalTurnLimit);
-      lobby.gameVariant = variant;
-      game.state.phase = 'playing';
-      connectedPlayers.forEach(player => {
-        game.savePlayerTurnState(player.id);
-      });
-      
-      // CRITICAL: Ensure bot flags are preserved in game state
-      console.log('🔧 PRESERVING BOT FLAGS IN DICE FACTORY GAME:');
-      connectedPlayers.forEach((lobbyPlayer, index) => {
-        const gamePlayer = game.state.players[index];
-        if (gamePlayer && botSystem.isBot(lobbyPlayer.id)) {
-          console.log(`  Setting isBot=true for ${gamePlayer.name} (${gamePlayer.id})`);
-          gamePlayer.isBot = true;
-          gamePlayer.botStyle = lobbyPlayer.botStyle;
-        }
-      });
-    } else if (lobby.gameType === 'henhur') {
-      // Start HenHur game (blank screen for now)
-      const HenHurGame = require('../games/henhur').HenHurGame;
-      const henhurVariant = clientVariant || lobby.gameOptions?.henhurVariant || 'standard';
-      game = new HenHurGame({ players: connectedPlayers, variant: henhurVariant });
-      game.initialize();
-      game.start();
-      // Store variant on game state for client views
-      if (!game.state) game.state = {};
-      game.state.variant = henhurVariant;
-    } else {
-      socket.emit('error', { message: 'Invalid game type' });
+    try {
+      game = createGame(lobby, connectedPlayers, clientVariant, botSystem, experimentalTurnLimit);
+    } catch (error) {
+      socket.emit('error', { message: error.message });
       return;
     }
 
@@ -273,55 +189,22 @@ function registerLobbyEvents(io, socket, lobbies, games) {
 
     console.log(`🚀 Started ${lobby.gameType} game in lobby ${slug} with ${connectedPlayers.length} players`);
 
-    // Send initial game state to all players
-    connectedPlayers.forEach(player => {
-      if (player.isConnected) {
-        const playerView = game.getPlayerView(player.id);
-        io.to(player.id).emit('game-started', playerView);
-      }
-    });
-    
-    // CRITICAL: Schedule initial bots for Dice Factory
+    // Broadcast game start to all players
+    broadcastGameStart(io, game, connectedPlayers);
+
+    // Schedule bots for Dice Factory
     if (lobby.gameType === 'dice-factory') {
       console.log('🎮 DICE FACTORY GAME STARTED - Scheduling initial bots');
-      
-      // Schedule bots after a short delay to let game state settle
       setTimeout(() => {
-        scheduleDiceFactoryBotsIfNeeded(io, slug, game, lobbies);
+        scheduleDiceFactoryBotsIfNeeded(io, slug, game, lobbies, botSystem);
       }, 1000);
     }
   });
 
-  // Helper function for dice factory bot scheduling
-  function scheduleDiceFactoryBotsIfNeeded(io, lobbySlug, game, lobbies) {
-    if (game.state.type !== 'dice-factory' || game.state.phase !== 'playing') {
-      return;
-    }
-    
-    const pendingBots = game.getPendingBotPlayers ? game.getPendingBotPlayers() : [];
-    if (pendingBots.length === 0) {
-      return;
-    }
-
-    console.log(`🤖 Scheduling ${pendingBots.length} dice factory bots from lobby events`);
-
-    // Use the bot system's executeBotTurn method instead of just ending turn
-    pendingBots.forEach((botPlayer, index) => {
-      setTimeout(() => {
-        if (!botPlayer.isReady && !botPlayer.hasFled) {
-          console.log(`🎮 Executing bot turn for ${botPlayer.name}`);
-          botSystem.executeBotTurn(io, lobbySlug, game, lobbies, botPlayer.id);
-        } else {
-          console.log(`⚠️ Bot ${botPlayer.name} no longer needs action`);
-        }
-      }, index * 1000);
-    });
-  }
-
   // Handle player disconnection
   socket.on('disconnect', () => {
     console.log(`🔌 Player disconnected: ${socket.id}`);
-    
+
     if (socket.lobbySlug) {
       const lobby = lobbies.get(socket.lobbySlug);
       if (lobby) {
@@ -329,44 +212,37 @@ function registerLobbyEvents(io, socket, lobbies, games) {
         if (player) {
           player.isConnected = false;
           console.log(`😴 Player ${player.name} marked as disconnected in ${socket.lobbySlug}`);
-          
-          // Clean up empty lobbies after 5 minutes
-          setTimeout(() => {
-            const currentLobby = lobbies.get(socket.lobbySlug);
-            if (currentLobby && currentLobby.players.every(p => !p.isConnected)) {
-              lobbies.delete(socket.lobbySlug);
-              games.delete(socket.lobbySlug);
-              console.log(`🧹 Cleaned up empty lobby: ${socket.lobbySlug}`);
-            }
-          }, 5 * 60 * 1000);
+
+          // Schedule cleanup for inactive lobbies
+          scheduleInactiveLobbyCleanup(lobbies, games, socket.lobbySlug);
         }
       }
     }
   });
 
-  // Add bot to lobby (leader only) - UPDATED FOR DICE FACTORY SUPPORT
+  // Add bot to lobby (leader only)
   socket.on('add-bot', (data) => {
     console.log('🤖 ADD-BOT EVENT TRIGGERED:', {
       socketId: socket.id,
       data: data,
       timestamp: new Date().toISOString()
     });
-    
+
     const { slug, botName, botStyle } = data;
     const lobby = lobbies.get(slug);
 
-    if (!lobby || lobby.leaderId !== socket.id) {
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
       console.log('❌ ADD-BOT REJECTED - Not leader or no lobby');
       return;
     }
 
     console.log('✅ ADD-BOT PROCEEDING - Creating bot...');
-    
+
     // Use the current lobby's game type for bot creation
     const gameType = lobby.gameType || 'dice-factory';
     const bot = botSystem.createBot(botStyle, gameType);
     bot.name = botName;
-    
+
     console.log(`🎯 BOT CREATED WITH STYLE:`, {
       botStyle: bot.botStyle,
       style: bot.style,
@@ -382,7 +258,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     });
 
     lobby.players.push(bot);
-    
+
     console.log('📊 LOBBY AFTER BOT ADD:', {
       totalPlayers: lobby.players.length,
       botCount: lobby.players.filter(p => p.isBot).length,
@@ -398,12 +274,11 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     const { slug, botId } = data;
     const lobby = lobbies.get(slug);
 
-    if (!lobby || lobby.leaderId !== socket.id) {
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
       return;
     }
 
     lobby.players = lobby.players.filter(p => p.id !== botId);
-
     botSystem.removeBot(botId);
 
     io.to(slug).emit('lobby-updated', lobby);
@@ -438,11 +313,11 @@ function registerLobbyEvents(io, socket, lobbies, games) {
   socket.on('change-bot-style', (data) => {
     const { slug, botId, newStyle } = data;
     const lobby = lobbies.get(slug);
-    
-    if (!lobby || lobby.leaderId !== socket.id) {
+
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
       return;
     }
-  
+
     const bot = lobby.players.find(p => p.id === botId && p.isBot);
     if (bot) {
       bot.botStyle = newStyle;

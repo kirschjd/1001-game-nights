@@ -8,3 +8,5 @@ build/
 npm-debug.log*
 .DS_Store
 **/old/**
+*.bak
+*.old

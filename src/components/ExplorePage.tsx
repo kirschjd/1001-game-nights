@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { generateLobbySlug } from '../utils/lobbyUtils';
 
 interface GameInfo {
   id: string;
@@ -82,17 +83,6 @@ const ExplorePage: React.FC = () => {
       status: 'available'
     }
   ];
-
-  const generateLobbySlug = (): string => {
-    const words = [
-      'horse', 'hat', 'wickerbasket', 'blue', 'mountain', 'river', 'coffee', 'laptop',
-      'sunset', 'garden', 'book', 'candle', 'forest', 'ocean', 'pizza', 'guitar',
-      'rainbow', 'cloud', 'bicycle', 'camera', 'thunder', 'whisper', 'diamond', 'feather'
-    ];
-    
-    const shuffled = words.sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 3).join('-');
-  };
 
   const createLobbyWithGame = (gameId: string) => {
     const slug = generateLobbySlug();
