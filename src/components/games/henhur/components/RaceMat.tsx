@@ -23,6 +23,20 @@ interface PlayerToken {
   position: TokenPosition | null;
 }
 
+// Track configuration constants
+const TRACKS = [
+  { lane: 0, curveSpaces: 7 },  // Inner track
+  { lane: 1, curveSpaces: 9 },  // Middle track
+  { lane: 2, curveSpaces: 11 }  // Outer track
+];
+
+const STRAIGHT_SPACES = 10;
+const LANE_WIDTH = 40;
+const CENTER_X = 450;
+const CENTER_Y = 300;
+const STRAIGHT_LENGTH = 400;
+const BASE_RADIUS = 100;
+
 const RaceMat: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [spacePositions, setSpacePositions] = useState<SpacePosition[]>([]);
@@ -35,36 +49,22 @@ const RaceMat: React.FC = () => {
   const [clickedSpaces, setClickedSpaces] = useState<Set<string>>(new Set());
   const [nearestSpace, setNearestSpace] = useState<SpacePosition | null>(null);
 
-  // Track configuration
-  const tracks = [
-    { lane: 0, curveSpaces: 7 },  // Inner track
-    { lane: 1, curveSpaces: 9 },  // Middle track
-    { lane: 2, curveSpaces: 11 }  // Outer track
-  ];
-
-  const straightSpaces = 10;
-  const laneWidth = 40;
-  const centerX = 450;
-  const centerY = 300;
-  const straightLength = 400;
-  const baseRadius = 100;
-
   // Generate space positions
   useEffect(() => {
     const positions: SpacePosition[] = [];
 
-    tracks.forEach((track, trackIndex) => {
-      const radius = baseRadius + (trackIndex * laneWidth);
-      const leftX = centerX - straightLength / 2;
-      const rightX = centerX + straightLength / 2;
+    TRACKS.forEach((track, trackIndex) => {
+      const radius = BASE_RADIUS + (trackIndex * LANE_WIDTH);
+      const leftX = CENTER_X - STRAIGHT_LENGTH / 2;
+      const rightX = CENTER_X + STRAIGHT_LENGTH / 2;
 
       // Top straight
-      for (let i = 0; i < straightSpaces; i++) {
-        const x1 = leftX + (i * straightLength / straightSpaces);
-        const x2 = leftX + ((i + 1) * straightLength / straightSpaces);
+      for (let i = 0; i < STRAIGHT_SPACES; i++) {
+        const x1 = leftX + (i * STRAIGHT_LENGTH / STRAIGHT_SPACES);
+        const x2 = leftX + ((i + 1) * STRAIGHT_LENGTH / STRAIGHT_SPACES);
         positions.push({
           x: (x1 + x2) / 2,
-          y: centerY - radius,
+          y: CENTER_Y - radius,
           track: trackIndex,
           section: 'top-straight',
           space: i
@@ -78,7 +78,7 @@ const RaceMat: React.FC = () => {
         const midAngle = (angle1 + angle2) / 2;
         positions.push({
           x: rightX + radius * Math.sin(midAngle),
-          y: centerY + radius * Math.cos(midAngle),
+          y: CENTER_Y + radius * Math.cos(midAngle),
           track: trackIndex,
           section: 'right-curve',
           space: i
@@ -86,12 +86,12 @@ const RaceMat: React.FC = () => {
       }
 
       // Bottom straight
-      for (let i = 0; i < straightSpaces; i++) {
-        const x1 = leftX + (i * straightLength / straightSpaces);
-        const x2 = leftX + ((i + 1) * straightLength / straightSpaces);
+      for (let i = 0; i < STRAIGHT_SPACES; i++) {
+        const x1 = leftX + (i * STRAIGHT_LENGTH / STRAIGHT_SPACES);
+        const x2 = leftX + ((i + 1) * STRAIGHT_LENGTH / STRAIGHT_SPACES);
         positions.push({
           x: (x1 + x2) / 2,
-          y: centerY + radius,
+          y: CENTER_Y + radius,
           track: trackIndex,
           section: 'bottom-straight',
           space: i
@@ -105,7 +105,7 @@ const RaceMat: React.FC = () => {
         const midAngle = (angle1 + angle2) / 2;
         positions.push({
           x: leftX + radius * Math.sin(midAngle),
-          y: centerY + radius * Math.cos(midAngle),
+          y: CENTER_Y + radius * Math.cos(midAngle),
           track: trackIndex,
           section: 'left-curve',
           space: i
@@ -130,22 +130,22 @@ const RaceMat: React.FC = () => {
 
   // Create track path
   const createTrackPath = (radius: number) => {
-    const innerR = radius - laneWidth / 2;
-    const outerR = radius + laneWidth / 2;
-    const leftX = centerX - straightLength / 2;
-    const rightX = centerX + straightLength / 2;
+    const innerR = radius - LANE_WIDTH / 2;
+    const outerR = radius + LANE_WIDTH / 2;
+    const leftX = CENTER_X - STRAIGHT_LENGTH / 2;
+    const rightX = CENTER_X + STRAIGHT_LENGTH / 2;
 
     return `
-      M ${leftX} ${centerY - outerR}
-      L ${rightX} ${centerY - outerR}
-      A ${outerR} ${outerR} 0 0 1 ${rightX} ${centerY + outerR}
-      L ${leftX} ${centerY + outerR}
-      A ${outerR} ${outerR} 0 0 1 ${leftX} ${centerY - outerR}
-      M ${leftX} ${centerY - innerR}
-      L ${rightX} ${centerY - innerR}
-      A ${innerR} ${innerR} 0 0 1 ${rightX} ${centerY + innerR}
-      L ${leftX} ${centerY + innerR}
-      A ${innerR} ${innerR} 0 0 1 ${leftX} ${centerY - innerR}
+      M ${leftX} ${CENTER_Y - outerR}
+      L ${rightX} ${CENTER_Y - outerR}
+      A ${outerR} ${outerR} 0 0 1 ${rightX} ${CENTER_Y + outerR}
+      L ${leftX} ${CENTER_Y + outerR}
+      A ${outerR} ${outerR} 0 0 1 ${leftX} ${CENTER_Y - outerR}
+      M ${leftX} ${CENTER_Y - innerR}
+      L ${rightX} ${CENTER_Y - innerR}
+      A ${innerR} ${innerR} 0 0 1 ${rightX} ${CENTER_Y + innerR}
+      L ${leftX} ${CENTER_Y + innerR}
+      A ${innerR} ${innerR} 0 0 1 ${leftX} ${CENTER_Y - innerR}
     `;
   };
 
@@ -276,17 +276,17 @@ const RaceMat: React.FC = () => {
   const renderTrackSpaces = () => {
     const elements: JSX.Element[] = [];
 
-    tracks.forEach((track, trackIndex) => {
-      const radius = baseRadius + (trackIndex * laneWidth);
-      const innerR = radius - laneWidth / 2;
-      const outerR = radius + laneWidth / 2;
-      const leftX = centerX - straightLength / 2;
-      const rightX = centerX + straightLength / 2;
+    TRACKS.forEach((track, trackIndex) => {
+      const radius = BASE_RADIUS + (trackIndex * LANE_WIDTH);
+      const innerR = radius - LANE_WIDTH / 2;
+      const outerR = radius + LANE_WIDTH / 2;
+      const leftX = CENTER_X - STRAIGHT_LENGTH / 2;
+      const rightX = CENTER_X + STRAIGHT_LENGTH / 2;
 
       // Top straight spaces
-      for (let i = 0; i < straightSpaces; i++) {
-        const x1 = leftX + (i * straightLength / straightSpaces);
-        const x2 = leftX + ((i + 1) * straightLength / straightSpaces);
+      for (let i = 0; i < STRAIGHT_SPACES; i++) {
+        const x1 = leftX + (i * STRAIGHT_LENGTH / STRAIGHT_SPACES);
+        const x2 = leftX + ((i + 1) * STRAIGHT_LENGTH / STRAIGHT_SPACES);
         const key = `${trackIndex}-top-straight-${i}`;
         const isClicked = clickedSpaces.has(key);
         const isNearestTarget = nearestSpace?.track === trackIndex &&
@@ -336,9 +336,9 @@ const RaceMat: React.FC = () => {
       }
 
       // Bottom straight spaces
-      for (let i = 0; i < straightSpaces; i++) {
-        const x1 = leftX + (i * straightLength / straightSpaces);
-        const x2 = leftX + ((i + 1) * straightLength / straightSpaces);
+      for (let i = 0; i < STRAIGHT_SPACES; i++) {
+        const x1 = leftX + (i * STRAIGHT_LENGTH / STRAIGHT_SPACES);
+        const x2 = leftX + ((i + 1) * STRAIGHT_LENGTH / STRAIGHT_SPACES);
         const key = `${trackIndex}-bottom-straight-${i}`;
         const isClicked = clickedSpaces.has(key);
         const isNearestTarget = nearestSpace?.track === trackIndex &&
@@ -395,25 +395,25 @@ const RaceMat: React.FC = () => {
   const renderDividers = () => {
     const elements: JSX.Element[] = [];
 
-    tracks.forEach((track, trackIndex) => {
-      const radius = baseRadius + (trackIndex * laneWidth);
-      const innerR = radius - laneWidth / 2;
-      const outerR = radius + laneWidth / 2;
-      const leftX = centerX - straightLength / 2;
-      const rightX = centerX + straightLength / 2;
+    TRACKS.forEach((track, trackIndex) => {
+      const radius = BASE_RADIUS + (trackIndex * LANE_WIDTH);
+      const innerR = radius - LANE_WIDTH / 2;
+      const outerR = radius + LANE_WIDTH / 2;
+      const leftX = CENTER_X - STRAIGHT_LENGTH / 2;
+      const rightX = CENTER_X + STRAIGHT_LENGTH / 2;
 
       // Lane dividers (between tracks)
-      if (trackIndex < tracks.length - 1) {
-        const dividerRadius = radius + laneWidth / 2;
+      if (trackIndex < TRACKS.length - 1) {
+        const dividerRadius = radius + LANE_WIDTH / 2;
         elements.push(
           <path
             key={`lane-divider-${trackIndex}`}
             d={`
-              M ${leftX} ${centerY - dividerRadius}
-              L ${rightX} ${centerY - dividerRadius}
-              A ${dividerRadius} ${dividerRadius} 0 0 1 ${rightX} ${centerY + dividerRadius}
-              L ${leftX} ${centerY + dividerRadius}
-              A ${dividerRadius} ${dividerRadius} 0 0 1 ${leftX} ${centerY - dividerRadius}
+              M ${leftX} ${CENTER_Y - dividerRadius}
+              L ${rightX} ${CENTER_Y - dividerRadius}
+              A ${dividerRadius} ${dividerRadius} 0 0 1 ${rightX} ${CENTER_Y + dividerRadius}
+              L ${leftX} ${CENTER_Y + dividerRadius}
+              A ${dividerRadius} ${dividerRadius} 0 0 1 ${leftX} ${CENTER_Y - dividerRadius}
             `}
             stroke="#222"
             strokeWidth={2}
@@ -423,15 +423,15 @@ const RaceMat: React.FC = () => {
       }
 
       // Space dividers - top straight
-      for (let i = 1; i < straightSpaces; i++) {
-        const x = leftX + (i * straightLength / straightSpaces);
+      for (let i = 1; i < STRAIGHT_SPACES; i++) {
+        const x = leftX + (i * STRAIGHT_LENGTH / STRAIGHT_SPACES);
         elements.push(
           <line
             key={`top-divider-${trackIndex}-${i}`}
             x1={x}
-            y1={centerY - innerR}
+            y1={CENTER_Y - innerR}
             x2={x}
-            y2={centerY - outerR}
+            y2={CENTER_Y - outerR}
             stroke="#666"
             strokeWidth={1}
           />
@@ -440,22 +440,22 @@ const RaceMat: React.FC = () => {
 
       // Transition dividers
       elements.push(
-        <line key={`top-left-${trackIndex}`} x1={leftX} y1={centerY - innerR} x2={leftX} y2={centerY - outerR} stroke="#666" strokeWidth={1} />,
-        <line key={`top-right-${trackIndex}`} x1={rightX} y1={centerY - innerR} x2={rightX} y2={centerY - outerR} stroke="#666" strokeWidth={1} />,
-        <line key={`bottom-left-${trackIndex}`} x1={leftX} y1={centerY + innerR} x2={leftX} y2={centerY + outerR} stroke="#666" strokeWidth={1} />,
-        <line key={`bottom-right-${trackIndex}`} x1={rightX} y1={centerY + innerR} x2={rightX} y2={centerY + outerR} stroke="#666" strokeWidth={1} />
+        <line key={`top-left-${trackIndex}`} x1={leftX} y1={CENTER_Y - innerR} x2={leftX} y2={CENTER_Y - outerR} stroke="#666" strokeWidth={1} />,
+        <line key={`top-right-${trackIndex}`} x1={rightX} y1={CENTER_Y - innerR} x2={rightX} y2={CENTER_Y - outerR} stroke="#666" strokeWidth={1} />,
+        <line key={`bottom-left-${trackIndex}`} x1={leftX} y1={CENTER_Y + innerR} x2={leftX} y2={CENTER_Y + outerR} stroke="#666" strokeWidth={1} />,
+        <line key={`bottom-right-${trackIndex}`} x1={rightX} y1={CENTER_Y + innerR} x2={rightX} y2={CENTER_Y + outerR} stroke="#666" strokeWidth={1} />
       );
 
       // Space dividers - bottom straight
-      for (let i = 1; i < straightSpaces; i++) {
-        const x = leftX + (i * straightLength / straightSpaces);
+      for (let i = 1; i < STRAIGHT_SPACES; i++) {
+        const x = leftX + (i * STRAIGHT_LENGTH / STRAIGHT_SPACES);
         elements.push(
           <line
             key={`bottom-divider-${trackIndex}-${i}`}
             x1={x}
-            y1={centerY + innerR}
+            y1={CENTER_Y + innerR}
             x2={x}
-            y2={centerY + outerR}
+            y2={CENTER_Y + outerR}
             stroke="#666"
             strokeWidth={1}
           />
@@ -471,9 +471,9 @@ const RaceMat: React.FC = () => {
           <line
             key={`right-divider-${trackIndex}-${i}`}
             x1={rightX + innerR * sin}
-            y1={centerY + innerR * cos}
+            y1={CENTER_Y + innerR * cos}
             x2={rightX + outerR * sin}
-            y2={centerY + outerR * cos}
+            y2={CENTER_Y + outerR * cos}
             stroke="#666"
             strokeWidth={1}
           />
@@ -489,9 +489,9 @@ const RaceMat: React.FC = () => {
           <line
             key={`left-divider-${trackIndex}-${i}`}
             x1={leftX + innerR * sin}
-            y1={centerY + innerR * cos}
+            y1={CENTER_Y + innerR * cos}
             x2={leftX + outerR * sin}
-            y2={centerY + outerR * cos}
+            y2={CENTER_Y + outerR * cos}
             stroke="#666"
             strokeWidth={1}
           />
@@ -551,8 +551,8 @@ const RaceMat: React.FC = () => {
       >
         {/* Track backgrounds */}
         <g>
-          {tracks.map((_, trackIndex) => {
-            const radius = baseRadius + (trackIndex * laneWidth);
+          {TRACKS.map((_, trackIndex) => {
+            const radius = BASE_RADIUS + (trackIndex * LANE_WIDTH);
             return (
               <path
                 key={`track-${trackIndex}`}
