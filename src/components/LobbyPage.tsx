@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
+import CardSelectionModal from './games/henhur/components/CardSelectionModal';
+import { ALL_CARDS } from './games/henhur/data/cards';
 
 interface Player {
   id: string;
@@ -37,6 +39,10 @@ const LobbyPage: React.FC = () => {
   const [selectedDFVariant, setSelectedDFVariant] = useState('standard');
   const [selectedHenhurVariant, setSelectedHenhurVariant] = useState('standard');
   const [experimentalTurnLimit, setExperimentalTurnLimit] = useState(11);
+  const [showCardSelection, setShowCardSelection] = useState(false);
+  const [selectedCardIds, setSelectedCardIds] = useState<string[]>(ALL_CARDS.map(card => card.id));
+  const [ktdPackSize, setKtdPackSize] = useState(15);
+  const [ktdTotalPacks, setKtdTotalPacks] = useState(3);
 
   useEffect(() => {
     const newSocket = io(process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
@@ -159,11 +165,21 @@ const LobbyPage: React.FC = () => {
           experimentalTurnLimit: selectedDFVariant === 'experimental' ? experimentalTurnLimit : undefined
         });
       } else if (lobby.gameType === 'henhur') {
-        // Start HenHur and include selected variant
+        // Start HenHur and include selected variant and card selection
         socket.emit('start-game', {
           slug,
-          variant: selectedHenhurVariant
+          variant: selectedHenhurVariant,
+          selectedCards: selectedCardIds
         });
+      } else if (lobby.gameType === 'kill-team-draft') {
+        // Ensure gameOptions exist and have the draft configuration
+        if (!lobby.gameOptions) {
+          lobby.gameOptions = {};
+        }
+        lobby.gameOptions.packSize = ktdPackSize;
+        lobby.gameOptions.totalPacks = ktdTotalPacks;
+
+        socket.emit('start-game', { slug });
       } else {
         // Unknown game type
         socket.emit('error', { message: 'Invalid game type' });
@@ -314,7 +330,7 @@ const LobbyPage: React.FC = () => {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-lion-light">Players</h3>
-              {isLeader && (lobby.gameType === 'war' || lobby.gameType === 'dice-factory') && (
+              {isLeader && (lobby.gameType === 'war' || lobby.gameType === 'dice-factory' || lobby.gameType === 'kill-team-draft') && (
                 <button
                   onClick={handleAddBot}
                   className="px-3 py-1 bg-uranian-blue hover:bg-uranian-blue-light text-white text-sm rounded transition-colors"
@@ -447,6 +463,7 @@ const LobbyPage: React.FC = () => {
                   <option value="war">War</option>
                   <option value="dice-factory">Dice Factory</option>
                   <option value="henhur">HenHur</option>
+                  <option value="kill-team-draft">Kill Team Draft</option>
                 </select>
                 <img 
                   src={`/assets/icon-${lobby.gameType}.jpg`} 
@@ -527,24 +544,94 @@ const LobbyPage: React.FC = () => {
 
             {/* HenHur Variant Selection */}
             {lobby.gameType === 'henhur' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2">HenHur Mode</label>
-                <select
-                  value={selectedHenhurVariant}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setSelectedHenhurVariant(v);
-                    if (socket && isLeader) {
-                      socket.emit('update-henhur-variant', { slug, variant: v });
-                    }
-                  }}
-                  disabled={!isLeader}
-                  className="w-full px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-lion"
-                >
-                  <option value="standard">Standard</option>
-                  <option value="debug">Debug</option>
-                </select>
-                <p className="text-xs text-gray-400 mt-1">Standard: normal play. Debug: additional logs and controls for testing.</p>
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">HenHur Mode</label>
+                  <select
+                    value={selectedHenhurVariant}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setSelectedHenhurVariant(v);
+                      if (socket && isLeader) {
+                        socket.emit('update-henhur-variant', { slug, variant: v });
+                      }
+                    }}
+                    disabled={!isLeader}
+                    className="w-full px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-lion"
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="debug">Debug</option>
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Standard: normal play. Debug: additional logs and controls for testing.</p>
+                </div>
+
+                {/* Card Selection Button */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Card Selection</label>
+                  <button
+                    onClick={() => setShowCardSelection(true)}
+                    disabled={!isLeader}
+                    className="w-full px-4 py-2 bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/30 rounded-lg text-amber-400 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    🃏 Configure Cards ({selectedCardIds.length}/{ALL_CARDS.length})
+                  </button>
+                  <p className="text-xs text-gray-400 mt-1">Select which cards will be available in this game</p>
+                </div>
+              </>
+            )}
+
+            {/* Kill Team Draft Configuration */}
+            {lobby.gameType === 'kill-team-draft' && isLeader && (
+              <div className="mb-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Pack Size</label>
+                  <input
+                    type="number"
+                    min="3"
+                    max="30"
+                    value={ktdPackSize}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      setKtdPackSize(value);
+                      if (socket && lobby.gameOptions) {
+                        lobby.gameOptions.packSize = value;
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Number of cards in each pack</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Total Packs</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={ktdTotalPacks}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      setKtdTotalPacks(value);
+                      if (socket && lobby.gameOptions) {
+                        lobby.gameOptions.totalPacks = value;
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Number of packs each player will draft from</p>
+                </div>
+
+                <div className="p-3 bg-blue-900/20 border border-blue-600/30 rounded">
+                  <div className="text-sm text-gray-300">
+                    <strong>Total cards needed:</strong> {lobby.players.length} players × {ktdPackSize} cards × {ktdTotalPacks} packs = {lobby.players.length * ktdPackSize * ktdTotalPacks} cards
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    Available: 100 unique placeholder cards (A-E, 1-20)
+                    {lobby.players.length * ktdPackSize * ktdTotalPacks > 100 && (
+                      <span className="text-yellow-400"> ⚠️ Will generate duplicates</span>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -635,6 +722,68 @@ const LobbyPage: React.FC = () => {
               <p className="text-lg font-semibold text-amber-400 mb-4">This is a placeholder for the HenHur game. Rules and features will be added soon!</p>
               <div className="space-y-4 text-gray-300">
                 <p className="text-lg">A new game framework. Stay tuned for updates and gameplay details.</p>
+              </div>
+            </div>
+          ) : lobby.gameType === 'kill-team-draft' ? (
+            <div className={`p-6 rounded-lg border ${gameColorClasses}`}>
+              <h2 className="text-2xl font-bold mb-4 text-uranian-blue">🎴 Kill Team Draft</h2>
+
+              <div className="space-y-4 text-gray-300">
+                <p className="text-lg">
+                  A classic card drafting game where players build their deck by selecting cards from rotating packs.
+                  Perfect for strategic deck building!
+                </p>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">📋 How to Play</h3>
+                  <ol className="space-y-2 text-sm">
+                    <li><strong>1.</strong> Each player receives a pack of cards</li>
+                    <li><strong>2.</strong> Select one card from your current pack to add to your deck</li>
+                    <li><strong>3.</strong> Pass the remaining cards to the next player</li>
+                    <li><strong>4.</strong> Repeat until all packs are empty</li>
+                    <li><strong>5.</strong> New packs are distributed and the direction alternates (right → left → right)</li>
+                    <li><strong>6.</strong> Continue until all rounds are complete</li>
+                  </ol>
+                </div>
+
+                <div className="p-3 bg-blue-900/20 border border-blue-600/40 rounded">
+                  <h4 className="font-semibold text-blue-400 mb-1">⚡ Pipeline Drafting</h4>
+                  <p className="text-sm">
+                    Packs move independently! You don't wait for everyone - as soon as you pick a card,
+                    the pack passes to the next player. If you're slow, packs will queue up for you.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">🎮 Game Info</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div><strong>Players:</strong> 2-8 players</div>
+                    <div><strong>Duration:</strong> 10-20 minutes</div>
+                    <div><strong>Difficulty:</strong> Easy</div>
+                    <div><strong>Strategy:</strong> Deck Building</div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">✨ Features</h3>
+                  <ul className="space-y-1 text-sm">
+                    <li>• <strong>Configurable:</strong> Adjust pack size (3-30 cards) and number of packs (1-10)</li>
+                    <li>• <strong>Organize:</strong> Drag and drop to reorder your drafted cards</li>
+                    <li>• <strong>Export:</strong> Copy your deck as plain text when finished</li>
+                    <li>• <strong>Draft Again:</strong> Start a fresh draft with the same players</li>
+                    <li>• <strong>Bot Support:</strong> Add bots that draft randomly</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">💡 Tips</h3>
+                  <ul className="space-y-1 text-sm">
+                    <li>• Draft quickly to keep packs flowing smoothly</li>
+                    <li>• Watch what cards get passed to you - it reveals what others are picking</li>
+                    <li>• Later picks in a pack are more informed but have fewer choices</li>
+                    <li>• Use the minimize and stack features to organize your deck by type</li>
+                  </ul>
+                </div>
               </div>
             </div>
           ) : (
@@ -799,6 +948,14 @@ const LobbyPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Card Selection Modal */}
+      <CardSelectionModal
+        isOpen={showCardSelection}
+        onClose={() => setShowCardSelection(false)}
+        selectedCardIds={selectedCardIds}
+        onSave={(cardIds) => setSelectedCardIds(cardIds)}
+      />
     </div>
   );
 };

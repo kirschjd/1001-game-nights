@@ -138,6 +138,17 @@ function registerLobbyEvents(io, socket, lobbies, games) {
       return;
     }
 
+    // Remove all bots when game type changes (bots are game-type specific)
+    const botsToRemove = lobby.players.filter(p => p.isBot);
+    if (botsToRemove.length > 0) {
+      botsToRemove.forEach(bot => {
+        botSystem.removeBot(bot.id);
+        console.log(`🤖 Removed bot ${bot.name} (${bot.id}) due to game type change`);
+      });
+      lobby.players = lobby.players.filter(p => !p.isBot);
+      console.log(`🔄 Cleared ${botsToRemove.length} bot(s) when switching to ${gameType}`);
+    }
+
     lobby.gameType = gameType;
     io.to(slug).emit('lobby-updated', lobby);
   });
@@ -198,6 +209,15 @@ function registerLobbyEvents(io, socket, lobbies, games) {
       setTimeout(() => {
         scheduleDiceFactoryBotsIfNeeded(io, slug, game, lobbies, botSystem);
       }, 1000);
+    }
+
+    // Schedule bots for Kill Team Draft
+    if (lobby.gameType === 'kill-team-draft') {
+      console.log('🎮 KILL TEAM DRAFT STARTED - Scheduling bot drafters');
+      const { scheduleBotActions } = require('./killTeamDraftEvents');
+      setTimeout(() => {
+        scheduleBotActions(io, lobbies, games, slug);
+      }, 500);
     }
   });
 
