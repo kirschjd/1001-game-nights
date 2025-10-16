@@ -52,7 +52,7 @@ const LeftInfoDrawer: React.FC<Props> = ({ variant, socket, slug, playerName }) 
 
   return (
     <>
-      <div className={`fixed top-0 left-0 h-full w-64 bg-payne-grey/90 border-r-4 border-amber-400 shadow-lg z-0 flex flex-col p-4 transition-transform duration-300`} style={{ transform: open ? 'translateX(0)' : 'translateX(-100%)' }}>
+      <div className={`fixed left-0 w-64 bg-payne-grey/90 border-r-4 border-amber-400 shadow-lg z-0 flex flex-col p-4 transition-transform duration-300`} style={{ top: '72px', height: 'calc(100vh - 72px)', transform: open ? 'translateX(0)' : 'translateX(-100%)' }}>
         <button
           className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-full z-0 bg-amber-400 text-white px-2 py-2 rounded-r-lg shadow-lg focus:outline-none"
           onClick={() => setOpen(!open)}

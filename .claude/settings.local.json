@@ -6,7 +6,12 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(node:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nRefactor codebase to reduce duplication and improve maintainability\n\n- Extract shared lobby utilities (generateLobbySlug) into src/utils/lobbyUtils.ts\n- Create shared card utilities for War game (client & server)\n  - shared/war/cardUtils.js for server\n  - src/shared/war/cardUtils.ts for client\n- Refactor War game components to use shared card utilities\n  - Updated warConstants.js, cardHelpers.ts\n  - Removed duplicate getCardName/getCardEmoji from game components\n- Extract lobby event handler complexity into helper modules\n  - server/socket/helpers/lobbyHelpers.js for lobby management\n  - server/socket/helpers/gameInitHelpers.js for game initialization\n- Simplify lobbyEvents.js using helper functions\n  - Consolidated leader permission checks\n  - Extracted player reconnection logic\n  - Simplified game creation and broadcasting\n- Remove server/index.bak and clean up .gitignore\n- Add utility files: useSocketEvent hook, logger utility\n- Add card assets for Henhur game\n\nNet change: -878 lines of code (removed ~996, added ~118)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git commit:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

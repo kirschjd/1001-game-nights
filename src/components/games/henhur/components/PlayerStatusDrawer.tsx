@@ -13,8 +13,8 @@ const PlayerStatusDrawer: React.FC = () => {
   return (
     <>
       <div
-        className={`fixed top-0 right-0 h-full w-64 bg-white border-l-4 border-amber-400 shadow-lg z-0 flex flex-col p-4 transition-transform duration-300`}
-        style={{ transform: open ? 'translateX(0)' : 'translateX(100%)' }}
+        className={`fixed right-0 w-64 bg-white border-l-4 border-amber-400 shadow-lg z-0 flex flex-col p-4 transition-transform duration-300`}
+        style={{ top: '72px', height: 'calc(100vh - 72px)', transform: open ? 'translateX(0)' : 'translateX(100%)' }}
       >
         <button
           className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-full z-0 bg-amber-400 text-white px-2 py-2 rounded-l-lg shadow-lg focus:outline-none"

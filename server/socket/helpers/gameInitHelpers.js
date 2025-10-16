@@ -3,6 +3,7 @@
 
 const WarGame = require('../../games/war');
 const DiceFactoryGame = require('../../games/dice-factory');
+const { KillTeamDraftGame } = require('../../games/kill-team-draft');
 
 /**
  * Initialize a War game
@@ -60,6 +61,25 @@ function initializeHenHurGame(connectedPlayers, clientVariant, lobby) {
 }
 
 /**
+ * Initialize a Kill Team Draft game
+ */
+function initializeKillTeamDraftGame(connectedPlayers, lobby) {
+  const packSize = lobby.gameOptions?.packSize || 15;
+  const totalPacks = lobby.gameOptions?.totalPacks || 3;
+
+  const game = new KillTeamDraftGame({
+    players: connectedPlayers,
+    packSize,
+    totalPacks
+  });
+
+  game.initialize();
+  game.start();
+
+  return game;
+}
+
+/**
  * Create game based on lobby type
  */
 function createGame(lobby, connectedPlayers, clientVariant, botSystem, experimentalTurnLimit) {
@@ -72,6 +92,9 @@ function createGame(lobby, connectedPlayers, clientVariant, botSystem, experimen
 
     case 'henhur':
       return initializeHenHurGame(connectedPlayers, clientVariant, lobby);
+
+    case 'kill-team-draft':
+      return initializeKillTeamDraftGame(connectedPlayers, lobby);
 
     default:
       throw new Error('Invalid game type');
@@ -123,5 +146,6 @@ module.exports = {
   scheduleDiceFactoryBotsIfNeeded,
   initializeWarGame,
   initializeDiceFactoryGame,
-  initializeHenHurGame
+  initializeHenHurGame,
+  initializeKillTeamDraftGame
 };

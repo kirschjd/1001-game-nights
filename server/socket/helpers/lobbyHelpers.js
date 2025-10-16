@@ -59,6 +59,13 @@ function updateGamePlayerSocketId(game, oldSocketId, newSocketId, playerName) {
     return;
   }
 
+  // If game has a custom update method (like HenHur), use it
+  if (typeof game.updatePlayerSocketId === 'function') {
+    game.updatePlayerSocketId(oldSocketId, newSocketId);
+    return;
+  }
+
+  // Otherwise use the default logic for other games
   let gamePlayer = game.state.players.find(p => p.id === oldSocketId);
 
   if (gamePlayer) {

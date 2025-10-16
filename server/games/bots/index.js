@@ -4,15 +4,17 @@
 const { botSystem } = require('./BotSystem');
 const WarBotHandler = require('./WarBotHandler');
 const DiceFactoryBotHandler = require('./DiceFactoryBotHandler');
+const KillTeamDraftBotHandler = require('./KillTeamDraftBotHandler');
 
 // Initialize bot handlers
 function initializeBotSystem() {
   console.log('Initializing bot system...');
-  
+
   // Register game-specific bot handlers
   botSystem.registerGameHandler('war', new WarBotHandler());
   botSystem.registerGameHandler('dice-factory', new DiceFactoryBotHandler());
-  
+  botSystem.registerGameHandler('kill-team-draft', new KillTeamDraftBotHandler());
+
   console.log('Bot system initialized successfully');
 }
 

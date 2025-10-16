@@ -8,6 +8,7 @@ import io, { Socket } from 'socket.io-client';
 import { EnhancedWarGame } from './games/war';
 import DiceFactoryGame from './games/dice-factory';
 import HenHurGame from './games/henhur';
+import KillTeamDraftGame from './games/kill-team-draft/KillTeamDraftGame';
 
 interface WarGameState {
   type: string;
@@ -312,11 +313,20 @@ useEffect(() => {
             slug={slug}
             playerName={playerName}
             isLeader={isLeader}
+            gameState={gameState}
+          />
+        )}
+
+        {gameState.type === 'kill-team-draft' && (
+          <KillTeamDraftGame
+            socket={socket!}
+            slug={slug!}
+            isLeader={isLeader}
           />
         )}
 
         {/* Fallback for unknown game types */}
-        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && (
+        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && gameState.type !== 'kill-team-draft' && (
           <div className="text-center p-8">
             <h2 className="text-2xl font-bold mb-4 text-red-400">Unknown Game Type</h2>
             <p className="text-gray-400 mb-4">Game type "{gameState.type}" is not supported.</p>

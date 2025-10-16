@@ -296,7 +296,7 @@ const RaceMat: React.FC = () => {
         elements.push(
           <path
             key={key}
-            d={`M ${x1} ${centerY - innerR} L ${x2} ${centerY - innerR} L ${x2} ${centerY - outerR} L ${x1} ${centerY - outerR} Z`}
+            d={`M ${x1} ${CENTER_Y - innerR} L ${x2} ${CENTER_Y - innerR} L ${x2} ${CENTER_Y - outerR} L ${x1} ${CENTER_Y - outerR} Z`}
             fill={isClicked ? 'rgba(74, 158, 255, 0.5)' : 'transparent'}
             stroke={isNearestTarget ? '#fff' : 'transparent'}
             strokeWidth={isNearestTarget ? 2 : 0}
@@ -320,10 +320,10 @@ const RaceMat: React.FC = () => {
           <path
             key={key}
             d={`
-              M ${rightX + innerR * Math.sin(angle1)} ${centerY + innerR * Math.cos(angle1)}
-              A ${innerR} ${innerR} 0 0 0 ${rightX + innerR * Math.sin(angle2)} ${centerY + innerR * Math.cos(angle2)}
-              L ${rightX + outerR * Math.sin(angle2)} ${centerY + outerR * Math.cos(angle2)}
-              A ${outerR} ${outerR} 0 0 1 ${rightX + outerR * Math.sin(angle1)} ${centerY + outerR * Math.cos(angle1)}
+              M ${rightX + innerR * Math.sin(angle1)} ${CENTER_Y + innerR * Math.cos(angle1)}
+              A ${innerR} ${innerR} 0 0 0 ${rightX + innerR * Math.sin(angle2)} ${CENTER_Y + innerR * Math.cos(angle2)}
+              L ${rightX + outerR * Math.sin(angle2)} ${CENTER_Y + outerR * Math.cos(angle2)}
+              A ${outerR} ${outerR} 0 0 1 ${rightX + outerR * Math.sin(angle1)} ${CENTER_Y + outerR * Math.cos(angle1)}
               Z
             `}
             fill={isClicked ? 'rgba(74, 158, 255, 0.5)' : 'transparent'}
@@ -348,7 +348,7 @@ const RaceMat: React.FC = () => {
         elements.push(
           <path
             key={key}
-            d={`M ${x1} ${centerY + innerR} L ${x2} ${centerY + innerR} L ${x2} ${centerY + outerR} L ${x1} ${centerY + outerR} Z`}
+            d={`M ${x1} ${CENTER_Y + innerR} L ${x2} ${CENTER_Y + innerR} L ${x2} ${CENTER_Y + outerR} L ${x1} ${CENTER_Y + outerR} Z`}
             fill={isClicked ? 'rgba(74, 158, 255, 0.5)' : 'transparent'}
             stroke={isNearestTarget ? '#fff' : 'transparent'}
             strokeWidth={isNearestTarget ? 2 : 0}
@@ -372,10 +372,10 @@ const RaceMat: React.FC = () => {
           <path
             key={key}
             d={`
-              M ${leftX + innerR * Math.sin(angle1)} ${centerY + innerR * Math.cos(angle1)}
-              A ${innerR} ${innerR} 0 0 0 ${leftX + innerR * Math.sin(angle2)} ${centerY + innerR * Math.cos(angle2)}
-              L ${leftX + outerR * Math.sin(angle2)} ${centerY + outerR * Math.cos(angle2)}
-              A ${outerR} ${outerR} 0 0 1 ${leftX + outerR * Math.sin(angle1)} ${centerY + outerR * Math.cos(angle1)}
+              M ${leftX + innerR * Math.sin(angle1)} ${CENTER_Y + innerR * Math.cos(angle1)}
+              A ${innerR} ${innerR} 0 0 0 ${leftX + innerR * Math.sin(angle2)} ${CENTER_Y + innerR * Math.cos(angle2)}
+              L ${leftX + outerR * Math.sin(angle2)} ${CENTER_Y + outerR * Math.cos(angle2)}
+              A ${outerR} ${outerR} 0 0 1 ${leftX + outerR * Math.sin(angle1)} ${CENTER_Y + outerR * Math.cos(angle1)}
               Z
             `}
             fill={isClicked ? 'rgba(74, 158, 255, 0.5)' : 'transparent'}
