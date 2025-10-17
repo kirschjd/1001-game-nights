@@ -11,11 +11,18 @@ export type CardEffectType =
   | 'discard_cards'
   | 'modify_priority'
   | 'block_action'
-  | 'gain_resource';
+  | 'gain_resource'
+  | string; // Allow custom effect types for experimentation
 
 export interface CardEffect {
   type: CardEffectType;
   params: Record<string, any>;
+  condition?: EffectCondition; // Optional condition for when effect triggers
+}
+
+export interface EffectCondition {
+  type: 'position_is_first' | 'position_is_last' | 'lap_equals' | 'token_count' | 'custom';
+  params?: Record<string, any>;
 }
 
 export interface Card {

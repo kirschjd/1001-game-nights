@@ -1,4 +1,5 @@
 // Entry point for HenHur game component
-import HenHurGame from './HenHurGame';
+// Using enhanced version with full turn system
+import HenHurGameEnhanced from './HenHurGameEnhanced';
 
-export default HenHurGame;
+export default HenHurGameEnhanced;

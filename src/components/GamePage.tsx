@@ -306,7 +306,7 @@ useEffect(() => {
           />
         )}
 
-        {gameState.type === 'henhur' && (
+        {gameState.type === 'henhur' && slug && (
           <HenHurGame
             variant={(gameState as any).variant || 'standard'}
             socket={socket}

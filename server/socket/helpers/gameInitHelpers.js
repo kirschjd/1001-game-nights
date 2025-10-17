@@ -46,16 +46,17 @@ function initializeDiceFactoryGame(connectedPlayers, clientVariant, lobby, botSy
  * Initialize a HenHur game
  */
 function initializeHenHurGame(connectedPlayers, clientVariant, lobby) {
-  const HenHurGame = require('../../games/henhur').HenHurGame;
+  // Use enhanced HenHur game with full turn system
+  const HenHurGameEnhanced = require('../../games/henhur/HenHurGameEnhanced');
   const henhurVariant = clientVariant || lobby.gameOptions?.henhurVariant || 'standard';
-  const game = new HenHurGame({ players: connectedPlayers, variant: henhurVariant });
 
-  game.initialize();
+  const game = new HenHurGameEnhanced({
+    players: connectedPlayers,
+    variant: henhurVariant,
+    selectedCards: lobby.gameOptions?.selectedCards || []
+  });
+
   game.start();
-
-  // Store variant on game state for client views
-  if (!game.state) game.state = {};
-  game.state.variant = henhurVariant;
 
   return game;
 }
