@@ -25,17 +25,23 @@ export interface EffectCondition {
   params?: Record<string, any>;
 }
 
+// Priority value format: "base + dice" (e.g., "1 + d6")
+export interface PriorityValue {
+  base: number;       // Base priority value
+  dice: string;       // Dice type: 'd4', 'd6', 'd8', etc.
+}
+
 export interface Card {
   id: string;
   title: string;
   deckType: DeckType;
   trickNumber: number;
-  raceNumber: number;
-  priority: number;
+  raceNumber: number; // Static race value
+  priority: number | PriorityValue; // Can be static number or base + dice
   description: string;
   effect: CardEffect[];
   burnEffect: CardEffect[];
-  copies?: number; // Number of copies in the pool (default: 1)
+  copies?: number; // Number of copies per player (for base deck) or in pool (for lap decks)
 }
 
 export interface CardInstance {

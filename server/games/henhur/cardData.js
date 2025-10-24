@@ -2,38 +2,148 @@
 
 const BASE_CARDS = [
   {
-    id: 'base_sprint',
-    title: 'Sprint',
+    id: 'base_pit_stop',
+    title: 'Pit Stop',
     deckType: 'base',
-    trickNumber: 1,
+    trickNumber: 2,
     raceNumber: 1,
-    priority: 5,
-    description: 'Move forward 1 space',
+    priority: { base: 1, dice: 'd6' },
+    description: 'Deck Maintenance - Discard a card from your burn stack',
+    effect: [
+      {
+        type: 'move_player_position',
+        params: { distance: 1 }
+      },
+      {
+        type: 'affect_player_mat',
+        params: { property: 'deckMaintenance', value: 1, operation: 'set' }
+      }
+    ],
+    burnEffect: [
+      {
+        type: 'affect_player_mat',
+        params: { property: 'discardBurnStack', value: true, operation: 'set' }
+      }
+    ],
+    copies: 1
+  },
+  {
+    id: 'base_high_bid',
+    title: 'High Bid',
+    deckType: 'base',
+    trickNumber: 7,
+    raceNumber: 1,
+    priority: { base: 1, dice: 'd4' },
+    description: 'Econ - Move 1 space and gain 4 trick value',
     effect: [
       {
         type: 'move_player_position',
         params: { distance: 1 }
       }
     ],
-    burnEffect: [],
-    copies: 5
+    burnEffect: [
+      {
+        type: 'affect_token_pool',
+        params: { action: 'gain', tokenType: 'P+', count: 1 }
+      }
+    ],
+    copies: 1
   },
   {
-    id: 'base_jog',
-    title: 'Jog',
+    id: 'base_low_bid',
+    title: 'Low Bid',
+    deckType: 'base',
+    trickNumber: 5,
+    raceNumber: 1,
+    priority: { base: 2, dice: 'd8' },
+    description: 'Econ - Move 1 space and gain 8 trick value',
+    effect: [
+      {
+        type: 'move_player_position',
+        params: { distance: 1 }
+      }
+    ],
+    burnEffect: [
+      {
+        type: 'affect_token_pool',
+        params: { action: 'gain', tokenType: 'A+', count: 1 }
+      }
+    ],
+    copies: 2
+  },
+  {
+    id: 'base_rush',
+    title: 'Rush',
     deckType: 'base',
     trickNumber: 1,
-    raceNumber: 2,
-    priority: 3,
-    description: 'Move forward 2 spaces',
+    raceNumber: 5,
+    priority: { base: 2, dice: 'd8' },
+    description: 'Sprint - Move 4 spaces, you may move at any point in the turn',
+    effect: [
+      {
+        type: 'move_player_position',
+        params: { distance: 4 }
+      },
+      {
+        type: 'affect_player_mat',
+        params: { property: 'canMoveAnytime', value: true, operation: 'set' }
+      }
+    ],
+    burnEffect: [
+      {
+        type: 'affect_token_pool',
+        params: { action: 'gain', tokenType: 'R+', count: 1 }
+      }
+    ],
+    copies: 2
+  },
+  {
+    id: 'base_stride',
+    title: 'Stride',
+    deckType: 'base',
+    trickNumber: 1,
+    raceNumber: 7,
+    priority: { base: 2, dice: 'd8' },
+    description: 'Stride - Move forward without using race number',
+    effect: [
+      {
+        type: 'move_player_position',
+        params: { distance: 0 }
+      }
+    ],
+    burnEffect: [
+      {
+        type: 'move_player_position',
+        params: { distance: 8 }
+      }
+    ],
+    copies: 2
+  },
+  {
+    id: 'base_punch',
+    title: 'Punch',
+    deckType: 'base',
+    trickNumber: 3,
+    raceNumber: 4,
+    priority: { base: 2, dice: 'd8' },
+    description: 'Fight - Move 2 spaces, then move an adjacent opponent 2 or give a damage token',
     effect: [
       {
         type: 'move_player_position',
         params: { distance: 2 }
+      },
+      {
+        type: 'move_opponent_position',
+        params: { distance: 2, targetSelection: 'choose', requiresAdjacent: true }
       }
     ],
-    burnEffect: [],
-    copies: 3
+    burnEffect: [
+      {
+        type: 'move_opponent_position',
+        params: { distance: 4, targetSelection: 'choose', requiresAdjacent: true }
+      }
+    ],
+    copies: 2
   }
 ];
 

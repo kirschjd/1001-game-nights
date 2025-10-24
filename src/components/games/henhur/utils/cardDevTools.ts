@@ -126,16 +126,26 @@ export function quickCard(id: string, title: string): CardBuilder {
 // ============================================================================
 
 /**
+ * Helper: Get priority base value
+ */
+function getPriorityBase(priority: number | { base: number; dice: string }): number {
+  return typeof priority === 'number' ? priority : priority.base;
+}
+
+/**
  * Compare two cards
  */
 export function compareCards(card1: Card, card2: Card) {
+  const priority1 = getPriorityBase(card1.priority);
+  const priority2 = getPriorityBase(card2.priority);
+
   return {
     id: { card1: card1.id, card2: card2.id },
     title: { card1: card1.title, card2: card2.title },
     priority: {
       card1: card1.priority,
       card2: card2.priority,
-      diff: card2.priority - card1.priority
+      diff: priority2 - priority1
     },
     trickNumber: {
       card1: card1.trickNumber,
@@ -162,7 +172,7 @@ export function compareCards(card1: Card, card2: Card) {
  * Get cards sorted by priority
  */
 export function getCardsByPriority(cards: Card[] = ALL_CARDS): Card[] {
-  return [...cards].sort((a, b) => b.priority - a.priority);
+  return [...cards].sort((a, b) => getPriorityBase(b.priority) - getPriorityBase(a.priority));
 }
 
 /**
@@ -176,11 +186,12 @@ export function getCardsByRaceNumber(cards: Card[] = ALL_CARDS): Card[] {
  * Find similar cards (same deck type and similar priority)
  */
 export function findSimilarCards(card: Card, cards: Card[] = ALL_CARDS): Card[] {
+  const cardPriority = getPriorityBase(card.priority);
   return cards.filter(
     c =>
       c.id !== card.id &&
       c.deckType === card.deckType &&
-      Math.abs(c.priority - card.priority) <= 2
+      Math.abs(getPriorityBase(c.priority) - cardPriority) <= 2
   );
 }
 

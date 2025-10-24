@@ -93,7 +93,7 @@ const EnhancedPlayerMat: React.FC<EnhancedPlayerMatProps> = ({
                     {slot.card.title}
                   </div>
                   <div className="text-orange-300 text-xs mt-1">
-                    P:{slot.card.priority} M:{slot.card.raceNumber}
+                    {`P:${typeof slot.card.priority === 'number' ? slot.card.priority : `${slot.card.priority.base}+${slot.card.priority.dice}`} M:${slot.card.raceNumber}`}
                   </div>
                 </>
               ) : (

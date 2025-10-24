@@ -93,7 +93,7 @@ const DeckManager: React.FC<DeckManagerProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-semibold text-white text-sm">{card.title}</h4>
-                      <span className="text-xs text-gray-400">P{card.priority}</span>
+                      <span className="text-xs text-gray-400">{`P${typeof card.priority === 'number' ? card.priority : `${card.priority.base}+${card.priority.dice}`}`}</span>
                     </div>
                     <p className="text-xs text-gray-300 mb-2">{card.description}</p>
                     <div className="flex gap-2 text-xs">

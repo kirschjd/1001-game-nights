@@ -60,7 +60,9 @@ const RaceTurnControls: React.FC<RaceTurnControlsProps> = ({
 
   const calculateTotalPriority = (): number => {
     if (!selectedCard) return 0;
-    let priority = selectedCard.priority;
+    let priority = typeof selectedCard.priority === 'number'
+      ? selectedCard.priority
+      : selectedCard.priority.base;
     selectedTokens.forEach(token => {
       if (token === 'P+' || token === 'W+') priority += 1;
       if (token === 'P+3') priority += 3;
@@ -134,7 +136,9 @@ const RaceTurnControls: React.FC<RaceTurnControlsProps> = ({
             >
               <div className="text-white font-semibold text-sm">{card.title}</div>
               <div className="flex justify-between mt-1 text-xs">
-                <span className="text-gray-300">P: {card.priority}</span>
+                <span className="text-gray-300">
+                  P: {typeof card.priority === 'number' ? card.priority : `${card.priority.base}+${card.priority.dice}`}
+                </span>
                 <span className="text-gray-300">M: {card.raceNumber}</span>
               </div>
             </button>
@@ -151,7 +155,9 @@ const RaceTurnControls: React.FC<RaceTurnControlsProps> = ({
           <div className="grid grid-cols-2 gap-2 text-xs mb-2">
             <div className="bg-gray-800 px-2 py-1 rounded">
               <span className="text-gray-500">Base Priority:</span>
-              <span className="text-white font-bold ml-1">{selectedCard.priority}</span>
+              <span className="text-white font-bold ml-1">
+                {typeof selectedCard.priority === 'number' ? selectedCard.priority : `${selectedCard.priority.base}+${selectedCard.priority.dice}`}
+              </span>
             </div>
             <div className="bg-gray-800 px-2 py-1 rounded">
               <span className="text-gray-500">Base Movement:</span>
@@ -203,7 +209,7 @@ const RaceTurnControls: React.FC<RaceTurnControlsProps> = ({
                 <div className="text-gray-400 text-xs">Total Priority</div>
                 <div className="text-white font-bold text-lg">{calculateTotalPriority()}</div>
                 <div className="text-gray-500 text-xs">
-                  {selectedCard.priority}
+                  {typeof selectedCard.priority === 'number' ? selectedCard.priority : `${selectedCard.priority.base}+${selectedCard.priority.dice}`}
                   {selectedTokens.filter(t => t === 'P+' || t === 'W+').length > 0 &&
                     ` + ${selectedTokens.filter(t => t === 'P+' || t === 'W+').length}`}
                   {selectedTokens.includes('P+3') && ' + 3'}

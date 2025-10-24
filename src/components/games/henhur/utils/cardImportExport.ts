@@ -1,7 +1,7 @@
 // Card Import/Export Utilities
 // Tools for importing cards from CSV/JSON and exporting for external editing
 
-import { Card, CardEffect, DeckType } from '../types/card.types';
+import { Card, CardEffect, DeckType, PriorityValue } from '../types/card.types';
 import { validateCard, ValidationResult } from './cardValidator';
 
 // ============================================================================
@@ -205,7 +205,7 @@ function parseCSVLine(line: string): string[] {
 export interface SimplifiedCardFormat {
   id: string;
   title: string;
-  priority: number;
+  priority: number | PriorityValue | string; // Can be number, PriorityValue, or string representation
   trickNumber: number;
   raceNumber: number;
   description: string;
@@ -252,13 +252,21 @@ export function simplifiedToCard(
   simplified: SimplifiedCardFormat,
   deckType: DeckType
 ): Card {
+  // Handle priority conversion from string if needed
+  let priority: number | PriorityValue;
+  if (typeof simplified.priority === 'string') {
+    priority = parseInt(simplified.priority);
+  } else {
+    priority = simplified.priority;
+  }
+
   return {
     id: simplified.id,
     title: simplified.title,
     deckType,
     trickNumber: simplified.trickNumber,
     raceNumber: simplified.raceNumber,
-    priority: simplified.priority,
+    priority,
     description: simplified.description,
     effect: parseEffectString(simplified.effectString),
     burnEffect: simplified.burnEffectString

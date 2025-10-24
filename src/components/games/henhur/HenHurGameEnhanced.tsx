@@ -10,6 +10,7 @@ import EnhancedPlayerMat from './components/EnhancedPlayerMat';
 import RaceMat from './components/RaceMat';
 import PlayerStatusDrawer from './components/PlayerStatusDrawer';
 import LeftInfoDrawer from './components/LeftInfoDrawer';
+import CardHand from './components/CardHand';
 
 interface HenHurGameEnhancedProps {
   variant?: 'standard' | 'debug';
@@ -252,6 +253,17 @@ const HenHurGameEnhanced: React.FC<HenHurGameEnhancedProps> = ({
         playerName={playerName}
         isLeader={isLeader}
       />
+
+      {/* Persistent Hand at Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 border-t-2 border-gray-700 backdrop-blur-sm z-40 overflow-x-auto">
+        <div className="max-w-7xl mx-auto">
+          <CardHand
+            cards={myState.deck.hand}
+            selectedCardId={null}
+            disabled={false}
+          />
+        </div>
+      </div>
     </div>
   );
 };

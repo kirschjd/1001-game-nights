@@ -118,8 +118,8 @@ const AuctionTurnControls: React.FC<AuctionTurnControlsProps> = ({
                   <div className="text-white font-semibold text-xs">{card.title}</div>
                   <div className="text-gray-400 text-xs mt-1">{card.description}</div>
                   <div className="flex justify-between mt-1 text-xs">
-                    <span className="text-purple-400">P: {card.priority}</span>
-                    <span className="text-purple-400">M: {card.raceNumber}</span>
+                    <span className="text-purple-400">{`P: ${typeof card.priority === 'number' ? card.priority : `${card.priority.base}+${card.priority.dice}`}`}</span>
+                    <span className="text-purple-400">{`M: ${card.raceNumber}`}</span>
                   </div>
                 </div>
               ))}
@@ -276,8 +276,8 @@ const AuctionTurnControls: React.FC<AuctionTurnControlsProps> = ({
                 <div className="text-white font-semibold text-sm">{card.title}</div>
                 <div className="text-gray-300 text-xs mt-1">{card.description}</div>
                 <div className="flex justify-between mt-1 text-xs">
-                  <span className="text-purple-300">P: {card.priority}</span>
-                  <span className="text-purple-300">M: {card.raceNumber}</span>
+                  <span className="text-purple-300">{`P: ${typeof card.priority === 'number' ? card.priority : `${card.priority.base}+${card.priority.dice}`}`}</span>
+                  <span className="text-purple-300">{`M: ${card.raceNumber}`}</span>
                 </div>
               </button>
             ))}

@@ -77,13 +77,13 @@ const CardHand: React.FC<CardHandProps> = ({
                 <h3 className="font-bold text-white text-sm truncate">{card.title}</h3>
                 <div className="flex gap-1 mt-1 text-xs">
                   <span className="px-1.5 py-0.5 bg-payne-grey rounded text-gray-300">
-                    P{card.priority}
+                    {`P${typeof card.priority === 'number' ? card.priority : `${card.priority.base}+${card.priority.dice}`}`}
                   </span>
                   <span className="px-1.5 py-0.5 bg-payne-grey rounded text-gray-300">
-                    T{card.trickNumber}
+                    {`T${card.trickNumber}`}
                   </span>
                   <span className="px-1.5 py-0.5 bg-payne-grey rounded text-gray-300">
-                    R{card.raceNumber}
+                    {`R${card.raceNumber}`}
                   </span>
                 </div>
               </div>

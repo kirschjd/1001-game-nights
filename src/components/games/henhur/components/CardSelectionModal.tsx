@@ -126,7 +126,7 @@ const CardSelectionModal: React.FC<CardSelectionModalProps> = ({
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-semibold text-white">{card.title}</span>
                             <span className="text-xs text-gray-400">
-                              P{card.priority}
+                              {`P${typeof card.priority === 'number' ? card.priority : `${card.priority.base}+${card.priority.dice}`}`}
                             </span>
                             {card.copies && card.copies > 1 && (
                               <span className="text-xs px-1.5 py-0.5 bg-amber-400/20 text-amber-400 rounded border border-amber-400/30">
