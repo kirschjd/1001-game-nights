@@ -215,12 +215,20 @@ function scheduleDiceFactoryBotsIfNeeded(io, lobbySlug, game, lobbies) {
  * @param {Map} games - Games storage
  */
 function registerDiceFactoryEvents(io, socket, lobbies, games) {
-  // Handle discarding a modification to add a new one
+  // Helper to check if game is v0.1.5 (has factory system)
+  const isV015Game = (game) => {
+    return game && game.state.version !== 'v0.2.1' && game.factorySystem;
+  };
+
+  // Handle discarding a modification to add a new one (v0.1.5 only)
   socket.on('dice-factory-discard-modification', (data) => {
     const game = games.get(socket.lobbySlug);
     if (!game || game.state.type !== 'dice-factory') {
       socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
       return;
+    }
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
     }
     const player = game.state.players.find(p => p.id === socket.id);
     if (!player) {
@@ -247,12 +255,15 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
 
   // ===== EXISTING DICE EVENTS =====
 
-  // Roll dice (legacy - may be removed if auto-roll is implemented)
+  // Roll dice (legacy - may be removed if auto-roll is implemented) - v0.1.5 only
   socket.on('dice-factory-roll', () => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       return;
+    }
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
     }
     
     const result = game.rollDice(socket.id);
@@ -264,12 +275,15 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // Promote dice
+  // Promote dice - v0.1.5 only
   socket.on('dice-factory-promote', (data) => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       return;
+    }
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
     }
     
     const result = game.promoteDice(socket.id, data.diceIds);
@@ -281,12 +295,15 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // Recruit dice
+  // Recruit dice - v0.1.5 only
   socket.on('dice-factory-recruit', (data) => {
     const game = games.get(socket.lobbySlug);
 
     if (!game || game.state.type !== 'dice-factory') {
       return;
+    }
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
     }
 
     const result = game.recruitDice(socket.id, data.diceIds); // <-- CORRECT: data.diceIds
@@ -298,13 +315,19 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // Get player's owned factory items (modifications, effects, hand)
+  // Get player's owned factory items (modifications, effects, hand) - v0.1.5 only
   socket.on('dice-factory-get-player-factory-items', (data) => {
     const { playerId } = data;
     const game = games.get(socket.lobbySlug);
 
     if (!game || game.state.type !== 'dice-factory') {
       socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
+      return;
+    }
+
+    // Only available in v0.1.5
+    if (game.state.version === 'v0.2.1' || !game.factorySystem) {
+      socket.emit('dice-factory-error', { error: 'Factory items not available in this version' });
       return;
     }
 
@@ -340,6 +363,9 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
       return;
     }
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
+    }
 
     console.log(`🎴 Player ${socket.playerName} playing effect: ${effectId}`);
 
@@ -359,11 +385,14 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // Score straight
+  // Score straight - v0.1.5 only
   socket.on('dice-factory-score-straight', (data) => {
     const game = games.get(socket.lobbySlug);
     if (!game || game.state.type !== 'dice-factory') {
       return;
+    }
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
     }
     const result = game.scoreStraight(socket.id, data.diceIds);
     if (result.success) {
@@ -374,14 +403,17 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // Score set
+  // Score set - v0.1.5 only
   socket.on('dice-factory-score-set', (data) => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       return;
     }
-    
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
+    }
+
     const result = game.scoreSet(socket.id, data.diceIds);
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
@@ -391,15 +423,18 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // Calculate score preview
+  // Calculate score preview - v0.1.5 only
   socket.on('dice-factory-calculate-score-preview', (data) => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
       return;
     }
-    
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
+    }
+
     const player = game.state.players.find(p => p.id === socket.id);
     if (!player) {
       socket.emit('dice-factory-error', { error: 'Player not found' });
@@ -422,14 +457,17 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // Process dice
+  // Process dice - v0.1.5 only
   socket.on('dice-factory-process', (data) => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       return;
     }
-    
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
+    }
+
     const result = game.processDice(socket.id, data.diceIds, data.arbitrageChoice);
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
@@ -439,14 +477,17 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // Pip action (reroll, increase)
+  // Pip action (reroll, increase) - v0.1.5 only
   socket.on('dice-factory-pip-action', (data) => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       return;
     }
-    
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
+    }
+
     const result = game.pipAction(socket.id, data.action, data.dieId);
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
@@ -456,14 +497,17 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // Factory action (purchase effect/modification)
+  // Factory action (purchase effect/modification) - v0.1.5 only
   socket.on('dice-factory-factory-action', (data) => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       return;
     }
-    
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
+    }
+
     console.log(`🏭 Player ${socket.playerName} factory action:`, data);
     
     const result = game.factoryAction(socket.id, data.actionType, data.targetId);
@@ -481,21 +525,24 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-      // Get modified pip costs for player
+      // Get modified pip costs for player - v0.1.5 only
     socket.on('dice-factory-get-modified-costs', () => {
       const game = games.get(socket.lobbySlug);
-      
+
       if (!game || game.state.type !== 'dice-factory') {
         socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
         return;
       }
-      
+      if (!isV015Game(game)) {
+        return; // Silently ignore for v0.2.1
+      }
+
       const player = game.state.players.find(p => p.id === socket.id);
       if (!player) {
         socket.emit('dice-factory-error', { error: 'Player not found' });
         return;
       }
-      
+
       // Get modified costs using the DiceSystem
       let rerollCost = game.diceSystem.getModifiedPipCost(player, 'reroll');
       
@@ -519,14 +566,17 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
 
   // ===== NEW MODIFICATION BIDDING EVENTS =====
 
-  // Place bid on modification
+  // Place bid on modification - v0.1.5 only
   socket.on('dice-factory-bid-modification', (data) => {
     const { modificationId, bidAmount } = data;
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
       return;
+    }
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
     }
 
     const result = game.factorySystem.placeBid(socket.id, modificationId, bidAmount);
@@ -646,13 +696,16 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     socket.emit('auction-bid-submitted', { modificationId });
   });
 
-  // Get current turn modifications (for UI)
+  // Get current turn modifications (for UI) - v0.1.5 only
   socket.on('dice-factory-get-turn-modifications', () => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       socket.emit('dice-factory-error', { error: 'Game not found or wrong type' });
       return;
+    }
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
     }
 
     const turnModifications = game.factorySystem.getCurrentTurnModifications();
@@ -669,9 +722,12 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
   // Generic dice factory action handler (supports bot actions)
   socket.on('dice-factory-action', (data) => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       return;
+    }
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
     }
     
     const result = game.processAction(socket.id, data);
@@ -683,12 +739,15 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // End turn
+  // End turn - v0.1.5 only
   socket.on('dice-factory-end-turn', (data = {}) => {
     const game = games.get(socket.lobbySlug);
-    
+
     if (!game || game.state.type !== 'dice-factory') {
       return;
+    }
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
     }
     
     const result = game.setPlayerReady(socket.id, data.dividendChoice);
@@ -938,6 +997,87 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
       }
     }
     socket.emit('score-preview', result);
+  });
+
+  // ===== V0.2.1 SLOT-BASED EVENTS =====
+
+  // Assign ability to slot (v0.2.1)
+  socket.on('dice-factory:assign-slot', (data) => {
+    const { slotNumber, abilityName } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.assignSlot(slotNumber, abilityName);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // Execute ability (v0.2.1)
+  socket.on('dice-factory:execute-ability', (data) => {
+    const { abilityName, costDiceIds, costCardIds, targetDieId, targetValue, bumpDirection, bumpAmount } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.executeAbility(abilityName, costDiceIds, costCardIds || [], targetDieId, targetValue, bumpDirection, bumpAmount);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // Buy card (v0.2.1)
+  socket.on('dice-factory:buy-card', (data) => {
+    const { cardId, costDiceIds } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.buyCard(cardId, costDiceIds);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // Use card dice number (v0.2.1)
+  socket.on('dice-factory:use-card-dice', (data) => {
+    const { cardId } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.useCardDiceNumber(cardId);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+      // Also send back the dice numbers that can be used
+      socket.emit('dice-factory:card-dice-ready', {
+        diceNumbers: result.diceNumbers,
+        cardId: cardId
+      });
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // End turn (v0.2.1) - reroll all, advance round, refresh exhaustion
+  socket.on('dice-factory:end-turn', (data) => {
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.endTurn();
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
   });
 
   // Cleanup when player disconnects

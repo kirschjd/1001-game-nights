@@ -1,0 +1,548 @@
+{
+  "deck1": [
+    {
+      "id": "deck1_card1",
+      "title": "Placeholder 1",
+      "cost": [3, 3, 2],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [3]
+      }
+    },
+    {
+      "id": "deck1_card2",
+      "title": "Placeholder 2",
+      "cost": [4, 2, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [4]
+      }
+    },
+    {
+      "id": "deck1_card3",
+      "title": "Placeholder 3",
+      "cost": [3, 1, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [3]
+      }
+    },
+    {
+      "id": "deck1_card4",
+      "title": "Placeholder 4",
+      "cost": [4, 4, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [1]
+      }
+    },
+    {
+      "id": "deck1_card5",
+      "title": "Placeholder 5",
+      "cost": [4, 2, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [2]
+      }
+    },
+    {
+      "id": "deck1_card6",
+      "title": "Placeholder 6",
+      "cost": [1, 1, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [2]
+      }
+    },
+    {
+      "id": "deck1_card7",
+      "title": "Placeholder 7",
+      "cost": [4, 2, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [5]
+      }
+    },
+    {
+      "id": "deck1_card8",
+      "title": "Placeholder 8",
+      "cost": [1, 1, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [4]
+      }
+    },
+    {
+      "id": "deck1_card9",
+      "title": "Placeholder 9",
+      "cost": [3, 1, 1],
+      "effects": {
+        "vp": 1,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck1_card10",
+      "title": "Placeholder 10",
+      "cost": [4, 4, 1, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [2, 3]
+      }
+    },
+    {
+      "id": "deck1_card11",
+      "title": "Placeholder 11",
+      "cost": [3, 3, 3, 2],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [6]
+      }
+    },
+    {
+      "id": "deck1_card12",
+      "title": "Placeholder 12",
+      "cost": [4, 3, 2, 2],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [1]
+      }
+    },
+    {
+      "id": "deck1_card13",
+      "title": "Placeholder 13",
+      "cost": [4, 2, 2, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [5]
+      }
+    },
+    {
+      "id": "deck1_card14",
+      "title": "Placeholder 14",
+      "cost": [4, 3, 3, 2],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [4]
+      }
+    },
+    {
+      "id": "deck1_card15",
+      "title": "Placeholder 15",
+      "cost": [3, 3, 2, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [4]
+      }
+    },
+    {
+      "id": "deck1_card16",
+      "title": "Placeholder 16",
+      "cost": [4, 2, 2, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [2, 3]
+      }
+    },
+    {
+      "id": "deck1_card17",
+      "title": "Placeholder 17",
+      "cost": [4, 3, 1, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [1]
+      }
+    },
+    {
+      "id": "deck1_card18",
+      "title": "Placeholder 18",
+      "cost": [4, 3, 2, 1],
+      "effects": {
+        "vp": 1,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck1_card19",
+      "title": "Placeholder 19",
+      "cost": [3, 2, 1, 1],
+      "effects": {
+        "vp": 1,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck1_card20",
+      "title": "Placeholder 20",
+      "cost": [4, 3, 2, 1],
+      "effects": {
+        "vp": 1,
+        "diceNumbers": []
+      }
+    }
+  ],
+  "deck2": [
+    {
+      "id": "deck2_card21",
+      "title": "Placeholder 21",
+      "cost": [2, 2, 2],
+      "effects": {
+        "vp": 1,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck2_card22",
+      "title": "Placeholder 22",
+      "cost": [6, 6, 6],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [5]
+      }
+    },
+    {
+      "id": "deck2_card23",
+      "title": "Placeholder 23",
+      "cost": [6, 4, 2],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [6]
+      }
+    },
+    {
+      "id": "deck2_card24",
+      "title": "Placeholder 24",
+      "cost": [7, 3, 3],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [7]
+      }
+    },
+    {
+      "id": "deck2_card25",
+      "title": "Placeholder 25",
+      "cost": [7, 4, 3],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [8]
+      }
+    },
+    {
+      "id": "deck2_card26",
+      "title": "Placeholder 26",
+      "cost": [6, 4, 2, 1],
+      "effects": {
+        "vp": 1,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck2_card27",
+      "title": "Placeholder 27",
+      "cost": [8, 6, 6, 4],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [1, 5]
+      }
+    },
+    {
+      "id": "deck2_card28",
+      "title": "Placeholder 28",
+      "cost": [7, 5, 3, 2],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [2, 6]
+      }
+    },
+    {
+      "id": "deck2_card29",
+      "title": "Placeholder 29",
+      "cost": [8, 2, 1, 1],
+      "effects": {
+        "vp": 1,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck2_card30",
+      "title": "Placeholder 30",
+      "cost": [8, 6, 5, 2],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [3, 7]
+      }
+    },
+    {
+      "id": "deck2_card31",
+      "title": "Placeholder 31",
+      "cost": [7, 4, 4, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [4, 8]
+      }
+    },
+    {
+      "id": "deck2_card32",
+      "title": "Placeholder 32",
+      "cost": [7, 7, 7, 4],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [5, 6]
+      }
+    },
+    {
+      "id": "deck2_card33",
+      "title": "Placeholder 33",
+      "cost": [8, 6, 4, 2],
+      "effects": {
+        "vp": 2,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck2_card34",
+      "title": "Placeholder 34",
+      "cost": [8, 7, 4, 3],
+      "effects": {
+        "vp": 2,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck2_card35",
+      "title": "Placeholder 35",
+      "cost": [8, 8, 6, 2],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [7, 8]
+      }
+    },
+    {
+      "id": "deck2_card36",
+      "title": "Placeholder 36",
+      "cost": [8, 8, 7, 6, 3],
+      "effects": {
+        "vp": 2,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck2_card37",
+      "title": "Placeholder 37",
+      "cost": [6, 5, 4, 3, 3],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [1, 4]
+      }
+    },
+    {
+      "id": "deck2_card38",
+      "title": "Placeholder 38",
+      "cost": [5, 3, 3, 1, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [5, 6, 7]
+      }
+    },
+    {
+      "id": "deck2_card39",
+      "title": "Placeholder 39",
+      "cost": [7, 7, 5, 4, 4],
+      "effects": {
+        "vp": 2,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck2_card40",
+      "title": "Placeholder 40",
+      "cost": [8, 5, 3, 2, 2],
+      "effects": {
+        "vp": 3,
+        "diceNumbers": []
+      }
+    }
+  ],
+  "deck3": [
+    {
+      "id": "deck3_card41",
+      "title": "Placeholder 41",
+      "cost": [12, 10, 6, 6],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [9]
+      }
+    },
+    {
+      "id": "deck3_card42",
+      "title": "Placeholder 42",
+      "cost": [11, 9, 5, 2],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [10]
+      }
+    },
+    {
+      "id": "deck3_card43",
+      "title": "Placeholder 43",
+      "cost": [8, 4, 2, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [11]
+      }
+    },
+    {
+      "id": "deck3_card44",
+      "title": "Placeholder 44",
+      "cost": [8, 8, 5, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [12]
+      }
+    },
+    {
+      "id": "deck3_card45",
+      "title": "Placeholder 45",
+      "cost": [12, 7, 7, 5],
+      "effects": {
+        "vp": 2,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card46",
+      "title": "Placeholder 46",
+      "cost": [12, 9, 7, 1],
+      "effects": {
+        "vp": 2,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card47",
+      "title": "Placeholder 47",
+      "cost": [7, 6, 3, 3, 2],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [9, 10]
+      }
+    },
+    {
+      "id": "deck3_card48",
+      "title": "Placeholder 48",
+      "cost": [8, 3, 3, 2, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [11, 12]
+      }
+    },
+    {
+      "id": "deck3_card49",
+      "title": "Placeholder 49",
+      "cost": [8, 6, 6, 6, 4],
+      "effects": {
+        "vp": 2,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card50",
+      "title": "Placeholder 50",
+      "cost": [6, 5, 5, 1, 1],
+      "effects": {
+        "vp": 2,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card51",
+      "title": "Placeholder 51",
+      "cost": [10, 9, 6, 2, 1],
+      "effects": {
+        "vp": 2,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card52",
+      "title": "Placeholder 52",
+      "cost": [11, 9, 4, 3, 2],
+      "effects": {
+        "vp": 2,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card53",
+      "title": "Placeholder 53",
+      "cost": [11, 10, 6, 4, 1],
+      "effects": {
+        "vp": 3,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card54",
+      "title": "Placeholder 54",
+      "cost": [11, 10, 9, 5, 5],
+      "effects": {
+        "vp": 3,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card55",
+      "title": "Placeholder 55",
+      "cost": [8, 7, 5, 4, 2, 1],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [5, 6, 7, 8]
+      }
+    },
+    {
+      "id": "deck3_card56",
+      "title": "Placeholder 56",
+      "cost": [10, 7, 7, 6, 5, 3],
+      "effects": {
+        "vp": 0,
+        "diceNumbers": [9, 10, 11]
+      }
+    },
+    {
+      "id": "deck3_card57",
+      "title": "Placeholder 57",
+      "cost": [12, 7, 5, 2, 1, 1],
+      "effects": {
+        "vp": 3,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card58",
+      "title": "Placeholder 58",
+      "cost": [12, 11, 8, 2, 2, 1],
+      "effects": {
+        "vp": 3,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card59",
+      "title": "Placeholder 59",
+      "cost": [12, 11, 5, 5, 5, 3],
+      "effects": {
+        "vp": 3,
+        "diceNumbers": []
+      }
+    },
+    {
+      "id": "deck3_card60",
+      "title": "Placeholder 60",
+      "cost": [12, 11, 8, 7, 7, 4],
+      "effects": {
+        "vp": 3,
+        "diceNumbers": []
+      }
+    }
+  ]
+}

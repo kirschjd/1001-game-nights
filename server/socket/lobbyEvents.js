@@ -173,7 +173,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
 
   // Start a new game (leader only)
   socket.on('start-game', (data) => {
-    const { slug, variant: clientVariant, experimentalTurnLimit } = data;
+    const { slug, variant: clientVariant, version: clientVersion } = data;
     const lobby = lobbies.get(slug);
 
     if (!validateLeaderPermission(lobby, socket.id, slug)) {
@@ -181,15 +181,20 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     }
 
     const connectedPlayers = lobby.players.filter(p => p.isConnected);
-    if (lobby.gameType !== 'henhur' && connectedPlayers.length < 2) {
+    // Allow solo play for: HenHur and Dice Factory v0.2.1
+    const allowSolo = lobby.gameType === 'henhur' ||
+                      (lobby.gameType === 'dice-factory' && clientVersion === 'v0.2.1');
+    if (!allowSolo && connectedPlayers.length < 2) {
       socket.emit('error', { message: 'Need at least 2 players to start' });
       return;
     }
 
     // Create appropriate game instance using helper
+    // Use version for dice-factory, variant for other games
+    const variantOrVersion = clientVersion || clientVariant;
     let game;
     try {
-      game = createGame(lobby, connectedPlayers, clientVariant, botSystem, experimentalTurnLimit);
+      game = createGame(lobby, connectedPlayers, variantOrVersion, botSystem);
     } catch (error) {
       socket.emit('error', { message: error.message });
       return;

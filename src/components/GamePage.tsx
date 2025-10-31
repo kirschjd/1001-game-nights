@@ -6,7 +6,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
 import { EnhancedWarGame } from './games/war';
-import DiceFactoryGame from './games/dice-factory';
+import { DiceFactoryGame as DiceFactoryGameV015 } from './games/dice-factory-v0.1.5';
+import { DiceFactoryGame as DiceFactoryGameV021 } from './games/dice-factory-v0.2.1';
 import HenHurGame from './games/henhur';
 import KillTeamDraftGame from './games/kill-team-draft/KillTeamDraftGame';
 
@@ -36,16 +37,18 @@ interface GameLogEntry {
 
 interface DiceFactoryGameState {
   type: string;
-  phase: 'rolling' | 'playing' | 'revealing' | 'complete';
+  version?: string;
+  phase: 'rolling' | 'playing' | 'revealing' | 'complete' | string;
   round: number;
-  turnCounter: number;
-  collapseStarted: boolean;
-  collapseDice: number[];
-  activeEffects: any[];
+  maxRounds?: number;
+  turnCounter?: number;
+  collapseStarted?: boolean;
+  collapseDice?: number[];
+  activeEffects?: any[];
   winner: string | null;
-  lastCollapseRoll: string | null;
+  lastCollapseRoll?: string | null;
   gameLog: GameLogEntry[];
-  allPlayersReady: boolean;
+  allPlayersReady?: boolean;
   players: any[];
   currentPlayer?: any;
   exhaustedDice?: string[];
@@ -299,11 +302,21 @@ useEffect(() => {
         )}
         
         {gameState.type === 'dice-factory' && (
-          <DiceFactoryGame 
-            gameState={gameState as DiceFactoryGameState} 
-            socket={socket!} 
-            isLeader={isLeader} 
-          />
+          <>
+            {(gameState as any).version === 'v0.2.1' ? (
+              <DiceFactoryGameV021
+                gameState={gameState as any}
+                socket={socket!}
+                isLeader={isLeader}
+              />
+            ) : (
+              <DiceFactoryGameV015
+                gameState={gameState as any}
+                socket={socket!}
+                isLeader={isLeader}
+              />
+            )}
+          </>
         )}
 
         {gameState.type === 'henhur' && slug && (

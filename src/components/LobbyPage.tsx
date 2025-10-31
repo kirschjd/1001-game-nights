@@ -36,7 +36,7 @@ const LobbyPage: React.FC = () => {
   const [myPlayerName, setMyPlayerName] = useState('');
   const [selectedVariant, setSelectedVariant] = useState('regular');
   const [botStyles, setBotStyles] = useState<any[]>([]);
-  const [selectedDFVariant, setSelectedDFVariant] = useState('standard');
+  const [selectedDFVariant, setSelectedDFVariant] = useState('v0.1.5');
   const [selectedHenhurVariant, setSelectedHenhurVariant] = useState('standard');
   const [experimentalTurnLimit, setExperimentalTurnLimit] = useState(11);
   const [showCardSelection, setShowCardSelection] = useState(false);
@@ -158,11 +158,10 @@ const LobbyPage: React.FC = () => {
           // Removed: bots array - use existing lobby bots only
         });
       } else if (lobby.gameType === 'dice-factory') {
-        // Start Dice Factory with variant support
-        socket.emit('start-game', { 
-          slug, 
-          variant: selectedDFVariant,
-          experimentalTurnLimit: selectedDFVariant === 'experimental' ? experimentalTurnLimit : undefined
+        // Start Dice Factory with version support
+        socket.emit('start-game', {
+          slug,
+          version: selectedDFVariant
         });
       } else if (lobby.gameType === 'henhur') {
         // Start HenHur and include selected variant and card selection
@@ -497,11 +496,11 @@ const LobbyPage: React.FC = () => {
               </div>
             )}
 
-            {/* Dice Factory Variant Selection */}
+            {/* Dice Factory Version Selection */}
             {lobby.gameType === 'dice-factory' && isLeader && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Game Mode
+                  Game Version
                 </label>
                 <div className="flex gap-2">
                   <select
@@ -515,29 +514,13 @@ const LobbyPage: React.FC = () => {
                     }}
                     className="flex-1 px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
                   >
-                    <option value="standard">Standard</option>
-                    <option value="experimental">Experimental</option>
+                    <option value="v0.1.5">v0.1.5 - Full (Experimental)</option>
+                    <option value="v0.2.1">v0.2.1 - Simplified</option>
                   </select>
-                  {selectedDFVariant === 'experimental' && (
-                    <select
-                      value={experimentalTurnLimit}
-                      onChange={e => setExperimentalTurnLimit(Number(e.target.value))}
-                      className="px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
-                    >
-                      <option value={8}>8 turns</option>
-                      <option value={9}>9 turns</option>
-                      <option value={10}>10 turns</option>
-                      <option value={11}>11 turns</option>
-                      <option value={12}>12 turns</option>
-                      <option value={13}>13 turns</option>
-                      <option value={14}>14 turns</option>
-                      <option value={15}>15 turns</option>
-                    </select>
-                  )}
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
-                  <strong>Standard:</strong> Classic Dice Factory rules.<br/>
-                  <strong>Experimental:</strong> New or test mechanics (see release notes).
+                  <strong>v0.1.5:</strong> Full game with factory mods, effects, and auctions. 11 rounds, no collapse.<br/>
+                  <strong>v0.2.1:</strong> Simplified version with text-based dice. Basic actions only, no factory systems.
                 </div>
               </div>
             )}
@@ -792,7 +775,7 @@ const LobbyPage: React.FC = () => {
               <h2 className="text-2xl font-bold mb-4 text-uranian-blue">🎲 Dice Factory</h2>
               {(() => {
                 // Use local variant for leader, lobby variant for others
-                const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.variant || 'standard';
+                const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.version || 'v0.1.5';
                 return (
                   <p className="text-lg font-semibold text-uranian-blue mb-4">
                     {variant === 'experimental'
@@ -803,7 +786,7 @@ const LobbyPage: React.FC = () => {
               })()}
               <div className="space-y-4 text-gray-300">
                 {(() => {
-                  const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.variant || 'standard';
+                  const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.version || 'v0.1.5';
                   return (
                     <p className="text-lg">
                       {variant === 'experimental'
@@ -879,7 +862,7 @@ const LobbyPage: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">💥 Ending the Game</h3>
                   {(() => {
-                    const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.variant || 'standard';
+                    const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.version || 'v0.1.5';
                     return variant === 'experimental' ? (
                       <p className="text-sm">
                         The game ends after a set number of turns. Players compete to score the most points within 
