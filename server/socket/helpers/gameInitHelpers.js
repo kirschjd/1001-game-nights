@@ -24,7 +24,9 @@ function initializeDiceFactoryGame(connectedPlayers, clientVersion, lobby, botSy
 
   // Create game instance based on version
   if (version === 'v0.2.1') {
-    game = new DiceFactoryGameV021(connectedPlayers);
+    const abilityTiers = lobby.gameOptions?.abilityTiers || [1, 2, 3, 4];
+    const selectedAbilities = lobby.gameOptions?.selectedAbilities || null;
+    game = new DiceFactoryGameV021(connectedPlayers, abilityTiers, selectedAbilities);
   } else {
     // Default to v0.1.5 (full game)
     game = new DiceFactoryGameV015(connectedPlayers);

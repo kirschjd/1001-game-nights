@@ -38,6 +38,38 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     io.to(slug).emit('lobby-updated', lobby);
   });
 
+  // Update Dice Factory ability tiers (leader only)
+  socket.on('update-df-ability-tiers', (data) => {
+    const { slug, tiers } = data;
+    const lobby = lobbies.get(slug);
+
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
+      return;
+    }
+
+    if (!lobby.gameOptions) {
+      lobby.gameOptions = {};
+    }
+    lobby.gameOptions.abilityTiers = tiers;
+    io.to(slug).emit('lobby-updated', lobby);
+  });
+
+  // Update Dice Factory selected abilities (leader only)
+  socket.on('update-df-abilities', (data) => {
+    const { slug, abilityIds } = data;
+    const lobby = lobbies.get(slug);
+
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
+      return;
+    }
+
+    if (!lobby.gameOptions) {
+      lobby.gameOptions = {};
+    }
+    lobby.gameOptions.selectedAbilities = abilityIds;
+    io.to(slug).emit('lobby-updated', lobby);
+  });
+
   // Update HenHur variant (leader only)
   socket.on('update-henhur-variant', (data) => {
     const { slug, variant } = data;

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
 import CardSelectionModal from './games/henhur/components/CardSelectionModal';
 import { ALL_CARDS } from './games/henhur/data/cards';
+import AbilitySelectionModal from './AbilitySelectionModal';
+import ABILITY_DECKS from './games/dice-factory-v0.2.1/data/abilityDecks.json';
 
 interface Player {
   id: string;
@@ -37,8 +39,9 @@ const LobbyPage: React.FC = () => {
   const [selectedVariant, setSelectedVariant] = useState('regular');
   const [botStyles, setBotStyles] = useState<any[]>([]);
   const [selectedDFVariant, setSelectedDFVariant] = useState('v0.1.5');
+  const [showAbilitySelection, setShowAbilitySelection] = useState(false);
+  const [selectedAbilityIds, setSelectedAbilityIds] = useState<string[]>([]);
   const [selectedHenhurVariant, setSelectedHenhurVariant] = useState('standard');
-  const [experimentalTurnLimit, setExperimentalTurnLimit] = useState(11);
   const [showCardSelection, setShowCardSelection] = useState(false);
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>(ALL_CARDS.map(card => card.id));
   const [ktdPackSize, setKtdPackSize] = useState(15);
@@ -100,6 +103,19 @@ const LobbyPage: React.FC = () => {
       setSelectedHenhurVariant(lobby.gameOptions.henhurVariant || 'standard');
     }
   }, [socket, lobby?.gameType]);
+
+  // Initialize all ability IDs as selected by default
+  useEffect(() => {
+    if (selectedAbilityIds.length === 0) {
+      const allAbilityIds = [
+        ...ABILITY_DECKS.tier1.map((a: any) => a.id),
+        ...ABILITY_DECKS.tier2.map((a: any) => a.id),
+        ...ABILITY_DECKS.tier3.map((a: any) => a.id),
+        ...ABILITY_DECKS.tier4.map((a: any) => a.id)
+      ];
+      setSelectedAbilityIds(allAbilityIds);
+    }
+  }, []);
 
   const handleTitleSubmit = () => {
     if (socket && tempTitle.trim()) {
@@ -514,14 +530,27 @@ const LobbyPage: React.FC = () => {
                     }}
                     className="flex-1 px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
                   >
-                    <option value="v0.1.5">v0.1.5 - Full (Experimental)</option>
-                    <option value="v0.2.1">v0.2.1 - Simplified</option>
+                    <option value="v0.1.5">v0.1.5</option>
+                    <option value="v0.2.1">v0.2.1</option>
                   </select>
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
                   <strong>v0.1.5:</strong> Full game with factory mods, effects, and auctions. 11 rounds, no collapse.<br/>
-                  <strong>v0.2.1:</strong> Simplified version with text-based dice. Basic actions only, no factory systems.
+                  <strong>v0.2.1:</strong> Slot-based ability system. Take 2 actions per turn, first to 10 VP wins.
                 </div>
+
+                {/* v0.2.1 Ability Selection */}
+                {selectedDFVariant === 'v0.2.1' && isLeader && (
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setShowAbilitySelection(true)}
+                      className="w-full px-4 py-2 bg-cyan-400/20 hover:bg-cyan-400/30 border border-cyan-400/30 rounded-lg text-cyan-400 font-medium transition-colors"
+                    >
+                      🎴 Configure Abilities ({selectedAbilityIds.length} selected)
+                    </button>
+                    <p className="text-xs text-gray-400 mt-1">Select which abilities will be available in this game</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -789,21 +818,85 @@ const LobbyPage: React.FC = () => {
                   const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.version || 'v0.1.5';
                   return (
                     <p className="text-lg">
-                      {variant === 'experimental'
-                        ? 'Score as many points as possible before the turn limit is reached. The player with the highest score wins.'
+                      {variant === 'v0.2.1'
+                        ? 'Use slot-based abilities to manipulate dice and score victory points. First player to reach 10 VP wins!'
                         : "The game's purpose is to score points. This is done by scoring tricks."}
                     </p>
                   );
                 })()}
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">🎲 Dice Pool</h3>
-                  <p className="text-sm mb-2">
-                    Tricks are made from each players' dice pool. Each player starts with a minimum dice pool of 4d4. 
-                    A player's dice minimum dice pool determines the number of die they cannot go below. The dice pool 
-                    is what a player rolls at the beginning of their turn. If a players dice pool falls below their 
-                    minimum dice pool, they will automatically recruit up to the minimum dice pool.
-                  </p>
-                </div>
+                {(() => {
+                  const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.version || 'v0.1.5';
+                  if (variant === 'v0.2.1') {
+                    return (
+                      <>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white mb-2">🎲 Dice Pool & Slots</h3>
+                          <p className="text-sm mb-2">
+                            Each player starts with 4d4. At the start of your turn, all dice are rolled. You have 12 ability
+                            slots (numbered 1-12) where you can assign abilities. To use an ability, you must pay its cost with
+                            dice matching the slot number. For example: using an ability in slot 3 requires dice showing 3.
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white mb-2">🎯 Turn Structure</h3>
+                          <p className="text-sm mb-2">
+                            On your turn, take <strong>2 actions</strong>, then play passes to the next player. Actions include:
+                          </p>
+                          <ul className="text-sm space-y-1 ml-4">
+                            <li>• Use an ability from a slot (costs dice matching slot number)</li>
+                            <li>• Buy a card from one of 3 available decks (costs dice matching card requirements)</li>
+                          </ul>
+                          <p className="text-sm mt-2">
+                            When done for the round, pass your turn. The round continues until all players pass.
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white mb-2">🎴 Ability System</h3>
+                          <p className="text-sm mb-2">
+                            <strong>Slots 1-4 (Tier 0):</strong> Basic abilities like Recruit, Promote, Reroll, Bump<br/>
+                            <strong>Slots 5-6 (Tier 1+):</strong> Advanced abilities from tier 1+ decks<br/>
+                            <strong>Slots 7-8 (Tier 2+):</strong> Score VP, special recruits, attacks<br/>
+                            <strong>Slots 9-10 (Tier 3+):</strong> Mass actions, card effects<br/>
+                            <strong>Slots 11-12 (Tier 4+):</strong> Powerful abilities like Score++ (3 VP)
+                          </p>
+                          <p className="text-sm">
+                            Drag abilities from the right panel to slots. Click a slot to activate, then add dice/cards
+                            as cost and targets. Abilities can be reused each round!
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white mb-2">🃏 Cards</h3>
+                          <p className="text-sm mb-2">
+                            Cards can be bought from 3 available decks. Each card has a cost (specific dice values needed)
+                            and provides VP or special dice values that can be used as cost for abilities.
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white mb-2">🏆 Winning</h3>
+                          <p className="text-sm">
+                            First player to reach <strong>10 Victory Points</strong> wins immediately!
+                          </p>
+                        </div>
+                      </>
+                    );
+                  }
+                  return (
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-2">🎲 Dice Pool</h3>
+                      <p className="text-sm mb-2">
+                        Tricks are made from each players' dice pool. Each player starts with a minimum dice pool of 4d4.
+                        A player's dice minimum dice pool determines the number of die they cannot go below. The dice pool
+                        is what a player rolls at the beginning of their turn. If a players dice pool falls below their
+                        minimum dice pool, they will automatically recruit up to the minimum dice pool.
+                      </p>
+                    </div>
+                  );
+                })()}
+                {(() => {
+                  const variant = isLeader ? selectedDFVariant : lobby.gameOptions?.version || 'v0.1.5';
+                  if (variant === 'v0.2.1') return null;
+                  return (
+                    <>
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">📋 Standard Actions</h3>
                   <div className="space-y-3 text-sm">
@@ -889,6 +982,9 @@ const LobbyPage: React.FC = () => {
                     <li><strong>5.</strong> Check for collapse</li>
                   </ol>
                 </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -938,6 +1034,19 @@ const LobbyPage: React.FC = () => {
         onClose={() => setShowCardSelection(false)}
         selectedCardIds={selectedCardIds}
         onSave={(cardIds) => setSelectedCardIds(cardIds)}
+      />
+
+      {/* Ability Selection Modal */}
+      <AbilitySelectionModal
+        isOpen={showAbilitySelection}
+        onClose={() => setShowAbilitySelection(false)}
+        selectedAbilityIds={selectedAbilityIds}
+        onSave={(abilityIds) => {
+          setSelectedAbilityIds(abilityIds);
+          if (socket && slug) {
+            socket.emit('update-df-abilities', { slug, abilityIds });
+          }
+        }}
       />
     </div>
   );

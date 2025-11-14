@@ -14,7 +14,11 @@ const abilityDecksPath = path.join(__dirname, 'abilityDecks.json');
 const ABILITY_DECKS = JSON.parse(fs.readFileSync(abilityDecksPath, 'utf8'));
 
 class DiceFactoryGame {
-  constructor(players) {
+  constructor(players, abilityTiers = [1, 2, 3, 4], selectedAbilities = null) {
+    // Store ability tiers and selected abilities for initialization
+    this.abilityTiers = abilityTiers;
+    this.selectedAbilities = selectedAbilities;
+
     // Shuffle players and determine turn order
     const shuffledPlayers = this.shuffleArray([...players]);
     const turnOrder = shuffledPlayers.map(p => p.id);
@@ -303,16 +307,51 @@ class DiceFactoryGame {
   }
 
   initializeAbilityTiers() {
-    // Draw 3 abilities from each tier deck
-    const tier1Shuffled = this.shuffleArray([...ABILITY_DECKS.tier1]);
-    const tier2Shuffled = this.shuffleArray([...ABILITY_DECKS.tier2]);
-    const tier3Shuffled = this.shuffleArray([...ABILITY_DECKS.tier3]);
-    const tier4Shuffled = this.shuffleArray([...ABILITY_DECKS.tier4]);
+    // Draw 3 abilities from each selected tier deck
+    // If selectedAbilities is provided, filter to only include those abilities
+    if (this.abilityTiers.includes(1)) {
+      let tier1Pool = [...ABILITY_DECKS.tier1];
+      if (this.selectedAbilities && Array.isArray(this.selectedAbilities)) {
+        tier1Pool = tier1Pool.filter(a => this.selectedAbilities.includes(a.id));
+      }
+      const tier1Shuffled = this.shuffleArray(tier1Pool);
+      this.state.availableTier1Abilities = tier1Shuffled.slice(0, 3);
+    } else {
+      this.state.availableTier1Abilities = [];
+    }
 
-    this.state.availableTier1Abilities = tier1Shuffled.slice(0, 3);
-    this.state.availableTier2Abilities = tier2Shuffled.slice(0, 3);
-    this.state.availableTier3Abilities = tier3Shuffled.slice(0, 3);
-    this.state.availableTier4Abilities = tier4Shuffled.slice(0, 3);
+    if (this.abilityTiers.includes(2)) {
+      let tier2Pool = [...ABILITY_DECKS.tier2];
+      if (this.selectedAbilities && Array.isArray(this.selectedAbilities)) {
+        tier2Pool = tier2Pool.filter(a => this.selectedAbilities.includes(a.id));
+      }
+      const tier2Shuffled = this.shuffleArray(tier2Pool);
+      this.state.availableTier2Abilities = tier2Shuffled.slice(0, 3);
+    } else {
+      this.state.availableTier2Abilities = [];
+    }
+
+    if (this.abilityTiers.includes(3)) {
+      let tier3Pool = [...ABILITY_DECKS.tier3];
+      if (this.selectedAbilities && Array.isArray(this.selectedAbilities)) {
+        tier3Pool = tier3Pool.filter(a => this.selectedAbilities.includes(a.id));
+      }
+      const tier3Shuffled = this.shuffleArray(tier3Pool);
+      this.state.availableTier3Abilities = tier3Shuffled.slice(0, 3);
+    } else {
+      this.state.availableTier3Abilities = [];
+    }
+
+    if (this.abilityTiers.includes(4)) {
+      let tier4Pool = [...ABILITY_DECKS.tier4];
+      if (this.selectedAbilities && Array.isArray(this.selectedAbilities)) {
+        tier4Pool = tier4Pool.filter(a => this.selectedAbilities.includes(a.id));
+      }
+      const tier4Shuffled = this.shuffleArray(tier4Pool);
+      this.state.availableTier4Abilities = tier4Shuffled.slice(0, 3);
+    } else {
+      this.state.availableTier4Abilities = [];
+    }
   }
 
   replaceCard(cardId) {
