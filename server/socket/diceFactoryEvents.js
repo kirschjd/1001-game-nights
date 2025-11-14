@@ -1003,12 +1003,12 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
 
   // Assign ability to slot (v0.2.1)
   socket.on('dice-factory:assign-slot', (data) => {
-    const { slotNumber, abilityName } = data;
+    const { slotNumber, abilityId } = data;
     const game = games.get(socket.lobbySlug);
     if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
       return;
     }
-    const result = game.assignSlot(slotNumber, abilityName);
+    const result = game.assignSlot(socket.id, slotNumber, abilityId);
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
     } else {
@@ -1018,12 +1018,42 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
 
   // Execute ability (v0.2.1)
   socket.on('dice-factory:execute-ability', (data) => {
-    const { abilityName, costDiceIds, costCardIds, targetDieId, targetValue, bumpDirection, bumpAmount } = data;
+    const { abilityId, slotNumber, costDiceIds, costCardIds, targetDieId, targetValue, bumpDirection, bumpAmount } = data;
     const game = games.get(socket.lobbySlug);
     if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
       return;
     }
-    const result = game.executeAbility(abilityName, costDiceIds, costCardIds || [], targetDieId, targetValue, bumpDirection, bumpAmount);
+    const result = game.executeAbility(socket.id, abilityId, slotNumber, costDiceIds, costCardIds || [], targetDieId, targetValue, bumpDirection, bumpAmount);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+
+      // If this was an attack, notify other players
+      if (result.pendingAttack) {
+        const lobby = lobbies.get(socket.lobbySlug);
+        if (lobby) {
+          result.pendingAttack.waitingFor.forEach(playerId => {
+            io.to(playerId).emit('dice-factory:attack-request', {
+              attackId: result.attackId,
+              attackerName: result.pendingAttack.attackerName,
+              diceCount: result.pendingAttack.diceCount,
+              type: result.pendingAttack.type
+            });
+          });
+        }
+      }
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // Respond to attack (v0.2.1)
+  socket.on('dice-factory:respond-to-attack', (data) => {
+    const { attackId, diceIds } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.respondToAttack(socket.id, attackId, diceIds);
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
     } else {
@@ -1038,7 +1068,97 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
       return;
     }
-    const result = game.buyCard(cardId, costDiceIds);
+    const result = game.buyCard(socket.id, cardId, costDiceIds);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // Swap slots (v0.2.1)
+  socket.on('dice-factory:swap-slots', (data) => {
+    const { slot1, slot2 } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.swapSlots(socket.id, slot1, slot2);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // Clear slot (v0.2.1)
+  socket.on('dice-factory:clear-slot', (data) => {
+    const { slotNumber } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.clearSlot(socket.id, slotNumber);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // Card unexhaust (v0.2.1)
+  socket.on('dice-factory:card-unexhaust', (data) => {
+    const { cardId } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.cardUnexhaustAbility(socket.id, cardId);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // Card cost reduction (v0.2.1)
+  socket.on('dice-factory:card-cost-reduction', (data) => {
+    const { cardId } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.cardCostReductionAbility(socket.id, cardId);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // Swap Plus (v0.2.1)
+  socket.on('dice-factory:swap-plus', (data) => {
+    const { slot1, slot2 } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.swapPlusAbility(socket.id, slot1, slot2);
+    if (result.success) {
+      broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
+    } else {
+      socket.emit('dice-factory:error', { error: result.error });
+    }
+  });
+
+  // Mass unexhaust (v0.2.1)
+  socket.on('dice-factory:mass-unexhaust', (data) => {
+    const { cardIds } = data;
+    const game = games.get(socket.lobbySlug);
+    if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
+      return;
+    }
+    const result = game.massUnexhaustAbility(socket.id, cardIds);
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
     } else {
@@ -1053,7 +1173,7 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
       return;
     }
-    const result = game.useCardDiceNumber(cardId);
+    const result = game.useCardDiceNumber(socket.id, cardId);
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
       // Also send back the dice numbers that can be used
@@ -1066,13 +1186,13 @@ function registerDiceFactoryEvents(io, socket, lobbies, games) {
     }
   });
 
-  // End turn (v0.2.1) - reroll all, advance round, refresh exhaustion
-  socket.on('dice-factory:end-turn', (data) => {
+  // Pass turn (v0.2.1) - player passes, play advances
+  socket.on('dice-factory:pass-turn', (data) => {
     const game = games.get(socket.lobbySlug);
     if (!game || game.state.type !== 'dice-factory' || game.state.version !== 'v0.2.1') {
       return;
     }
-    const result = game.endTurn();
+    const result = game.passTurn(socket.id);
     if (result.success) {
       broadcastDiceFactoryUpdate(io, socket.lobbySlug, game, lobbies);
     } else {

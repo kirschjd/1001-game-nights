@@ -1,0 +1,285 @@
+{
+  "tier0": [
+    {
+      "id": "recruit",
+      "name": "Recruit",
+      "tier": 0,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "effect": "recruit"
+    },
+    {
+      "id": "reroll",
+      "name": "Reroll",
+      "tier": 0,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "effect": "reroll"
+    },
+    {
+      "id": "bump",
+      "name": "Bump",
+      "tier": 0,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "needsDirection": true,
+      "effect": "bump"
+    },
+    {
+      "id": "promote",
+      "name": "Promote",
+      "tier": 0,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": true,
+      "effect": "promote"
+    }
+  ],
+  "tier1": [
+    {
+      "id": "T1-P1",
+      "name": "Bump Up",
+      "tier": 1,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "needsAmount": true,
+      "effect": "bumpUp"
+    },
+    {
+      "id": "T1-P2",
+      "name": "Bump Down",
+      "tier": 1,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "needsAmount": true,
+      "effect": "bumpDown"
+    },
+    {
+      "id": "T1-P3",
+      "name": "Mass Reroll",
+      "tier": 1,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "multiTarget": true,
+      "maxTargets": 3,
+      "effect": "massReroll"
+    },
+    {
+      "id": "T1-P4",
+      "name": "Attack",
+      "tier": 1,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "effect": "attack"
+    },
+    {
+      "id": "T1-P5",
+      "name": "Mass Bump",
+      "tier": 1,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "multiTarget": true,
+      "maxTargets": 2,
+      "needsDirection": true,
+      "effect": "massBump"
+    },
+    {
+      "id": "T1-P6",
+      "name": "2s Reroll",
+      "tier": 1,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "effect": "twosReroll"
+    }
+  ],
+  "tier2": [
+    {
+      "id": "T2-P1",
+      "name": "Score",
+      "tier": 2,
+      "costCount": 3,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "effect": "score"
+    },
+    {
+      "id": "T2-P2",
+      "name": "Targeted Recruit",
+      "tier": 2,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "effect": "targetedRecruit"
+    },
+    {
+      "id": "T2-P3",
+      "name": "Recruit +",
+      "tier": 2,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "effect": "recruitPlus"
+    },
+    {
+      "id": "T2-P4",
+      "name": "Attack +",
+      "tier": 2,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "effect": "attackPlus"
+    },
+    {
+      "id": "T2-P5",
+      "name": "Unexhaust",
+      "tier": 2,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "effect": "unexhaust"
+    },
+    {
+      "id": "T2-P6",
+      "name": "Swap Slots",
+      "tier": 2,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "needsSlots": true,
+      "effect": "swapSlots"
+    }
+  ],
+  "tier3": [
+    {
+      "id": "T3-P1",
+      "name": "Score +",
+      "tier": 3,
+      "costCount": 3,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "effect": "scorePlus"
+    },
+    {
+      "id": "T3-P2",
+      "name": "Mass Bump +",
+      "tier": 3,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "multiTarget": true,
+      "maxTargets": 3,
+      "needsDirection": true,
+      "needsAmount": true,
+      "effect": "massBumpPlus"
+    },
+    {
+      "id": "T3-P3",
+      "name": "Mass Reroll +",
+      "tier": 3,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "multiTarget": true,
+      "effect": "massRerollPlus"
+    },
+    {
+      "id": "T3-P4",
+      "name": "Clear Slot",
+      "tier": 3,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "needsSlot": true,
+      "effect": "clearSlot"
+    },
+    {
+      "id": "T3-P5",
+      "name": "Card Unexhaust",
+      "tier": 3,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "needsCard": true,
+      "effect": "cardUnexhaust"
+    },
+    {
+      "id": "T3-P6",
+      "name": "Select Value",
+      "tier": 3,
+      "costCount": 2,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "needsValue": true,
+      "effect": "selectValue"
+    }
+  ],
+  "tier4": [
+    {
+      "id": "T4-P1",
+      "name": "Score ++",
+      "tier": 4,
+      "costCount": 3,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "effect": "scorePlusPlus"
+    },
+    {
+      "id": "T4-P2",
+      "name": "Card Cost Reduction",
+      "tier": 4,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "needsCard": true,
+      "effect": "cardCostReduction"
+    },
+    {
+      "id": "T4-P3",
+      "name": "Swap +",
+      "tier": 4,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "needsSlots": true,
+      "effect": "swapPlus"
+    },
+    {
+      "id": "T4-P4",
+      "name": "Mass Unexhaust",
+      "tier": 4,
+      "costCount": 1,
+      "needsTarget": false,
+      "exhaustTarget": false,
+      "needsCards": true,
+      "maxCards": 2,
+      "effect": "massUnexhaust"
+    },
+    {
+      "id": "T4-P5",
+      "name": "Target Attack",
+      "tier": 4,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "effect": "targetAttack"
+    },
+    {
+      "id": "T4-P6",
+      "name": "Targeted Unexhaust",
+      "tier": 4,
+      "costCount": 1,
+      "needsTarget": true,
+      "exhaustTarget": false,
+      "effect": "targetedUnexhaust"
+    }
+  ]
+}
