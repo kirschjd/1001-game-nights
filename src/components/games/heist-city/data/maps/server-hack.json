@@ -1,0 +1,242 @@
+{
+  "id": "server-hack",
+  "name": "Server Hack",
+  "description": "Infiltrate the data center and hack the mainframe",
+  "items": [
+    {
+      "id": "server-room-outer",
+      "type": "wall",
+      "position": { "x": 12, "y": 12 },
+      "width": 12,
+      "height": 12,
+      "destructible": true,
+      "health": 15
+    },
+    {
+      "id": "server-rack-1",
+      "type": "table",
+      "position": { "x": 15, "y": 15 },
+      "width": 2,
+      "height": 2,
+      "moveable": false,
+      "provideCover": true
+    },
+    {
+      "id": "server-rack-2",
+      "type": "table",
+      "position": { "x": 19, "y": 15 },
+      "width": 2,
+      "height": 2,
+      "moveable": false,
+      "provideCover": true
+    },
+    {
+      "id": "server-rack-3",
+      "type": "table",
+      "position": { "x": 15, "y": 19 },
+      "width": 2,
+      "height": 2,
+      "moveable": false,
+      "provideCover": true
+    },
+    {
+      "id": "server-rack-4",
+      "type": "table",
+      "position": { "x": 19, "y": 19 },
+      "width": 2,
+      "height": 2,
+      "moveable": false,
+      "provideCover": true
+    },
+    {
+      "id": "workstation-1",
+      "type": "table",
+      "position": { "x": 6, "y": 6 },
+      "width": 2,
+      "height": 1,
+      "moveable": true,
+      "provideCover": true
+    },
+    {
+      "id": "workstation-2",
+      "type": "table",
+      "position": { "x": 28, "y": 6 },
+      "width": 2,
+      "height": 1,
+      "moveable": true,
+      "provideCover": true
+    },
+    {
+      "id": "workstation-3",
+      "type": "table",
+      "position": { "x": 6, "y": 29 },
+      "width": 2,
+      "height": 1,
+      "moveable": true,
+      "provideCover": true
+    },
+    {
+      "id": "workstation-4",
+      "type": "table",
+      "position": { "x": 28, "y": 29 },
+      "width": 2,
+      "height": 1,
+      "moveable": true,
+      "provideCover": true
+    },
+    {
+      "id": "computer-1",
+      "type": "computer",
+      "position": { "x": 6, "y": 8 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "computer-2",
+      "type": "computer",
+      "position": { "x": 30, "y": 8 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "computer-3",
+      "type": "computer",
+      "position": { "x": 6, "y": 28 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "computer-4",
+      "type": "computer",
+      "position": { "x": 30, "y": 28 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "mainframe-1",
+      "type": "computer",
+      "position": { "x": 16, "y": 18 },
+      "size": 1,
+      "interactive": true,
+      "properties": { "mainframe": true }
+    },
+    {
+      "id": "mainframe-2",
+      "type": "computer",
+      "position": { "x": 20, "y": 18 },
+      "size": 1,
+      "interactive": true,
+      "properties": { "mainframe": true }
+    },
+    {
+      "id": "gear-1",
+      "type": "gear",
+      "position": { "x": 3, "y": 18 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "gear-2",
+      "type": "gear",
+      "position": { "x": 33, "y": 18 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "info-1",
+      "type": "info-drop",
+      "position": { "x": 18, "y": 3 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "info-2",
+      "type": "info-drop",
+      "position": { "x": 18, "y": 33 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "teleporter-1",
+      "type": "teleporter",
+      "position": { "x": 9, "y": 18 },
+      "size": 1,
+      "properties": { "pairId": 1 }
+    },
+    {
+      "id": "teleporter-2",
+      "type": "teleporter",
+      "position": { "x": 27, "y": 18 },
+      "size": 1,
+      "properties": { "pairId": 1 }
+    },
+    {
+      "id": "camera-1",
+      "type": "enemy-camera",
+      "position": { "x": 12, "y": 12 },
+      "size": 1,
+      "rotation": 135
+    },
+    {
+      "id": "camera-2",
+      "type": "enemy-camera",
+      "position": { "x": 24, "y": 12 },
+      "size": 1,
+      "rotation": 225
+    },
+    {
+      "id": "camera-3",
+      "type": "enemy-camera",
+      "position": { "x": 12, "y": 24 },
+      "size": 1,
+      "rotation": 45
+    },
+    {
+      "id": "camera-4",
+      "type": "enemy-camera",
+      "position": { "x": 24, "y": 24 },
+      "size": 1,
+      "rotation": 315
+    },
+    {
+      "id": "guard-1",
+      "type": "enemy-security-guard",
+      "position": { "x": 18, "y": 12 },
+      "size": 1
+    },
+    {
+      "id": "guard-2",
+      "type": "enemy-security-guard",
+      "position": { "x": 18, "y": 24 },
+      "size": 1
+    },
+    {
+      "id": "rapid-response-1",
+      "type": "enemy-rapid-response",
+      "position": { "x": 14, "y": 18 },
+      "size": 1
+    },
+    {
+      "id": "rapid-response-2",
+      "type": "enemy-rapid-response",
+      "position": { "x": 22, "y": 18 },
+      "size": 1
+    }
+  ],
+  "startPositions": {
+    "player1": [
+      { "x": 2, "y": 2 },
+      { "x": 2, "y": 4 },
+      { "x": 4, "y": 2 },
+      { "x": 4, "y": 4 },
+      { "x": 3, "y": 3 }
+    ],
+    "player2": [
+      { "x": 33, "y": 33 },
+      { "x": 33, "y": 32 },
+      { "x": 32, "y": 33 },
+      { "x": 32, "y": 32 },
+      { "x": 33, "y": 33 }
+    ]
+  }
+}

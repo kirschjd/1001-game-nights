@@ -1,0 +1,161 @@
+{
+  "id": "bank-job",
+  "name": "Bank Job",
+  "description": "Break into the vault and escape with the loot",
+  "items": [
+    {
+      "id": "outer-wall-north",
+      "type": "wall",
+      "position": { "x": 0, "y": 0 },
+      "endPosition": { "x": 35, "y": 0 },
+      "destructible": false
+    },
+    {
+      "id": "outer-wall-south",
+      "type": "wall",
+      "position": { "x": 0, "y": 35 },
+      "endPosition": { "x": 35, "y": 35 },
+      "destructible": false
+    },
+    {
+      "id": "outer-wall-west",
+      "type": "wall",
+      "position": { "x": 0, "y": 0 },
+      "endPosition": { "x": 0, "y": 35 },
+      "destructible": false
+    },
+    {
+      "id": "outer-wall-east",
+      "type": "wall",
+      "position": { "x": 35, "y": 0 },
+      "endPosition": { "x": 35, "y": 35 },
+      "destructible": false
+    },
+    {
+      "id": "vault-wall-1",
+      "type": "wall",
+      "position": { "x": 15, "y": 15 },
+      "width": 6,
+      "height": 6,
+      "destructible": true,
+      "health": 10
+    },
+    {
+      "id": "desk-1",
+      "type": "table",
+      "position": { "x": 8, "y": 8 },
+      "width": 2,
+      "height": 3,
+      "moveable": true,
+      "provideCover": true
+    },
+    {
+      "id": "desk-2",
+      "type": "table",
+      "position": { "x": 26, "y": 8 },
+      "width": 2,
+      "height": 3,
+      "moveable": true,
+      "provideCover": true
+    },
+    {
+      "id": "computer-1",
+      "type": "computer",
+      "position": { "x": 8, "y": 28 },
+      "size": 1,
+      "interactive": true,
+      "destructible": false
+    },
+    {
+      "id": "computer-2",
+      "type": "computer",
+      "position": { "x": 28, "y": 28 },
+      "size": 1,
+      "interactive": true,
+      "destructible": false
+    },
+    {
+      "id": "gear-1",
+      "type": "gear",
+      "position": { "x": 6, "y": 18 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "gear-2",
+      "type": "gear",
+      "position": { "x": 30, "y": 18 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "info-drop-1",
+      "type": "info-drop",
+      "position": { "x": 18, "y": 10 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "camera-1",
+      "type": "enemy-camera",
+      "position": { "x": 12, "y": 6 },
+      "size": 1,
+      "rotation": 135
+    },
+    {
+      "id": "camera-2",
+      "type": "enemy-camera",
+      "position": { "x": 24, "y": 6 },
+      "size": 1,
+      "rotation": 225
+    },
+    {
+      "id": "camera-3",
+      "type": "enemy-camera",
+      "position": { "x": 12, "y": 30 },
+      "size": 1,
+      "rotation": 45
+    },
+    {
+      "id": "camera-4",
+      "type": "enemy-camera",
+      "position": { "x": 24, "y": 30 },
+      "size": 1,
+      "rotation": 315
+    },
+    {
+      "id": "guard-1",
+      "type": "enemy-security-guard",
+      "position": { "x": 18, "y": 18 },
+      "size": 1
+    },
+    {
+      "id": "rapid-response-1",
+      "type": "enemy-rapid-response",
+      "position": { "x": 6, "y": 6 },
+      "size": 1
+    },
+    {
+      "id": "rapid-response-2",
+      "type": "enemy-rapid-response",
+      "position": { "x": 30, "y": 30 },
+      "size": 1
+    }
+  ],
+  "startPositions": {
+    "player1": [
+      { "x": 2, "y": 2 },
+      { "x": 2, "y": 4 },
+      { "x": 2, "y": 6 },
+      { "x": 4, "y": 2 },
+      { "x": 4, "y": 4 }
+    ],
+    "player2": [
+      { "x": 33, "y": 33 },
+      { "x": 33, "y": 32 },
+      { "x": 33, "y": 30 },
+      { "x": 32, "y": 33 },
+      { "x": 32, "y": 32 }
+    ]
+  }
+}

@@ -5,6 +5,7 @@ const WarGame = require('../../games/war');
 const { DiceFactoryGame: DiceFactoryGameV015 } = require('../../games/dice-factory-v0.1.5');
 const { DiceFactoryGame: DiceFactoryGameV021 } = require('../../games/dice-factory-v0.2.1');
 const { KillTeamDraftGame } = require('../../games/kill-team-draft');
+const { HeistCityGame } = require('../../games/heist-city');
 
 /**
  * Initialize a War game
@@ -102,6 +103,35 @@ function initializeKillTeamDraftGame(connectedPlayers, lobby) {
 }
 
 /**
+ * Initialize a Heist City game
+ */
+function initializeHeistCityGame(connectedPlayers, lobby) {
+  // Get selected map from lobby options
+  const mapId = lobby.gameOptions?.mapId || 'bank-job';
+
+  // For now, we'll use a basic game class
+  // Map loading happens on client-side using mapLoader.ts
+  const game = {
+    state: {
+      type: 'heist-city',
+      phase: 'playing',
+      mapId: mapId, // Pass map ID to client
+      players: connectedPlayers.map(p => ({
+        id: p.id,
+        name: p.name,
+        isConnected: p.isConnected
+      })),
+      mapState: null // Will be managed client-side
+    },
+    getPlayerView: function(playerId) {
+      return this.state;
+    }
+  };
+
+  return game;
+}
+
+/**
  * Create game based on lobby type
  */
 function createGame(lobby, connectedPlayers, clientVariantOrVersion, botSystem) {
@@ -117,6 +147,9 @@ function createGame(lobby, connectedPlayers, clientVariantOrVersion, botSystem) 
 
     case 'kill-team-draft':
       return initializeKillTeamDraftGame(connectedPlayers, lobby);
+
+    case 'heist-city':
+      return initializeHeistCityGame(connectedPlayers, lobby);
 
     default:
       throw new Error('Invalid game type');
@@ -169,5 +202,6 @@ module.exports = {
   initializeWarGame,
   initializeDiceFactoryGame,
   initializeHenHurGame,
-  initializeKillTeamDraftGame
+  initializeKillTeamDraftGame,
+  initializeHeistCityGame
 };

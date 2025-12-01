@@ -7,6 +7,7 @@ const { registerWarEvents } = require('./warEvents');
 const { registerDiceFactoryEvents } = require('./diceFactoryEvents');
 const { registerKillTeamDraftEvents } = require('./killTeamDraftEvents');
 const { registerHenHurEvents } = require('./henHurEvents');
+const { registerHeistCityEvents } = require('./heistCityEvents');
 
 // Import enhanced war events
 const setupEnhancedWarEvents = require('../games/war/events/enhancedWarEvents');
@@ -28,6 +29,7 @@ function initializeSocketHandlers(io, lobbies, games) {
     registerDiceFactoryEvents(io, socket, lobbies, games);
     registerKillTeamDraftEvents(io, socket, lobbies, games);
     registerHenHurEvents(io, socket, lobbies, games);
+    registerHeistCityEvents(io, socket, lobbies, games);
 
     // Register enhanced war events (bots, variants, etc.)
     setupEnhancedWarEvents(io, socket, lobbies, games);

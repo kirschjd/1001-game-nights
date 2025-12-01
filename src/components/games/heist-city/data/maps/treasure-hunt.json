@@ -1,0 +1,158 @@
+{
+  "id": "treasure-hunt",
+  "name": "Treasure Hunt",
+  "description": "Navigate through teleporters to find the hidden treasure",
+  "items": [
+    {
+      "id": "maze-wall-1",
+      "type": "wall",
+      "position": { "x": 6, "y": 6 },
+      "endPosition": { "x": 6, "y": 30 },
+      "destructible": true,
+      "health": 5
+    },
+    {
+      "id": "maze-wall-2",
+      "type": "wall",
+      "position": { "x": 12, "y": 6 },
+      "endPosition": { "x": 12, "y": 24 },
+      "destructible": true,
+      "health": 5
+    },
+    {
+      "id": "maze-wall-3",
+      "type": "wall",
+      "position": { "x": 18, "y": 12 },
+      "endPosition": { "x": 18, "y": 35 },
+      "destructible": true,
+      "health": 5
+    },
+    {
+      "id": "maze-wall-4",
+      "type": "wall",
+      "position": { "x": 24, "y": 6 },
+      "endPosition": { "x": 24, "y": 24 },
+      "destructible": true,
+      "health": 5
+    },
+    {
+      "id": "maze-wall-5",
+      "type": "wall",
+      "position": { "x": 30, "y": 6 },
+      "endPosition": { "x": 30, "y": 30 },
+      "destructible": true,
+      "health": 5
+    },
+    {
+      "id": "teleporter-1",
+      "type": "teleporter",
+      "position": { "x": 9, "y": 9 },
+      "size": 1,
+      "properties": { "pairId": 1 }
+    },
+    {
+      "id": "teleporter-2",
+      "type": "teleporter",
+      "position": { "x": 27, "y": 27 },
+      "size": 1,
+      "properties": { "pairId": 1 }
+    },
+    {
+      "id": "teleporter-3",
+      "type": "teleporter",
+      "position": { "x": 15, "y": 15 },
+      "size": 1,
+      "properties": { "pairId": 2 }
+    },
+    {
+      "id": "teleporter-4",
+      "type": "teleporter",
+      "position": { "x": 21, "y": 21 },
+      "size": 1,
+      "properties": { "pairId": 2 }
+    },
+    {
+      "id": "gear-1",
+      "type": "gear",
+      "position": { "x": 3, "y": 18 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "gear-2",
+      "type": "gear",
+      "position": { "x": 9, "y": 27 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "gear-3",
+      "type": "gear",
+      "position": { "x": 33, "y": 18 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "info-drop-1",
+      "type": "info-drop",
+      "position": { "x": 18, "y": 3 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "info-drop-2",
+      "type": "info-drop",
+      "position": { "x": 18, "y": 33 },
+      "size": 1,
+      "interactive": true
+    },
+    {
+      "id": "camera-1",
+      "type": "enemy-camera",
+      "position": { "x": 9, "y": 18 },
+      "size": 1,
+      "rotation": 90
+    },
+    {
+      "id": "camera-2",
+      "type": "enemy-camera",
+      "position": { "x": 27, "y": 18 },
+      "size": 1,
+      "rotation": 270
+    },
+    {
+      "id": "guard-1",
+      "type": "enemy-security-guard",
+      "position": { "x": 15, "y": 9 },
+      "size": 1
+    },
+    {
+      "id": "guard-2",
+      "type": "enemy-security-guard",
+      "position": { "x": 21, "y": 27 },
+      "size": 1
+    },
+    {
+      "id": "rapid-response-1",
+      "type": "enemy-rapid-response",
+      "position": { "x": 18, "y": 18 },
+      "size": 1
+    }
+  ],
+  "startPositions": {
+    "player1": [
+      { "x": 2, "y": 2 },
+      { "x": 2, "y": 4 },
+      { "x": 4, "y": 2 },
+      { "x": 4, "y": 4 },
+      { "x": 3, "y": 3 }
+    ],
+    "player2": [
+      { "x": 33, "y": 33 },
+      { "x": 33, "y": 32 },
+      { "x": 32, "y": 33 },
+      { "x": 32, "y": 32 },
+      { "x": 33, "y": 33 }
+    ]
+  }
+}

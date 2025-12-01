@@ -81,6 +81,30 @@ const ExplorePage: React.FC = () => {
         '🚧 More features coming soon'
       ],
       status: 'available'
+    },
+    {
+      id: 'heist-city',
+      name: 'Heist City',
+      players: '2 players',
+      duration: '30-45 minutes',
+      description: 'A tactical heist game on a 36" x 36" grid. Control 5 characters each to complete objectives while avoiding security!',
+      rules: [
+        'Each player controls 5 character tokens on a 36" × 36" map',
+        'Move characters strategically to complete objectives',
+        'Collect gear, access computers, and retrieve intel',
+        'Avoid enemy cameras, guards, and rapid response units',
+        'Use teleporters to quickly navigate the map',
+        'Plan your route carefully - security is everywhere!',
+        'Complete your objectives before your opponent'
+      ],
+      features: [
+        '🗺️ Interactive 36" × 36" grid map',
+        '🎮 Drag-and-drop character movement',
+        '📹 Dynamic security systems',
+        '⚡ Teleporter mechanics',
+        '🎯 Strategic objective-based gameplay'
+      ],
+      status: 'available'
     }
   ];
 
@@ -125,10 +149,10 @@ const ExplorePage: React.FC = () => {
       <main className="container mx-auto px-6 py-8 max-w-6xl relative z-10">
         <div className="grid gap-8">
           {games.map((game) => {
-            const gameColor = game.id === 'war' ? 'tea-rose' : game.id === 'henhur' ? 'amber-400' : 'uranian-blue';
-            const gameBorderColor = game.id === 'war' ? 'border-tea-rose/30' : game.id === 'henhur' ? 'border-amber-400/30' : 'border-uranian-blue/30';
-            const gameAccentColor = game.id === 'war' ? 'bg-tea-rose/10' : game.id === 'henhur' ? 'bg-amber-400/10' : 'bg-uranian-blue/10';
-            const gameButtonColor = game.id === 'war' ? 'bg-tea-rose hover:bg-tea-rose-light' : game.id === 'henhur' ? 'bg-amber-400 hover:bg-amber-300' : 'bg-uranian-blue hover:bg-uranian-blue-light';
+            const gameColor = game.id === 'war' ? 'tea-rose' : game.id === 'henhur' ? 'amber-400' : game.id === 'heist-city' ? 'purple-500' : 'uranian-blue';
+            const gameBorderColor = game.id === 'war' ? 'border-tea-rose/30' : game.id === 'henhur' ? 'border-amber-400/30' : game.id === 'heist-city' ? 'border-purple-500/30' : 'border-uranian-blue/30';
+            const gameAccentColor = game.id === 'war' ? 'bg-tea-rose/10' : game.id === 'henhur' ? 'bg-amber-400/10' : game.id === 'heist-city' ? 'bg-purple-500/10' : 'bg-uranian-blue/10';
+            const gameButtonColor = game.id === 'war' ? 'bg-tea-rose hover:bg-tea-rose-light' : game.id === 'henhur' ? 'bg-amber-400 hover:bg-amber-300' : game.id === 'heist-city' ? 'bg-purple-500 hover:bg-purple-400' : 'bg-uranian-blue hover:bg-uranian-blue-light';
 
             return (
               <div

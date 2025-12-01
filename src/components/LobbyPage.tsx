@@ -46,6 +46,7 @@ const LobbyPage: React.FC = () => {
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>(ALL_CARDS.map(card => card.id));
   const [ktdPackSize, setKtdPackSize] = useState(15);
   const [ktdTotalPacks, setKtdTotalPacks] = useState(3);
+  const [selectedHeistCityMap, setSelectedHeistCityMap] = useState('bank-job');
 
   useEffect(() => {
     const newSocket = io(process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
@@ -195,6 +196,14 @@ const LobbyPage: React.FC = () => {
         lobby.gameOptions.totalPacks = ktdTotalPacks;
 
         socket.emit('start-game', { slug });
+      } else if (lobby.gameType === 'heist-city') {
+        // Ensure gameOptions exist and have the selected map
+        if (!lobby.gameOptions) {
+          lobby.gameOptions = {};
+        }
+        lobby.gameOptions.mapId = selectedHeistCityMap;
+
+        socket.emit('start-game', { slug });
       } else {
         // Unknown game type
         socket.emit('error', { message: 'Invalid game type' });
@@ -233,11 +242,13 @@ const LobbyPage: React.FC = () => {
   const isLeader = lobby && socket && lobby.leaderId === socket.id;
 
   // Get game-specific colors
-  const gameColor = lobby?.gameType === 'war' ? 'tea-rose' : lobby?.gameType === 'henhur' ? 'amber-400' : 'uranian-blue';
-  const gameColorClasses = lobby?.gameType === 'war' 
-    ? 'border-tea-rose/30 bg-tea-rose/10' 
-    : lobby?.gameType === 'henhur' 
-      ? 'border-amber-400/30 bg-amber-400/10' 
+  const gameColor = lobby?.gameType === 'war' ? 'tea-rose' : lobby?.gameType === 'henhur' ? 'amber-400' : lobby?.gameType === 'heist-city' ? 'purple-500' : 'uranian-blue';
+  const gameColorClasses = lobby?.gameType === 'war'
+    ? 'border-tea-rose/30 bg-tea-rose/10'
+    : lobby?.gameType === 'henhur'
+      ? 'border-amber-400/30 bg-amber-400/10'
+      : lobby?.gameType === 'heist-city'
+      ? 'border-purple-500/30 bg-purple-500/10'
       : 'border-uranian-blue/30 bg-uranian-blue/10';
 
   if (!lobby) {
@@ -268,7 +279,7 @@ const LobbyPage: React.FC = () => {
             <div>
               <h1 className="text-3xl font-bold mb-1 text-lion-light">🎮 {lobby.title}</h1>
               <p className="text-gray-300">
-                Playing: {lobby.gameType === 'war' ? 'War' : lobby.gameType === 'dice-factory' ? 'Dice Factory' : lobby.gameType === 'henhur' ? 'HenHur' : lobby.gameType}
+                Playing: {lobby.gameType === 'war' ? 'War' : lobby.gameType === 'dice-factory' ? 'Dice Factory' : lobby.gameType === 'henhur' ? 'HenHur' : lobby.gameType === 'heist-city' ? 'Heist City' : lobby.gameType}
               </p>
             </div>
           </div>
@@ -478,6 +489,7 @@ const LobbyPage: React.FC = () => {
                   <option value="war">War</option>
                   <option value="dice-factory">Dice Factory</option>
                   <option value="henhur">HenHur</option>
+                  <option value="heist-city">Heist City</option>
                   <option value="kill-team-draft">Kill Team Draft</option>
                 </select>
                 <img 
@@ -646,6 +658,39 @@ const LobbyPage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Heist City Map Selection */}
+            {lobby.gameType === 'heist-city' && isLeader && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Map Selection
+                </label>
+                <select
+                  value={selectedHeistCityMap}
+                  onChange={(e) => {
+                    const mapId = e.target.value;
+                    setSelectedHeistCityMap(mapId);
+                    if (socket) {
+                      socket.emit('update-heist-city-map', { slug, mapId });
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
+                >
+                  <option value="bank-job">Bank Job</option>
+                  <option value="treasure-hunt">Treasure Hunt</option>
+                  <option value="train-robbery">Train Robbery</option>
+                  <option value="server-hack">Server Hack</option>
+                  <option value="jail-break">Jail Break</option>
+                </select>
+                <div className="text-xs text-gray-400 mt-2">
+                  {selectedHeistCityMap === 'bank-job' && '🏦 Break into the vault and escape with the loot'}
+                  {selectedHeistCityMap === 'treasure-hunt' && '🗺️ Navigate through teleporters to find the hidden treasure'}
+                  {selectedHeistCityMap === 'train-robbery' && '🚂 Rob the moving train before it reaches the station'}
+                  {selectedHeistCityMap === 'server-hack' && '💻 Infiltrate the data center and hack the mainframe'}
+                  {selectedHeistCityMap === 'jail-break' && '🚔 Break out of maximum security prison'}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Start Game Button */}
@@ -734,6 +779,61 @@ const LobbyPage: React.FC = () => {
               <p className="text-lg font-semibold text-amber-400 mb-4">This is a placeholder for the HenHur game. Rules and features will be added soon!</p>
               <div className="space-y-4 text-gray-300">
                 <p className="text-lg">A new game framework. Stay tuned for updates and gameplay details.</p>
+              </div>
+            </div>
+          ) : lobby.gameType === 'heist-city' ? (
+            <div className={`p-6 rounded-lg border ${gameColorClasses}`}>
+              <h2 className="text-2xl font-bold mb-4 text-purple-500">🏙️ Heist City</h2>
+
+              <div className="space-y-4 text-gray-300">
+                <p className="text-lg">
+                  A tactical heist game on a 36" × 36" grid. Control 5 characters each to complete objectives while avoiding security!
+                </p>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">📋 How to Play</h3>
+                  <ol className="space-y-2 text-sm">
+                    <li><strong>1.</strong> Each player controls 5 character tokens on a 36" × 36" map</li>
+                    <li><strong>2.</strong> Move characters strategically to complete objectives</li>
+                    <li><strong>3.</strong> Collect gear, access computers, and retrieve intel</li>
+                    <li><strong>4.</strong> Avoid enemy cameras, guards, and rapid response units</li>
+                    <li><strong>5.</strong> Use teleporters to quickly navigate the map</li>
+                    <li><strong>6.</strong> Plan your route carefully - security is everywhere!</li>
+                    <li><strong>7.</strong> Complete your objectives before your opponent</li>
+                  </ol>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">🎮 Game Info</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div><strong>Players:</strong> 2 players</div>
+                    <div><strong>Duration:</strong> 30-45 minutes</div>
+                    <div><strong>Difficulty:</strong> Medium</div>
+                    <div><strong>Strategy:</strong> Tactical Movement</div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">✨ Features</h3>
+                  <ul className="space-y-1 text-sm">
+                    <li>• <strong>Interactive Map:</strong> Drag-and-drop character movement on a precise grid</li>
+                    <li>• <strong>Security Systems:</strong> Cameras, guards, and rapid response units</li>
+                    <li>• <strong>Strategic Items:</strong> Gear, computers, info drops, and teleporters</li>
+                    <li>• <strong>Grid-based Movement:</strong> 1-inch grid squares for precise positioning</li>
+                    <li>• <strong>Visual Feedback:</strong> Real-time position tracking and selection</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">💡 Tips</h3>
+                  <ul className="space-y-1 text-sm">
+                    <li>• Plan your route to avoid camera vision cones</li>
+                    <li>• Use walls and tables as cover from security</li>
+                    <li>• Teleporters can save time but may be monitored</li>
+                    <li>• Split your team to cover more objectives simultaneously</li>
+                    <li>• Watch your opponent's movements for strategic opportunities</li>
+                  </ul>
+                </div>
               </div>
             </div>
           ) : lobby.gameType === 'kill-team-draft' ? (

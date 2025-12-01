@@ -10,6 +10,7 @@ import { DiceFactoryGame as DiceFactoryGameV015 } from './games/dice-factory-v0.
 import { DiceFactoryGame as DiceFactoryGameV021 } from './games/dice-factory-v0.2.1';
 import HenHurGame from './games/henhur';
 import KillTeamDraftGame from './games/kill-team-draft/KillTeamDraftGame';
+import HeistCityGame from './games/heist-city';
 
 interface WarGameState {
   type: string;
@@ -244,9 +245,11 @@ useEffect(() => {
   }
 
   // Get game-specific colors
-  const gameColor = gameState.type === 'war' ? 'tea-rose' : 'uranian-blue';
-  const gameColorClasses = gameState.type === 'war' 
-    ? 'border-tea-rose/30 bg-tea-rose/10' 
+  const gameColor = gameState.type === 'war' ? 'tea-rose' : gameState.type === 'heist-city' ? 'purple-500' : 'uranian-blue';
+  const gameColorClasses = gameState.type === 'war'
+    ? 'border-tea-rose/30 bg-tea-rose/10'
+    : gameState.type === 'heist-city'
+    ? 'border-purple-500/30 bg-purple-500/10'
     : 'border-uranian-blue/30 bg-uranian-blue/10';
 
   return (
@@ -271,9 +274,10 @@ useEffect(() => {
           />
           <div>
             <h1 className="text-2xl font-bold text-lion-light">
-              Playing: {gameState.type === 'war' ? 
-                (gameState as WarGameState).variantDisplayName || 'War' : 
-                gameState.type === 'dice-factory' ? 'Dice Factory' : 
+              Playing: {gameState.type === 'war' ?
+                (gameState as WarGameState).variantDisplayName || 'War' :
+                gameState.type === 'dice-factory' ? 'Dice Factory' :
+                gameState.type === 'heist-city' ? 'Heist City' :
                 gameState.type}
             </h1>
             <p className="text-gray-400">Player: {playerName}</p>
@@ -338,8 +342,16 @@ useEffect(() => {
           />
         )}
 
+        {gameState.type === 'heist-city' && slug && socket && (
+          <HeistCityGame
+            socket={socket}
+            lobbyId={slug}
+            playerId={socket.id || ''}
+          />
+        )}
+
         {/* Fallback for unknown game types */}
-        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && gameState.type !== 'kill-team-draft' && (
+        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && gameState.type !== 'kill-team-draft' && gameState.type !== 'heist-city' && (
           <div className="text-center p-8">
             <h2 className="text-2xl font-bold mb-4 text-red-400">Unknown Game Type</h2>
             <p className="text-gray-400 mb-4">Game type "{gameState.type}" is not supported.</p>

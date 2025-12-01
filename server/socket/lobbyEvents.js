@@ -83,6 +83,19 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     io.to(slug).emit('lobby-updated', lobby);
   });
 
+  // Update Heist City map (leader only)
+  socket.on('update-heist-city-map', (data) => {
+    const { slug, mapId } = data;
+    const lobby = lobbies.get(slug);
+
+    if (!validateLeaderPermission(lobby, socket.id, slug)) {
+      return;
+    }
+
+    lobby.gameOptions.mapId = mapId;
+    io.to(slug).emit('lobby-updated', lobby);
+  });
+
   // Player joins or rejoins a lobby
   socket.on('join-lobby', (data) => {
     const { slug, playerName } = data;
