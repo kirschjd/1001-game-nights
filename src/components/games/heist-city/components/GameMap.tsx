@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { MapState, CharacterToken as CharacterTokenType, MapItem as MapItemType, Position } from '../types';
+import { MapState, CharacterToken as CharacterTokenType, MapItem as MapItemType, Position, ItemType } from '../types';
 import {
   SVG_WIDTH,
   SVG_HEIGHT,
@@ -17,6 +17,7 @@ import CharacterToken from './CharacterToken';
 import MapItem from './MapItem';
 import MapToolbar, { MapTool } from './MapToolbar';
 import MapSettings from './MapSettings';
+import MapLegend from './MapLegend';
 
 interface GameMapProps {
   mapState: MapState;
@@ -36,9 +37,13 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
 
   // Dragging state
   const [draggedToken, setDraggedToken] = useState<string | null>(null);
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [hoveredGrid, setHoveredGrid] = useState<Position | null>(null);
   const [cursorPosition, setCursorPosition] = useState<Position | null>(null);
+  const [dragOffset, setDragOffset] = useState<Position | null>(null);
+  const [tempDragPosition, setTempDragPosition] = useState<Position | null>(null);
+  const tempDragPositionRef = useRef<Position | null>(null);
 
   // Pan state
   const [isPanning, setIsPanning] = useState(false);
@@ -187,11 +192,61 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
 
   // Handle token drag start
   const handleTokenMouseDown = useCallback(
-    (token: CharacterTokenType) => {
+    (token: CharacterTokenType, e: React.MouseEvent) => {
       if (readOnly || activeTool !== 'select') return;
+
+      // Calculate offset from cursor to token center
+      const svgCoords = screenToSVG(e.clientX, e.clientY);
+      const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
+      const offset = {
+        x: token.position.x - posInches.x,
+        y: token.position.y - posInches.y
+      };
+
       setDraggedToken(token.id);
+      setDragOffset(offset);
     },
-    [readOnly, activeTool]
+    [readOnly, activeTool, screenToSVG]
+  );
+
+  // Handle item drag start (editor mode)
+  const handleItemMouseDown = useCallback(
+    (item: MapItemType, e: React.MouseEvent) => {
+      if (readOnly || activeTool !== 'editor') return;
+
+      // Calculate offset from cursor to item center
+      const svgCoords = screenToSVG(e.clientX, e.clientY);
+      const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
+      const offset = {
+        x: item.position.x - posInches.x,
+        y: item.position.y - posInches.y
+      };
+
+      setDraggedItem(item.id);
+      setDragOffset(offset);
+    },
+    [readOnly, activeTool, screenToSVG]
+  );
+
+  // Add new item to map (editor mode)
+  const handleAddItem = useCallback(
+    (itemType: ItemType) => {
+      if (readOnly) return;
+
+      // Find a default position (center of map)
+      const newItem: MapItemType = {
+        id: `item-${Date.now()}`,
+        type: itemType,
+        position: { x: 18, y: 18 }, // Center of 36x36 map
+        size: 1,
+      };
+
+      onMapStateChange?.({
+        ...mapState,
+        items: [...mapState.items, newItem]
+      });
+    },
+    [readOnly, mapState, onMapStateChange]
   );
 
   // Handle mouse move
@@ -219,16 +274,43 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       }
 
       // Handle token dragging
-      if (draggedToken && activeTool === 'select') {
-        const snapPos = settings.snapToGrid ? snapToGridUtil(posInches) : posInches;
+      if (draggedToken && activeTool === 'select' && dragOffset) {
+        // Apply drag offset to keep item under cursor
+        const adjustedPos = {
+          x: posInches.x + dragOffset.x,
+          y: posInches.y + dragOffset.y
+        };
+        const snapPos = settings.snapToGrid ? snapToGridUtil(adjustedPos) : adjustedPos;
         setHoveredGrid(snapPos);
-        setCursorPosition(posInches); // Track actual cursor position for shadow
+        setCursorPosition(adjustedPos); // Track actual cursor position for shadow
 
-        const updatedCharacters = mapState.characters.map((token) =>
-          token.id === draggedToken ? { ...token, position: posInches } : token
-        );
+        // Update ref immediately (no re-render)
+        tempDragPositionRef.current = adjustedPos;
 
-        onMapStateChange?.({ ...mapState, characters: updatedCharacters });
+        // Schedule state update on next animation frame for smooth rendering
+        requestAnimationFrame(() => {
+          setTempDragPosition(adjustedPos);
+        });
+      }
+
+      // Handle item dragging (editor mode)
+      if (draggedItem && activeTool === 'editor' && dragOffset) {
+        // Apply drag offset to keep item under cursor
+        const adjustedPos = {
+          x: posInches.x + dragOffset.x,
+          y: posInches.y + dragOffset.y
+        };
+        const snapPos = settings.snapToGrid ? snapToGridUtil(adjustedPos) : adjustedPos;
+        setHoveredGrid(snapPos);
+        setCursorPosition(adjustedPos);
+
+        // Update ref immediately (no re-render)
+        tempDragPositionRef.current = adjustedPos;
+
+        // Schedule state update on next animation frame for smooth rendering
+        requestAnimationFrame(() => {
+          setTempDragPosition(adjustedPos);
+        });
       }
     },
     [
@@ -239,8 +321,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       rulerStart,
       activeTool,
       draggedToken,
-      mapState,
-      onMapStateChange,
+      draggedItem,
+      dragOffset,
       settings.snapToGrid,
     ]
   );
@@ -259,13 +341,10 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
     }
 
     // End token dragging
-    if (draggedToken) {
-      const token = mapState.characters.find((t) => t.id === draggedToken);
-      if (!token) return;
-
-      let finalPosition = token.position;
+    if (draggedToken && tempDragPositionRef.current) {
+      let finalPosition = tempDragPositionRef.current;
       if (settings.snapToGrid) {
-        finalPosition = snapToGridUtil(token.position);
+        finalPosition = snapToGridUtil(tempDragPositionRef.current);
       }
 
       if (!isWithinBounds(finalPosition)) {
@@ -279,10 +358,38 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
 
       onMapStateChange?.({ ...mapState, characters: updatedCharacters });
       setDraggedToken(null);
+      setDragOffset(null);
+      setTempDragPosition(null);
+      tempDragPositionRef.current = null;
       setHoveredGrid(null);
       setCursorPosition(null);
     }
-  }, [isPanning, rulerStart, activeTool, draggedToken, mapState, onMapStateChange, settings.snapToGrid]);
+
+    // End item dragging (editor mode)
+    if (draggedItem && tempDragPositionRef.current) {
+      let finalPosition = tempDragPositionRef.current;
+      if (settings.snapToGrid) {
+        finalPosition = snapToGridUtil(tempDragPositionRef.current);
+      }
+
+      if (!isWithinBounds(finalPosition)) {
+        finalPosition.x = Math.max(0, Math.min(35, finalPosition.x));
+        finalPosition.y = Math.max(0, Math.min(35, finalPosition.y));
+      }
+
+      const updatedItems = mapState.items.map((i) =>
+        i.id === draggedItem ? { ...i, position: finalPosition } : i
+      );
+
+      onMapStateChange?.({ ...mapState, items: updatedItems });
+      setDraggedItem(null);
+      setDragOffset(null);
+      setTempDragPosition(null);
+      tempDragPositionRef.current = null;
+      setHoveredGrid(null);
+      setCursorPosition(null);
+    }
+  }, [isPanning, rulerStart, activeTool, draggedToken, draggedItem, tempDragPosition, mapState, onMapStateChange, settings.snapToGrid]);
 
   // Handle token click
   const handleTokenClick = useCallback(
@@ -313,7 +420,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
   // Handle item click
   const handleItemClick = useCallback(
     (item: MapItemType) => {
-      if (readOnly || activeTool !== 'select') return;
+      // Allow selection in both select and editor modes
+      if (readOnly || (activeTool !== 'select' && activeTool !== 'editor')) return;
       const isCurrentlySelected = item.id === selectedItem;
       setSelectedItem(isCurrentlySelected ? null : item.id);
 
@@ -337,6 +445,33 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
     },
     [selectedItem, onSelectionChange, readOnly, activeTool]
   );
+
+  // Handle delete selected item
+  const handleDeleteItem = useCallback(() => {
+    if (!selectedItem || readOnly || activeTool !== 'editor') return;
+
+    const updatedItems = mapState.items.filter((item) => item.id !== selectedItem);
+    onMapStateChange?.({ ...mapState, items: updatedItems });
+    setSelectedItem(null);
+    onSelectionChange?.(null);
+  }, [selectedItem, readOnly, activeTool, mapState, onMapStateChange, onSelectionChange]);
+
+  // Handle keyboard events for delete
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Don't trigger if user is typing in an input
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        e.preventDefault();
+        handleDeleteItem();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleDeleteItem]);
 
   // Calculate distance for ruler
   const calculateDistance = useCallback((start: Position, end: Position) => {
@@ -388,7 +523,7 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
 
   // Render hovered grid highlight
   const renderHoveredGrid = () => {
-    if (!cursorPosition || !draggedToken) return null;
+    if (!cursorPosition || (!draggedToken && !draggedItem)) return null;
 
     // Center the shadow on the cursor position
     const x = inchesToPixels(cursorPosition.x + GRID_CENTER_OFFSET);
@@ -494,6 +629,7 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
     if (readOnly) return '';
     if (activeTool === 'pan') return isPanning ? 'cursor-grabbing' : 'cursor-grab';
     if (activeTool === 'ruler') return 'cursor-crosshair';
+    if (activeTool === 'editor') return draggedItem ? 'cursor-grabbing' : 'cursor-move';
     return draggedToken ? 'cursor-grabbing' : 'cursor-default';
   };
 
@@ -514,6 +650,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
         onFitToWindow={handleFitToWindow}
         onToggleSettings={() => setShowSettings(!showSettings)}
         showSettings={showSettings}
+        selectedItemId={selectedItem}
+        onDeleteItem={handleDeleteItem}
       />
 
       {/* Settings Panel */}
@@ -530,8 +668,10 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
         />
       )}
 
-      {/* Map */}
-      <svg
+      {/* Map and Legend Container */}
+      <div className="flex gap-4">
+        {/* Map */}
+        <svg
         ref={svgRef}
         width="100%"
         height={600}
@@ -558,33 +698,60 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
         {/* Map items */}
         {settings.showItems && (
           <g>
-            {mapState.items.map((item) => (
-              <MapItem
-                key={item.id}
-                item={item}
-                onClick={handleItemClick}
-                isSelected={item.id === selectedItem}
-              />
-            ))}
+            {mapState.items.map((item) => {
+              // Use temporary position if this item is being dragged
+              const displayItem = item.id === draggedItem && tempDragPosition
+                ? { ...item, position: tempDragPosition }
+                : item;
+
+              return (
+                <MapItem
+                  key={item.id}
+                  item={displayItem}
+                  onMouseDown={(e) => handleItemMouseDown(item, e)}
+                  onClick={handleItemClick}
+                  isSelected={item.id === selectedItem}
+                  isDragging={item.id === draggedItem}
+                />
+              );
+            })}
           </g>
         )}
 
         {/* Character tokens */}
         <g>
-          {mapState.characters.map((token) => (
-            <CharacterToken
-              key={token.id}
-              token={token}
-              onMouseDown={handleTokenMouseDown}
-              onClick={handleTokenClick}
-              isDragging={token.id === draggedToken}
-            />
-          ))}
+          {mapState.characters.map((token) => {
+            // Use temporary position if this token is being dragged
+            const displayToken = token.id === draggedToken && tempDragPosition
+              ? { ...token, position: tempDragPosition }
+              : token;
+
+            return (
+              <CharacterToken
+                key={token.id}
+                token={displayToken}
+                onMouseDown={handleTokenMouseDown}
+                onClick={handleTokenClick}
+                isDragging={token.id === draggedToken}
+              />
+            );
+          })}
         </g>
 
         {/* Ruler */}
         {renderRuler()}
       </svg>
+
+      {/* Map Legend */}
+      <div className="flex-shrink-0 w-64">
+        <MapLegend
+          editorMode={activeTool === 'editor'}
+          onAddItem={handleAddItem}
+          existingItems={mapState.items.map(item => item.type)}
+          allItems={mapState.items}
+        />
+      </div>
+    </div>
     </div>
   );
 };

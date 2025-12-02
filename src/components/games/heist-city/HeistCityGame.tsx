@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Socket } from 'socket.io-client';
 import { GameMap } from './components';
-import { MapState } from './types';
+import CharacterCard from './components/CharacterCard';
+import { MapState, CharacterToken, CharacterState } from './types';
 import { loadMap } from './data/mapLoader';
 
 interface HeistCityGameProps {
@@ -83,13 +84,45 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     });
   };
 
+  // Handle character stats update
+  const handleStatsUpdate = (characterId: string, updatedStats: CharacterToken['stats']) => {
+    if (!mapState) return;
+
+    const updatedCharacters = mapState.characters.map(char =>
+      char.id === characterId ? { ...char, stats: updatedStats } : char
+    );
+
+    const newMapState = {
+      ...mapState,
+      characters: updatedCharacters,
+    };
+
+    handleMapStateChange(newMapState);
+  };
+
+  // Handle character state update
+  const handleStateUpdate = (characterId: string, newState: CharacterState) => {
+    if (!mapState) return;
+
+    const updatedCharacters = mapState.characters.map(char =>
+      char.id === characterId ? { ...char, state: newState } : char
+    );
+
+    const newMapState = {
+      ...mapState,
+      characters: updatedCharacters,
+    };
+
+    handleMapStateChange(newMapState);
+  };
+
   if (!mapState) {
     return <div className="text-white">Loading Heist City...</div>;
   }
 
   return (
     <div className="heist-city-game p-6 bg-gray-950 min-h-screen">
-      <div className="max-w-[920px] mx-auto">
+      <div className="max-w-[1550px] mx-auto">
         <h1 className="text-3xl font-bold text-white mb-6">Heist City</h1>
 
         {/* Game Map */}
@@ -142,40 +175,42 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
           </div>
         </div>
 
-        {/* Token Status */}
-        <div className="mt-4 bg-gray-800 p-4 rounded-lg">
-          <h2 className="text-xl font-bold text-white mb-2">Character Tokens</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <h3 className="text-sm font-bold text-blue-400 mb-2">Player 1 (Blue)</h3>
+        {/* Character Cards */}
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold text-white mb-4">Character Cards</h2>
+
+          {/* Player 1 Characters */}
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-blue-400 mb-3">Player 1 (Blue)</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
               {mapState.characters
-                .filter((t) => t.playerNumber === 1)
-                .map((token) => (
-                  <div key={token.id} className="text-sm text-gray-300 flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full border border-white"
-                      style={{ backgroundColor: token.color }}
-                    />
-                    <span>
-                      {token.name}: ({token.position.x.toFixed(1)}", {token.position.y.toFixed(1)}")
-                    </span>
-                  </div>
+                .filter((char) => char.playerNumber === 1)
+                .map((character) => (
+                  <CharacterCard
+                    key={character.id}
+                    character={character}
+                    isOwnedByPlayer={character.playerId === playerId}
+                    onStatsUpdate={handleStatsUpdate}
+                    onStateUpdate={handleStateUpdate}
+                  />
                 ))}
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-red-400 mb-2">Player 2 (Red)</h3>
+          </div>
+
+          {/* Player 2 Characters */}
+          <div>
+            <h3 className="text-lg font-bold text-red-400 mb-3">Player 2 (Red)</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
               {mapState.characters
-                .filter((t) => t.playerNumber === 2)
-                .map((token) => (
-                  <div key={token.id} className="text-sm text-gray-300 flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full border border-white"
-                      style={{ backgroundColor: token.color }}
-                    />
-                    <span>
-                      {token.name}: ({token.position.x.toFixed(1)}", {token.position.y.toFixed(1)}")
-                    </span>
-                  </div>
+                .filter((char) => char.playerNumber === 2)
+                .map((character) => (
+                  <CharacterCard
+                    key={character.id}
+                    character={character}
+                    isOwnedByPlayer={character.playerId === playerId}
+                    onStatsUpdate={handleStatsUpdate}
+                    onStateUpdate={handleStateUpdate}
+                  />
                 ))}
             </div>
           </div>

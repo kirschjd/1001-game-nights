@@ -40,35 +40,35 @@ export const ITEM_STYLES = {
   },
   table: {
     color: '#e9d5ff', // Very light purple (partial cover)
-    size: 2, // inches (2x2)
+    size: 1, // inches (1x1, fills square exactly)
   },
   computer: {
-    color: '#1e293b',
-    size: 1,
+    color: '#16a34a', // Green
+    size: 1, // inches (1x1 square, same as teleporter)
   },
   gear: {
     color: '#16a34a',
     size: 0.5,
   },
   teleporter: {
-    color: '#a855f7',
-    size: 1.5,
+    color: '#f97316', // Orange
+    size: 1, // inches (1x1 square)
   },
   'info-drop': {
-    color: '#eab308',
-    size: 0.5,
+    color: '#16a34a', // Green
+    size: 1, // inches (cross fits in 1 square)
   },
   'enemy-camera': {
-    color: '#dc2626',
-    size: 0.7,
+    color: '#dc2626', // Red
+    size: 1, // inches (cross fits in 1 square)
   },
   'enemy-rapid-response': {
-    color: '#f97316',
-    size: 1,
+    color: '#dc2626', // Red
+    size: 1, // inches (diamond fills square)
   },
   'enemy-security-guard': {
-    color: '#991b1b',
-    size: 1,
+    color: '#dc2626', // Red
+    size: 1, // inches (circle fits in square)
   },
 };
 

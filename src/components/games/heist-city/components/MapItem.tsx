@@ -5,10 +5,12 @@ import { inchesToPixels, ITEM_STYLES, GRID_CENTER_OFFSET } from '../data/mapCons
 interface MapItemProps {
   item: MapItemType;
   onClick?: (item: MapItemType) => void;
+  onMouseDown?: (e: React.MouseEvent) => void;
   isSelected?: boolean;
+  isDragging?: boolean;
 }
 
-const MapItem: React.FC<MapItemProps> = ({ item, onClick, isSelected }) => {
+const MapItem: React.FC<MapItemProps> = ({ item, onClick, onMouseDown, isSelected, isDragging }) => {
   const style = ITEM_STYLES[item.type];
   // Center items in grid squares by adding offset
   const x = inchesToPixels(item.position.x + GRID_CENTER_OFFSET);
@@ -19,6 +21,11 @@ const MapItem: React.FC<MapItemProps> = ({ item, onClick, isSelected }) => {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onClick?.(item);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMouseDown?.(e);
   };
 
   // Render different shapes based on item type
@@ -47,7 +54,6 @@ const MapItem: React.FC<MapItemProps> = ({ item, onClick, isSelected }) => {
             fill={style.color}
             stroke={isSelected ? '#fff' : 'none'}
             strokeWidth={isSelected ? 2 : 0}
-            rx={4}
           />
         );
 
@@ -58,20 +64,19 @@ const MapItem: React.FC<MapItemProps> = ({ item, onClick, isSelected }) => {
               x={x - size / 2}
               y={y - size / 2}
               width={size}
-              height={size * 0.7}
-              fill={style.color}
-              stroke={isSelected ? '#fff' : '#000'}
-              strokeWidth={isSelected ? 2 : 1}
-              rx={2}
+              height={size}
+              fill="none"
+              stroke={style.color}
+              strokeWidth={3}
             />
             <rect
-              x={x - size / 3}
-              y={y}
-              width={size * 0.66}
-              height={size * 0.2}
-              fill="#4b5563"
-              stroke="#000"
-              strokeWidth={1}
+              x={x - size / 4}
+              y={y - size / 4}
+              width={size / 2}
+              height={size / 2}
+              fill={style.color}
+              stroke={isSelected ? '#fff' : 'none'}
+              strokeWidth={isSelected ? 2 : 0}
             />
           </g>
         );
@@ -91,18 +96,20 @@ const MapItem: React.FC<MapItemProps> = ({ item, onClick, isSelected }) => {
       case 'teleporter':
         return (
           <g>
-            <circle
-              cx={x}
-              cy={y}
-              r={size / 2}
+            <rect
+              x={x - size / 2}
+              y={y - size / 2}
+              width={size}
+              height={size}
               fill="none"
               stroke={style.color}
               strokeWidth={3}
             />
-            <circle
-              cx={x}
-              cy={y}
-              r={size / 4}
+            <rect
+              x={x - size / 4}
+              y={y - size / 4}
+              width={size / 2}
+              height={size / 2}
               fill={style.color}
               stroke={isSelected ? '#fff' : 'none'}
               strokeWidth={isSelected ? 2 : 0}
@@ -113,92 +120,75 @@ const MapItem: React.FC<MapItemProps> = ({ item, onClick, isSelected }) => {
       case 'info-drop':
         return (
           <g>
-            <polygon
-              points={`${x},${y - size / 2} ${x + size / 2},${y + size / 2} ${x - size / 2},${y + size / 2}`}
+            {/* Horizontal bar of cross */}
+            <rect
+              x={x - size / 2}
+              y={y - size / 8}
+              width={size}
+              height={size / 4}
               fill={style.color}
               stroke={isSelected ? '#fff' : '#000'}
               strokeWidth={isSelected ? 2 : 1}
             />
-            <text
-              x={x}
-              y={y + size / 6}
-              textAnchor="middle"
-              fill="#000"
-              fontSize="10"
-              fontWeight="bold"
-            >
-              i
-            </text>
+            {/* Vertical bar of cross */}
+            <rect
+              x={x - size / 8}
+              y={y - size / 2}
+              width={size / 4}
+              height={size}
+              fill={style.color}
+              stroke={isSelected ? '#fff' : '#000'}
+              strokeWidth={isSelected ? 2 : 1}
+            />
           </g>
         );
 
       case 'enemy-camera':
         return (
           <g>
-            <circle
-              cx={x}
-              cy={y}
-              r={size / 2}
+            {/* Horizontal bar of cross */}
+            <rect
+              x={x - size / 2}
+              y={y - size / 8}
+              width={size}
+              height={size / 4}
               fill={style.color}
               stroke={isSelected ? '#fff' : '#000'}
               strokeWidth={isSelected ? 2 : 1}
             />
-            <path
-              d={`M ${x} ${y} L ${x - size / 3} ${y - size} L ${x + size / 3} ${y - size} Z`}
+            {/* Vertical bar of cross */}
+            <rect
+              x={x - size / 8}
+              y={y - size / 2}
+              width={size / 4}
+              height={size}
               fill={style.color}
-              fillOpacity={0.3}
-              stroke={style.color}
-              strokeWidth={1}
+              stroke={isSelected ? '#fff' : '#000'}
+              strokeWidth={isSelected ? 2 : 1}
             />
           </g>
         );
 
       case 'enemy-rapid-response':
         return (
-          <g>
-            <rect
-              x={x - size / 2}
-              y={y - size / 2}
-              width={size}
-              height={size}
-              fill={style.color}
-              stroke={isSelected ? '#fff' : '#000'}
-              strokeWidth={isSelected ? 2 : 1}
-            />
-            <text
-              x={x}
-              y={y + size / 6}
-              textAnchor="middle"
-              fill="#fff"
-              fontSize="12"
-              fontWeight="bold"
-            >
-              RR
-            </text>
-          </g>
+          <polygon
+            points={`${x},${y - size / 2} ${x + size / 2},${y} ${x},${y + size / 2} ${x - size / 2},${y}`}
+            fill={style.color}
+            stroke={isSelected ? '#fff' : '#000'}
+            strokeWidth={isSelected ? 2 : 1}
+          />
         );
 
       case 'enemy-security-guard':
         return (
-          <g>
-            <circle
-              cx={x}
-              cy={y - size / 4}
-              r={size / 4}
-              fill={style.color}
-              stroke={isSelected ? '#fff' : '#000'}
-              strokeWidth={isSelected ? 2 : 1}
-            />
-            <rect
-              x={x - size / 3}
-              y={y}
-              width={size * 0.66}
-              height={size / 2}
-              fill={style.color}
-              stroke={isSelected ? '#fff' : '#000'}
-              strokeWidth={isSelected ? 2 : 1}
-            />
-          </g>
+          <circle
+            cx={x}
+            cy={y}
+            r={size / 2}
+            fill={style.color}
+            stroke={isSelected ? '#fff' : '#000'}
+            strokeWidth={isSelected ? 2 : 1}
+          />
         );
 
       default:
@@ -219,7 +209,9 @@ const MapItem: React.FC<MapItemProps> = ({ item, onClick, isSelected }) => {
     <g
       transform={`rotate(${rotation}, ${x}, ${y})`}
       onClick={handleClick}
-      className="cursor-pointer hover:opacity-80 transition-opacity"
+      onMouseDown={handleMouseDown}
+      className={`cursor-pointer hover:opacity-80 ${isDragging ? 'no-transition' : 'transition-opacity'}`}
+      opacity={isDragging ? 0.5 : 1}
     >
       {renderItem()}
     </g>

@@ -1,5 +1,6 @@
 import { MapState, CharacterToken } from '../types';
 import { PLAYER_COLORS, TOKENS_PER_PLAYER } from './mapConstants';
+import { INITIAL_CHARACTER_STATS, CHARACTER_ROLES } from './characterStats';
 
 // Initial character tokens for both players
 export const createInitialTokens = (player1Id: string, player2Id: string): CharacterToken[] => {
@@ -7,26 +8,34 @@ export const createInitialTokens = (player1Id: string, player2Id: string): Chara
 
   // Player 1 tokens - start at bottom left
   for (let i = 0; i < TOKENS_PER_PLAYER; i++) {
+    const role = CHARACTER_ROLES[i];
     tokens.push({
       id: `p1-token-${i}`,
       playerId: player1Id,
       playerNumber: 1,
       position: { x: 2 + i * 2, y: 34 }, // Spread along bottom
       color: PLAYER_COLORS[1],
-      name: `Blue ${i + 1}`,
+      name: `P1 ${role}`,
+      role: role,
+      stats: { ...INITIAL_CHARACTER_STATS[role] }, // Clone stats
+      state: 'Overt',
       isSelected: false,
     });
   }
 
   // Player 2 tokens - start at top right
   for (let i = 0; i < TOKENS_PER_PLAYER; i++) {
+    const role = CHARACTER_ROLES[i];
     tokens.push({
       id: `p2-token-${i}`,
       playerId: player2Id,
       playerNumber: 2,
       position: { x: 34 - i * 2, y: 2 }, // Spread along top
       color: PLAYER_COLORS[2],
-      name: `Red ${i + 1}`,
+      name: `P2 ${role}`,
+      role: role,
+      stats: { ...INITIAL_CHARACTER_STATS[role] }, // Clone stats
+      state: 'Overt',
       isSelected: false,
     });
   }

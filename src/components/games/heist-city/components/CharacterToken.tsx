@@ -4,7 +4,7 @@ import { inchesToPixels, TOKEN_RADIUS, GRID_CENTER_OFFSET } from '../data/mapCon
 
 interface CharacterTokenProps {
   token: CharacterTokenType;
-  onMouseDown?: (token: CharacterTokenType) => void;
+  onMouseDown?: (token: CharacterTokenType, e: React.MouseEvent) => void;
   onClick?: (token: CharacterTokenType) => void;
   isDragging?: boolean;
 }
@@ -21,7 +21,7 @@ const CharacterToken: React.FC<CharacterTokenProps> = ({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onMouseDown?.(token);
+    onMouseDown?.(token, e);
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -31,7 +31,7 @@ const CharacterToken: React.FC<CharacterTokenProps> = ({
 
   return (
     <g
-      className={`cursor-move ${isDragging ? 'opacity-70' : ''}`}
+      className={`cursor-move ${isDragging ? 'opacity-70 no-transition' : ''}`}
       onMouseDown={handleMouseDown}
       onClick={handleClick}
     >
@@ -59,17 +59,18 @@ const CharacterToken: React.FC<CharacterTokenProps> = ({
         style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))' }}
       />
 
-      {/* Token number/label */}
+      {/* Token role label (first letter) */}
       <text
         x={x}
         y={y + 4}
         textAnchor="middle"
         fill="#fff"
-        fontSize="10"
+        fontSize="12"
         fontWeight="bold"
         pointerEvents="none"
+        style={{ userSelect: 'none' }}
       >
-        {token.name.split(' ')[1]}
+        {token.role[0]}
       </text>
     </g>
   );

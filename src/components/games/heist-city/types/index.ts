@@ -45,6 +45,20 @@ export interface MapItem {
   properties?: Record<string, any>; // Item-specific properties
 }
 
+export type CharacterRole = 'Face' | 'Muscle' | 'Ninja' | 'Brain' | 'Spook';
+export type CharacterState = 'Overt' | 'Hidden' | 'Disguised';
+
+export interface CharacterStats {
+  movement: number; // M
+  meleeSkill: number; // MS
+  ballisticSkill: number; // BS
+  wounds: number; // W (current)
+  maxWounds: number; // W (max)
+  defense: number; // D
+  hack: number; // H
+  con: number; // C
+}
+
 export interface CharacterToken {
   id: string;
   playerId: string;
@@ -52,6 +66,9 @@ export interface CharacterToken {
   position: Position;
   color: string;
   name: string;
+  role: CharacterRole;
+  stats: CharacterStats;
+  state: CharacterState;
   isSelected?: boolean;
 }
 

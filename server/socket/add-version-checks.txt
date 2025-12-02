@@ -1,0 +1,20 @@
+Events that need version guards (add after game type check):
+- dice-factory-calculate-score-preview
+- dice-factory-process
+- dice-factory-pip-action
+- dice-factory-factory-action
+- dice-factory-bid-modification
+- dice-factory-reserve-modification
+- dice-factory-buy-random-modification
+- dice-factory-auction-bid
+- dice-factory-undo
+- dice-factory-flee
+- dice-factory-initialize
+- dice-factory-reroll-all
+- dice-factory-increase-dice-pool
+- dice-factory-calculate-score
+
+Add this after game type check:
+    if (!isV015Game(game)) {
+      return; // Silently ignore for v0.2.1
+    }

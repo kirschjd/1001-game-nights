@@ -1,5 +1,6 @@
-import { MapDefinition, MapItem, MapState, CharacterToken, Position } from '../types';
+import { MapDefinition, MapItem, MapState, CharacterToken, Position, CharacterRole } from '../types';
 import { GRID_SIZE_INCHES } from './mapConstants';
+import { INITIAL_CHARACTER_STATS, CHARACTER_ROLES } from './characterStats';
 
 // Import all map definitions
 import bankJobMap from './maps/bank-job.json';
@@ -174,26 +175,34 @@ function createCharacterTokens(
 
   // Player 1 tokens (blue)
   startPositions.player1.forEach((pos, index) => {
+    const role = CHARACTER_ROLES[index];
     tokens.push({
       id: `p1-token-${index + 1}`,
       playerId: player1Id,
       playerNumber: 1,
       position: pos,
       color: '#3b82f6', // Blue
-      name: `P1 ${index + 1}`,
+      name: `P1 ${role}`,
+      role: role,
+      stats: { ...INITIAL_CHARACTER_STATS[role] }, // Clone stats
+      state: 'Overt',
       isSelected: false,
     });
   });
 
   // Player 2 tokens (red)
   startPositions.player2.forEach((pos, index) => {
+    const role = CHARACTER_ROLES[index];
     tokens.push({
       id: `p2-token-${index + 1}`,
       playerId: player2Id,
       playerNumber: 2,
       position: pos,
       color: '#ef4444', // Red
-      name: `P2 ${index + 1}`,
+      name: `P2 ${role}`,
+      role: role,
+      stats: { ...INITIAL_CHARACTER_STATS[role] }, // Clone stats
+      state: 'Overt',
       isSelected: false,
     });
   });

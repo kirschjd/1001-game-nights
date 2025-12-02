@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type MapTool = 'select' | 'pan' | 'ruler';
+export type MapTool = 'select' | 'pan' | 'ruler' | 'editor';
 
 interface MapToolbarProps {
   activeTool: MapTool;
@@ -12,6 +12,8 @@ interface MapToolbarProps {
   onFitToWindow: () => void;
   onToggleSettings: () => void;
   showSettings: boolean;
+  selectedItemId?: string | null;
+  onDeleteItem?: () => void;
 }
 
 const MapToolbar: React.FC<MapToolbarProps> = ({
@@ -24,11 +26,14 @@ const MapToolbar: React.FC<MapToolbarProps> = ({
   onFitToWindow,
   onToggleSettings,
   showSettings,
+  selectedItemId,
+  onDeleteItem,
 }) => {
   const tools: { id: MapTool; icon: string; label: string }[] = [
     { id: 'select', icon: '👆', label: 'Select (Move tokens)' },
     { id: 'pan', icon: '✋', label: 'Pan (Drag map)' },
     { id: 'ruler', icon: '📏', label: 'Ruler (Measure distance)' },
+    { id: 'editor', icon: '✏️', label: 'Editor (Move/Add map elements)' },
   ];
 
   return (
@@ -101,6 +106,17 @@ const MapToolbar: React.FC<MapToolbarProps> = ({
         >
           <span className="text-lg">⚙️</span>
         </button>
+
+        {/* Delete Button (Editor Mode Only) */}
+        {activeTool === 'editor' && selectedItemId && onDeleteItem && (
+          <button
+            onClick={onDeleteItem}
+            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors border-l border-gray-600 ml-2"
+            title="Delete selected item (Delete/Backspace)"
+          >
+            <span className="text-lg">🗑️</span>
+          </button>
+        )}
 
         {/* Active Tool Indicator */}
         <div className="ml-auto text-sm text-gray-400">

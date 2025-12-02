@@ -4,138 +4,613 @@
   "description": "Navigate through teleporters to find the hidden treasure",
   "items": [
     {
-      "id": "maze-wall-1",
+      "id": "wall-segment-1764703633340-538",
       "type": "wall",
-      "position": { "x": 6, "y": 6 },
-      "endPosition": { "x": 6, "y": 30 },
+      "position": {
+        "x": 6,
+        "y": 17
+      },
       "destructible": true,
-      "health": 5
+      "health": 5,
+      "size": 1
     },
     {
-      "id": "maze-wall-2",
+      "id": "wall-segment-1764703633340-539",
       "type": "wall",
-      "position": { "x": 12, "y": 6 },
-      "endPosition": { "x": 12, "y": 24 },
+      "position": {
+        "x": 6,
+        "y": 18
+      },
       "destructible": true,
-      "health": 5
+      "health": 5,
+      "size": 1
     },
     {
-      "id": "maze-wall-3",
+      "id": "wall-segment-1764703633340-571",
       "type": "wall",
-      "position": { "x": 18, "y": 12 },
-      "endPosition": { "x": 18, "y": 35 },
+      "position": {
+        "x": 19,
+        "y": 18
+      },
       "destructible": true,
-      "health": 5
+      "health": 5,
+      "size": 1
     },
     {
-      "id": "maze-wall-4",
+      "id": "wall-segment-1764703633340-582",
       "type": "wall",
-      "position": { "x": 24, "y": 6 },
-      "endPosition": { "x": 24, "y": 24 },
+      "position": {
+        "x": 20,
+        "y": 18
+      },
       "destructible": true,
-      "health": 5
+      "health": 5,
+      "size": 1
     },
     {
-      "id": "maze-wall-5",
+      "id": "wall-segment-1764703633340-601",
       "type": "wall",
-      "position": { "x": 30, "y": 6 },
-      "endPosition": { "x": 30, "y": 30 },
+      "position": {
+        "x": 21,
+        "y": 18
+      },
       "destructible": true,
-      "health": 5
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-602",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-603",
+      "type": "wall",
+      "position": {
+        "x": 16,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-604",
+      "type": "wall",
+      "position": {
+        "x": 15,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-605",
+      "type": "wall",
+      "position": {
+        "x": 14,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-606",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-616",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 15
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-617",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-618",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-619",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-623",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-624",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-625",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-626",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 15
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-627",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 16
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-628",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-629",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 16
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
+    },
+    {
+      "id": "wall-segment-1764703633340-630",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 5,
+      "size": 1
     },
     {
       "id": "teleporter-1",
       "type": "teleporter",
-      "position": { "x": 9, "y": 9 },
+      "position": {
+        "x": 2,
+        "y": 9
+      },
       "size": 1,
-      "properties": { "pairId": 1 }
+      "properties": {
+        "pairId": 1
+      }
     },
     {
       "id": "teleporter-2",
       "type": "teleporter",
-      "position": { "x": 27, "y": 27 },
+      "position": {
+        "x": 10,
+        "y": 27
+      },
       "size": 1,
-      "properties": { "pairId": 1 }
+      "properties": {
+        "pairId": 1
+      }
     },
     {
       "id": "teleporter-3",
       "type": "teleporter",
-      "position": { "x": 15, "y": 15 },
+      "position": {
+        "x": 13,
+        "y": 18
+      },
       "size": 1,
-      "properties": { "pairId": 2 }
+      "properties": {
+        "pairId": 2
+      }
     },
     {
       "id": "teleporter-4",
       "type": "teleporter",
-      "position": { "x": 21, "y": 21 },
+      "position": {
+        "x": 22,
+        "y": 17
+      },
       "size": 1,
-      "properties": { "pairId": 2 }
+      "properties": {
+        "pairId": 2
+      }
     },
     {
       "id": "gear-1",
       "type": "gear",
-      "position": { "x": 3, "y": 18 },
+      "position": {
+        "x": 3,
+        "y": 18
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "gear-2",
       "type": "gear",
-      "position": { "x": 9, "y": 27 },
+      "position": {
+        "x": 9,
+        "y": 17
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "gear-3",
       "type": "gear",
-      "position": { "x": 33, "y": 18 },
-      "size": 1,
-      "interactive": true
-    },
-    {
-      "id": "info-drop-1",
-      "type": "info-drop",
-      "position": { "x": 18, "y": 3 },
-      "size": 1,
-      "interactive": true
-    },
-    {
-      "id": "info-drop-2",
-      "type": "info-drop",
-      "position": { "x": 18, "y": 33 },
+      "position": {
+        "x": 23,
+        "y": 20
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "camera-1",
       "type": "enemy-camera",
-      "position": { "x": 9, "y": 18 },
+      "position": {
+        "x": 6,
+        "y": 16
+      },
       "size": 1,
       "rotation": 90
     },
     {
       "id": "camera-2",
       "type": "enemy-camera",
-      "position": { "x": 27, "y": 18 },
+      "position": {
+        "x": 6,
+        "y": 19
+      },
       "size": 1,
       "rotation": 270
     },
     {
       "id": "guard-1",
       "type": "enemy-security-guard",
-      "position": { "x": 15, "y": 9 },
+      "position": {
+        "x": 27,
+        "y": 9
+      },
       "size": 1
     },
     {
       "id": "guard-2",
       "type": "enemy-security-guard",
-      "position": { "x": 21, "y": 27 },
+      "position": {
+        "x": 32,
+        "y": 26
+      },
       "size": 1
     },
     {
       "id": "rapid-response-1",
       "type": "enemy-rapid-response",
-      "position": { "x": 18, "y": 18 },
+      "position": {
+        "x": 29,
+        "y": 19
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764703995578",
+      "type": "table",
+      "position": {
+        "x": 6,
+        "y": 26
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764703998774",
+      "type": "computer",
+      "position": {
+        "x": 16,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704002600",
+      "type": "computer",
+      "position": {
+        "x": 19,
+        "y": 17
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704009762",
+      "type": "enemy-security-guard",
+      "position": {
+        "x": 14,
+        "y": 21
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704010422",
+      "type": "enemy-security-guard",
+      "position": {
+        "x": 21,
+        "y": 14
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704186311",
+      "type": "table",
+      "position": {
+        "x": 5,
+        "y": 26
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704195641",
+      "type": "table",
+      "position": {
+        "x": 6,
+        "y": 25
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704205392",
+      "type": "table",
+      "position": {
+        "x": 4,
+        "y": 25
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704205602",
+      "type": "table",
+      "position": {
+        "x": 4,
+        "y": 26
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704206839",
+      "type": "table",
+      "position": {
+        "x": 5,
+        "y": 25
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704214940",
+      "type": "table",
+      "position": {
+        "x": 7,
+        "y": 10
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704215150",
+      "type": "table",
+      "position": {
+        "x": 6,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704215307",
+      "type": "table",
+      "position": {
+        "x": 8,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704215502",
+      "type": "table",
+      "position": {
+        "x": 7,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704215690",
+      "type": "table",
+      "position": {
+        "x": 8,
+        "y": 10
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704216155",
+      "type": "table",
+      "position": {
+        "x": 6,
+        "y": 10
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704302675",
+      "type": "table",
+      "position": {
+        "x": 29,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704309343",
+      "type": "table",
+      "position": {
+        "x": 29,
+        "y": 17
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704309515",
+      "type": "table",
+      "position": {
+        "x": 29,
+        "y": 16
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704317143",
+      "type": "table",
+      "position": {
+        "x": 31,
+        "y": 17
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704317337",
+      "type": "table",
+      "position": {
+        "x": 31,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704317518",
+      "type": "table",
+      "position": {
+        "x": 31,
+        "y": 19
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704349395",
+      "type": "teleporter",
+      "position": {
+        "x": 28,
+        "y": 17
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704353183",
+      "type": "teleporter",
+      "position": {
+        "x": 32,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704370321",
+      "type": "computer",
+      "position": {
+        "x": 28,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704373043",
+      "type": "computer",
+      "position": {
+        "x": 32,
+        "y": 17
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764704403368",
+      "type": "enemy-rapid-response",
+      "position": {
+        "x": 31,
+        "y": 16
+      },
       "size": 1
     }
   ],

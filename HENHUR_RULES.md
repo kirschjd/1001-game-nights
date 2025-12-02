@@ -119,7 +119,6 @@ Auction turns are when players draft new cards into their decks.
 - Click "Ready" when done selecting
 
 #### Phase 2: Bid Reveal
-- 2-second reveal
 - All bids and trick values become visible
 
 #### Phase 3: Auction Drafting
@@ -196,11 +195,15 @@ Players can hold up to **10 tokens total**. Token types:
 | Token | Name | Effect |
 |-------|------|--------|
 | **P+** | Priority +1 | Add +1 to card priority in races |
-| **P+3** | Priority +3 | Add +3 to card priority in races |
+| **P++** | Priority +3 | Add +3 to card priority in races |
 | **R+** | Race +1 | Add +1 space to movement in races |
+| **R++** | Race +3 | Add +3 space to movement in races |
 | **A+** | Auction +1 | Add +1 to trick value in auctions |
+| **A++** | Auction +3 | Add +3 to trick value in auctions |
 | **W+** | Wild +1 | Can substitute for any token type (+1 value) |
+| **W++** | Wild +3 | Can substitute for any token type (+3 value) |
 | **D** | Damage | Negative token; cannot be used, must be carried |
+| **D+** | Damage + | Same as Damage, except all movement is reduced by 1 |
 
 ### How to Get Tokens
 - **Card Effects**: Some cards grant tokens when played
@@ -253,47 +256,6 @@ Players can hold up to **10 tokens total**. Token types:
 
 ---
 
-## Strategic Tips
-
-### Early Game Strategy
-- **Focus on tokens**: Burn cards strategically to build your token economy
-- **Balance your burn slots**: Don't fill all 3 too quickly
-- **Low movement is okay**: Early laps are about building resources
-
-### Mid Game Strategy
-- **Fight for auctions**: Use Auction tokens to get first pick of better cards
-- **Build your deck**: Draft high-movement cards (Dash, Surge, Turbo Boost)
-- **Watch opponents**: Track who's ahead and who has tokens
-
-### Late Game Strategy
-- **Priority matters**: Use P+ tokens to ensure your high-movement cards go first
-- **Calculate distances**: Know exactly how many spaces you need to win
-- **Race token timing**: Save R+ tokens for your final winning move
-
-### Token Management
-- **Wild tokens** are the most flexible - save them for critical moments
-- **Priority tokens** help you move first (important when racing for position)
-- **Race tokens** are your direct path to victory
-- **Auction tokens** help you get better cards earlier
-
-### Auction Tips
-- Bid high when **good cards** are available (check the pool preview)
-- Bid low when the pool is weak - save tokens for better auctions
-- Remember: You must spend a card to bid, so every auction costs you
-
-### Burn Slot Strategy
-- Burn early-game economic cards first (Low Bid, Rush)
-- Save slots for late-game power cards if possible
-- Consider: Is the burn effect worth losing a slot permanently?
-
-### Card Priority Guide
-- High priority (7-10): Goes first - great for offensive moves
-- Medium priority (4-6): Middle of the pack - reliable
-- Low priority (1-3): Goes last - vulnerable to opponents' actions
-- Dice-based priority: Variable - risky but can roll high
-
----
-
 ## Quick Reference
 
 ### Turn Order
@@ -331,19 +293,6 @@ Exactly **3 slots**, permanent once filled
 - Lap 2 and Lap 3 cards now available
 - Powerful late-game cards
 - Sprint to the finish!
-
----
-
-## Notes on Implementation
-
-This game is implemented as a real-time multiplayer web game with:
-- **Server-side game logic** for fair play and validation
-- **Simultaneous card selection** (no turn order waiting)
-- **Synchronized reveals** for dramatic effect
-- **Automatic win detection** and game state management
-- **Full game state persistence** across reconnects
-
-The game uses Socket.io for real-time communication between players and the server.
 
 ---
 

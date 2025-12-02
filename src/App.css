@@ -46,6 +46,12 @@
   transition: all 0.2s ease-in-out;
 }
 
+/* Disable transitions during dragging for immediate feedback */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
 /* Disable transition on transform to prevent layout shift */
 *:not(.transform) {
   transition: all 0.2s ease-in-out;
