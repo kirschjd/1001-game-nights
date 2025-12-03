@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
-import { ItemType, MapItem } from '../types';
+import { ItemType, MapItem, MapZone, CharacterToken, Position } from '../types';
 import { ITEM_STYLES } from '../data/mapConstants';
 
 interface MapLegendProps {
   editorMode: boolean;
   onAddItem?: (itemType: ItemType) => void;
+  onAddZone?: () => void;
   existingItems: ItemType[];
   allItems?: MapItem[];
+  allZones?: MapZone[];
+  allCharacters?: CharacterToken[];
+  onImportMap?: (mapData: {
+    items: MapItem[];
+    zones: MapZone[];
+    startPositions?: { player1: Position[]; player2: Position[] };
+    characterData?: CharacterToken[];
+  }) => void;
 }
 
 const ITEM_NAMES: Record<ItemType, string> = {
@@ -198,8 +207,10 @@ const renderItemIcon = (itemType: ItemType) => {
   }
 };
 
-const MapLegend: React.FC<MapLegendProps> = ({ editorMode, onAddItem, existingItems, allItems = [] }) => {
+const MapLegend: React.FC<MapLegendProps> = ({ editorMode, onAddItem, onAddZone, existingItems, allItems = [], allZones = [], allCharacters = [], onImportMap }) => {
   const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importText, setImportText] = useState('');
 
   const itemCounts = existingItems.reduce((acc, itemType) => {
     acc[itemType] = (acc[itemType] || 0) + 1;
@@ -207,7 +218,42 @@ const MapLegend: React.FC<MapLegendProps> = ({ editorMode, onAddItem, existingIt
   }, {} as Record<string, number>);
 
   const exportMapJSON = () => {
-    return JSON.stringify(allItems, null, 2);
+    // Extract start positions from characters
+    const player1Characters = allCharacters.filter(c => c.playerNumber === 1);
+    const player2Characters = allCharacters.filter(c => c.playerNumber === 2);
+
+    const exportData = {
+      items: allItems,
+      zones: allZones,
+      startPositions: {
+        player1: player1Characters.map(c => ({ x: c.position.x, y: c.position.y })),
+        player2: player2Characters.map(c => ({ x: c.position.x, y: c.position.y })),
+      },
+      characterData: allCharacters.map(c => ({
+        id: c.id,
+        playerId: c.playerId,
+        playerNumber: c.playerNumber,
+        position: c.position,
+        color: c.color,
+        name: c.name,
+        role: c.role,
+        stats: c.stats,
+        state: c.state,
+        isSelected: c.isSelected,
+      })),
+    };
+    return JSON.stringify(exportData, null, 2);
+  };
+
+  const handleImport = () => {
+    try {
+      const mapData = JSON.parse(importText);
+      onImportMap?.(mapData);
+      setImportText('');
+      setShowImport(false);
+    } catch (error) {
+      alert('Invalid JSON format. Please check your input.');
+    }
   };
 
   return (
@@ -250,6 +296,13 @@ const MapLegend: React.FC<MapLegendProps> = ({ editorMode, onAddItem, existingIt
             Click items to add to map
           </div>
           <button
+            onClick={onAddZone}
+            className="mt-3 w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors font-semibold"
+          >
+            + Add Zone
+          </button>
+
+          <button
             onClick={() => setShowExport(!showExport)}
             className="mt-3 w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors font-semibold"
           >
@@ -273,6 +326,29 @@ const MapLegend: React.FC<MapLegendProps> = ({ editorMode, onAddItem, existingIt
                 className="mt-2 w-full px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded transition-colors"
               >
                 Copy to Clipboard
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowImport(!showImport)}
+            className="mt-3 w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors font-semibold"
+          >
+            {showImport ? 'Hide Import' : 'Import Map JSON'}
+          </button>
+          {showImport && (
+            <div className="mt-3">
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder="Paste map JSON here..."
+                className="w-full h-64 p-2 bg-gray-900 border border-gray-600 rounded text-xs text-gray-300 font-mono"
+              />
+              <button
+                onClick={handleImport}
+                className="mt-2 w-full px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors font-semibold"
+              >
+                Load Map
               </button>
             </div>
           )}

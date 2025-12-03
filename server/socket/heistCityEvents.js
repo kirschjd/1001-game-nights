@@ -44,6 +44,30 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     console.log(`📡 Broadcasted Heist City map state update to lobby ${lobbyId}`);
   });
 
+  /**
+   * Handle dice roll events
+   * This syncs dice rolls across all players in the lobby
+   */
+  socket.on('heist-city-dice-roll', (data) => {
+    const { lobbyId, dice1, dice2, total, roller } = data;
+
+    if (!lobbyId || dice1 === undefined || dice2 === undefined || total === undefined) {
+      socket.emit('error', { message: 'Missing required dice roll data' });
+      return;
+    }
+
+    const lobby = lobbies.get(lobbyId);
+    if (!lobby) {
+      socket.emit('error', { message: 'Lobby not found' });
+      return;
+    }
+
+    // Broadcast the dice roll to all players in the lobby (including sender)
+    io.to(lobbyId).emit('heist-city-dice-roll', { dice1, dice2, total, roller });
+
+    console.log(`🎲 Broadcasted dice roll (${dice1}, ${dice2} = ${total}) to lobby ${lobbyId}`);
+  });
+
 }
 
 module.exports = {

@@ -241,6 +241,7 @@ export function loadMap(
   return {
     items: expandedItems,
     characters,
+    zones: mapDefinition.zones || [],
   };
 }
 

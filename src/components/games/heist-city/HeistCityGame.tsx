@@ -4,6 +4,7 @@ import { GameMap } from './components';
 import CharacterCard from './components/CharacterCard';
 import { MapState, CharacterToken, CharacterState } from './types';
 import { loadMap } from './data/mapLoader';
+import { LogEntry } from './components/GameLog';
 
 interface HeistCityGameProps {
   socket: Socket;
@@ -26,6 +27,13 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     name: string;
     position: { x: number; y: number };
   } | null>(null);
+  const [lastDiceRoll, setLastDiceRoll] = useState<{
+    dice1: number;
+    dice2: number;
+    total: number;
+    roller?: string;
+  } | null>(null);
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
 
   useEffect(() => {
     // Listen for game state updates
@@ -67,12 +75,32 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
       setMapState(newMapState);
     });
 
+    // Listen for dice roll updates
+    socket.on('heist-city-dice-roll', (rollData: { dice1: number; dice2: number; total: number; roller?: string }) => {
+      console.log('Received dice roll update:', rollData);
+      setLastDiceRoll(rollData);
+
+      // Add to game log with player name
+      const rollerName = gameState?.players?.find(p => p.id === rollData.roller)?.name || rollData.roller || 'Unknown';
+      const logEntry: LogEntry = {
+        id: `roll-${Date.now()}-${Math.random()}`,
+        timestamp: Date.now(),
+        type: 'dice-roll',
+        playerName: rollerName,
+        dice1: rollData.dice1,
+        dice2: rollData.dice2,
+        total: rollData.total,
+      };
+      setLogEntries(prev => [...prev, logEntry]);
+    });
+
     return () => {
       socket.off('gameStateUpdate');
       socket.off('game-started');
       socket.off('heist-city-map-state-update');
+      socket.off('heist-city-dice-roll');
     };
-  }, [socket]);
+  }, [socket, gameState]);
 
   // Handle map state changes (e.g., token movement)
   const handleMapStateChange = (newMapState: MapState) => {
@@ -116,6 +144,13 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     handleMapStateChange(newMapState);
   };
 
+  // Handle dice roll
+  const handleDiceRoll = (dice1: number, dice2: number, total: number) => {
+    const rollData = { dice1, dice2, total, roller: playerId };
+    setLastDiceRoll(rollData);
+    socket.emit('heist-city-dice-roll', { lobbyId, ...rollData });
+  };
+
   if (!mapState) {
     return <div className="text-white">Loading Heist City...</div>;
   }
@@ -141,6 +176,9 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
             }
           }}
           readOnly={false}
+          onDiceRoll={handleDiceRoll}
+          lastDiceRoll={lastDiceRoll}
+          logEntries={logEntries}
         />
 
         {/* Selection Info Panel */}

@@ -12,7 +12,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-539",
@@ -23,7 +24,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-571",
@@ -34,7 +36,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-582",
@@ -45,7 +48,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-601",
@@ -56,7 +60,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-602",
@@ -67,7 +72,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-603",
@@ -78,7 +84,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-604",
@@ -89,7 +96,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-605",
@@ -100,7 +108,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-606",
@@ -111,7 +120,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-616",
@@ -122,7 +132,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-617",
@@ -133,7 +144,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-618",
@@ -144,7 +156,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-619",
@@ -155,7 +168,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-623",
@@ -166,7 +180,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-624",
@@ -177,7 +192,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-625",
@@ -188,7 +204,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-626",
@@ -199,7 +216,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-627",
@@ -210,7 +228,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-628",
@@ -221,7 +240,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-629",
@@ -232,7 +252,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "wall-segment-1764703633340-630",
@@ -243,7 +264,8 @@
       },
       "destructible": true,
       "health": 5,
-      "size": 1
+      "size": 1,
+      "maxHealth": 5
     },
     {
       "id": "teleporter-1",
@@ -614,20 +636,74 @@
       "size": 1
     }
   ],
+  "zones": [
+    {
+      "id": "zone-1764773507716",
+      "position": {
+        "x": 0,
+        "y": 30
+      },
+      "width": 36,
+      "height": 6,
+      "color": "rgba(236, 39, 39, 0.3)",
+      "label": "Deployment Zone"
+    },
+    {
+      "id": "zone-1764773581797",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "width": 36,
+      "height": 6,
+      "color": "rgba(44, 57, 242, 0.3)",
+      "label": "Deployment Zone"
+    }
+  ],
   "startPositions": {
     "player1": [
-      { "x": 2, "y": 2 },
-      { "x": 2, "y": 4 },
-      { "x": 4, "y": 2 },
-      { "x": 4, "y": 4 },
-      { "x": 3, "y": 3 }
+      {
+        "x": 2,
+        "y": 2
+      },
+      {
+        "x": 2,
+        "y": 4
+      },
+      {
+        "x": 4,
+        "y": 2
+      },
+      {
+        "x": 4,
+        "y": 4
+      },
+      {
+        "x": 3,
+        "y": 3
+      }
     ],
     "player2": [
-      { "x": 33, "y": 33 },
-      { "x": 33, "y": 32 },
-      { "x": 32, "y": 33 },
-      { "x": 32, "y": 32 },
-      { "x": 33, "y": 33 }
+      {
+        "x": 33,
+        "y": 33
+      },
+      {
+        "x": 32,
+        "y": 32
+      },
+      {
+        "x": 31,
+        "y": 33
+      },
+      {
+        "x": 30,
+        "y": 32
+      },
+      {
+        "x": 29,
+        "y": 33
+      }
     ]
   }
 }

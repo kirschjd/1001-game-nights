@@ -45,6 +45,15 @@ export interface MapItem {
   properties?: Record<string, any>; // Item-specific properties
 }
 
+export interface MapZone {
+  id: string;
+  position: Position; // Top-left corner position in inches
+  width: number; // Width in grid squares
+  height: number; // Height in grid squares
+  color: string; // RGBA color string
+  label: string; // Zone label/name
+}
+
 export type CharacterRole = 'Face' | 'Muscle' | 'Ninja' | 'Brain' | 'Spook';
 export type CharacterState = 'Overt' | 'Hidden' | 'Disguised';
 
@@ -82,6 +91,7 @@ export interface Player {
 export interface MapState {
   items: MapItem[];
   characters: CharacterToken[];
+  zones: MapZone[];
 }
 
 export interface GameState {
@@ -123,6 +133,7 @@ export interface MapDefinition {
   name: string;
   description: string;
   items: MapDefinitionItem[];
+  zones?: MapZone[]; // Optional zones
   startPositions: {
     player1: Position[];
     player2: Position[];

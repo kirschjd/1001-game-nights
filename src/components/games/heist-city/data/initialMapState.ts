@@ -48,6 +48,7 @@ export const createEmptyMapState = (): MapState => {
   return {
     items: [],
     characters: [],
+    zones: [],
   };
 };
 
@@ -55,6 +56,7 @@ export const createEmptyMapState = (): MapState => {
 export const createSampleMap = (player1Id: string, player2Id: string): MapState => {
   return {
     characters: createInitialTokens(player1Id, player2Id),
+    zones: [],
     items: [
       // Walls forming a simple room structure
       { id: 'wall-1', type: 'wall', position: { x: 10, y: 10 } },

@@ -1,205 +1,1435 @@
 {
   "id": "train-robbery",
   "name": "Train Robbery",
-  "description": "Rob the moving train before it reaches the station",
+  "description": "Rob the moving train before it reaches its destination",
   "items": [
     {
-      "id": "train-car-1-walls",
+      "id": "wall-block-1764777343927-1",
       "type": "wall",
-      "position": { "x": 3, "y": 12 },
-      "width": 9,
-      "height": 1,
+      "position": {
+        "x": 1,
+        "y": 13
+      },
       "destructible": true,
-      "health": 3
+      "health": 3,
+      "size": 1
     },
     {
-      "id": "train-car-1-walls-2",
+      "id": "wall-block-1764777343927-2",
       "type": "wall",
-      "position": { "x": 3, "y": 24 },
-      "width": 9,
-      "height": 1,
+      "position": {
+        "x": 0,
+        "y": 13
+      },
       "destructible": true,
-      "health": 3
+      "health": 3,
+      "size": 1
     },
     {
-      "id": "train-car-2-walls",
+      "id": "wall-block-1764777343927-3",
       "type": "wall",
-      "position": { "x": 13, "y": 12 },
-      "width": 9,
-      "height": 1,
+      "position": {
+        "x": 3,
+        "y": 13
+      },
       "destructible": true,
-      "health": 3
+      "health": 3,
+      "size": 1
     },
     {
-      "id": "train-car-2-walls-2",
+      "id": "wall-block-1764777343927-4",
       "type": "wall",
-      "position": { "x": 13, "y": 24 },
-      "width": 9,
-      "height": 1,
+      "position": {
+        "x": 2,
+        "y": 13
+      },
       "destructible": true,
-      "health": 3
+      "health": 3,
+      "size": 1
     },
     {
-      "id": "train-car-3-walls",
+      "id": "wall-block-1764777343927-5",
       "type": "wall",
-      "position": { "x": 23, "y": 12 },
-      "width": 9,
-      "height": 1,
+      "position": {
+        "x": 5,
+        "y": 13
+      },
       "destructible": true,
-      "health": 3
+      "health": 3,
+      "size": 1
     },
     {
-      "id": "train-car-3-walls-2",
+      "id": "wall-block-1764777343927-6",
       "type": "wall",
-      "position": { "x": 23, "y": 24 },
-      "width": 9,
-      "height": 1,
+      "position": {
+        "x": 4,
+        "y": 13
+      },
       "destructible": true,
-      "health": 3
+      "health": 3,
+      "size": 1
     },
     {
-      "id": "divider-1",
+      "id": "wall-block-1764777343927-8",
       "type": "wall",
-      "position": { "x": 11, "y": 14 },
-      "height": 3,
-      "width": 1,
+      "position": {
+        "x": 6,
+        "y": 13
+      },
       "destructible": true,
-      "health": 2
+      "health": 3,
+      "size": 1
     },
     {
-      "id": "divider-2",
+      "id": "wall-block-1764777343927-10",
       "type": "wall",
-      "position": { "x": 21, "y": 14 },
-      "height": 3,
-      "width": 1,
+      "position": {
+        "x": 7,
+        "y": 13
+      },
       "destructible": true,
-      "health": 2
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343927-12",
+      "type": "wall",
+      "position": {
+        "x": 8,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343927-14",
+      "type": "wall",
+      "position": {
+        "x": 9,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343927-15",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 16
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343927-16",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343927-17",
+      "type": "wall",
+      "position": {
+        "x": 35,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343927-18",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 15
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-23",
+      "type": "wall",
+      "position": {
+        "x": 0,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-24",
+      "type": "wall",
+      "position": {
+        "x": 1,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-25",
+      "type": "wall",
+      "position": {
+        "x": 2,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-26",
+      "type": "wall",
+      "position": {
+        "x": 3,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-27",
+      "type": "wall",
+      "position": {
+        "x": 4,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-28",
+      "type": "wall",
+      "position": {
+        "x": 5,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-29",
+      "type": "wall",
+      "position": {
+        "x": 6,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-30",
+      "type": "wall",
+      "position": {
+        "x": 7,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-31",
+      "type": "wall",
+      "position": {
+        "x": 8,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-32",
+      "type": "wall",
+      "position": {
+        "x": 9,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-33",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-37",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 15
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-38",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-39",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-40",
+      "type": "wall",
+      "position": {
+        "x": 14,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-41",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-42",
+      "type": "wall",
+      "position": {
+        "x": 15,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-43",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-44",
+      "type": "wall",
+      "position": {
+        "x": 16,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-45",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-46",
+      "type": "wall",
+      "position": {
+        "x": 17,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-47",
+      "type": "wall",
+      "position": {
+        "x": 4,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-48",
+      "type": "wall",
+      "position": {
+        "x": 18,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-49",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 16
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-50",
+      "type": "wall",
+      "position": {
+        "x": 19,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-51",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-52",
+      "type": "wall",
+      "position": {
+        "x": 20,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-53",
+      "type": "wall",
+      "position": {
+        "x": 5,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-54",
+      "type": "wall",
+      "position": {
+        "x": 21,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-56",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-58",
+      "type": "wall",
+      "position": {
+        "x": 14,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-60",
+      "type": "wall",
+      "position": {
+        "x": 15,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-61",
+      "type": "wall",
+      "position": {
+        "x": 17,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-62",
+      "type": "wall",
+      "position": {
+        "x": 16,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-63",
+      "type": "wall",
+      "position": {
+        "x": 19,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-64",
+      "type": "wall",
+      "position": {
+        "x": 18,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-65",
+      "type": "wall",
+      "position": {
+        "x": 21,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-66",
+      "type": "wall",
+      "position": {
+        "x": 20,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-71",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-72",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-73",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-74",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-75",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-76",
+      "type": "wall",
+      "position": {
+        "x": 26,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-77",
+      "type": "wall",
+      "position": {
+        "x": 29,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-78",
+      "type": "wall",
+      "position": {
+        "x": 28,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-79",
+      "type": "wall",
+      "position": {
+        "x": 31,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-80",
+      "type": "wall",
+      "position": {
+        "x": 30,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-81",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-82",
+      "type": "wall",
+      "position": {
+        "x": 32,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-83",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 15
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-84",
+      "type": "wall",
+      "position": {
+        "x": 34,
+        "y": 13
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-85",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-86",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 16
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-87",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-88",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-89",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 15
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-90",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-91",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-92",
+      "type": "wall",
+      "position": {
+        "x": 6,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-93",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-94",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-95",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-96",
+      "type": "wall",
+      "position": {
+        "x": 26,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-97",
+      "type": "wall",
+      "position": {
+        "x": 29,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-98",
+      "type": "wall",
+      "position": {
+        "x": 28,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-99",
+      "type": "wall",
+      "position": {
+        "x": 32,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-100",
+      "type": "wall",
+      "position": {
+        "x": 30,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-101",
+      "type": "wall",
+      "position": {
+        "x": 29,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-103",
+      "type": "wall",
+      "position": {
+        "x": 30,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-104",
+      "type": "wall",
+      "position": {
+        "x": 31,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-106",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-107",
+      "type": "wall",
+      "position": {
+        "x": 31,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-108",
+      "type": "wall",
+      "position": {
+        "x": 34,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 3,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-109",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 2,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-110",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 2,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-111",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 2,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-112",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 2,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-113",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 17
+      },
+      "destructible": true,
+      "health": 2,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-114",
+      "type": "wall",
+      "position": {
+        "x": 35,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 2,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-115",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 16
+      },
+      "destructible": true,
+      "health": 2,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764777343928-116",
+      "type": "wall",
+      "position": {
+        "x": 32,
+        "y": 18
+      },
+      "destructible": true,
+      "health": 2,
+      "size": 1
     },
     {
       "id": "crate-1",
       "type": "table",
-      "position": { "x": 5, "y": 15 },
+      "position": {
+        "x": 5,
+        "y": 19
+      },
       "width": 2,
       "height": 2,
       "moveable": true,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "crate-2",
       "type": "table",
-      "position": { "x": 8, "y": 19 },
+      "position": {
+        "x": 6,
+        "y": 19
+      },
       "width": 2,
       "height": 2,
       "moveable": true,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "crate-3",
       "type": "table",
-      "position": { "x": 15, "y": 15 },
+      "position": {
+        "x": 15,
+        "y": 15
+      },
       "width": 2,
       "height": 2,
       "moveable": true,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "crate-4",
       "type": "table",
-      "position": { "x": 18, "y": 19 },
+      "position": {
+        "x": 20,
+        "y": 20
+      },
       "width": 2,
       "height": 2,
       "moveable": true,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "safe-1",
       "type": "gear",
-      "position": { "x": 7, "y": 18 },
+      "position": {
+        "x": 7,
+        "y": 18
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "safe-2",
       "type": "gear",
-      "position": { "x": 17, "y": 18 },
+      "position": {
+        "x": 17,
+        "y": 18
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "safe-3",
       "type": "gear",
-      "position": { "x": 27, "y": 18 },
+      "position": {
+        "x": 27,
+        "y": 18
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "computer-1",
       "type": "computer",
-      "position": { "x": 27, "y": 14 },
+      "position": {
+        "x": 33,
+        "y": 17
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "info-1",
       "type": "info-drop",
-      "position": { "x": 7, "y": 22 },
+      "position": {
+        "x": 2,
+        "y": 15
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "camera-1",
       "type": "enemy-camera",
-      "position": { "x": 6, "y": 13 },
-      "size": 1,
-      "rotation": 180
-    },
-    {
-      "id": "camera-2",
-      "type": "enemy-camera",
-      "position": { "x": 16, "y": 13 },
+      "position": {
+        "x": 9,
+        "y": 20
+      },
       "size": 1,
       "rotation": 180
     },
     {
       "id": "camera-3",
       "type": "enemy-camera",
-      "position": { "x": 26, "y": 13 },
+      "position": {
+        "x": 26,
+        "y": 15
+      },
       "size": 1,
       "rotation": 180
     },
     {
       "id": "guard-1",
       "type": "enemy-security-guard",
-      "position": { "x": 13, "y": 18 },
+      "position": {
+        "x": 5,
+        "y": 18
+      },
       "size": 1
     },
     {
       "id": "guard-2",
       "type": "enemy-security-guard",
-      "position": { "x": 23, "y": 18 },
+      "position": {
+        "x": 30,
+        "y": 17
+      },
       "size": 1
     },
     {
       "id": "rapid-response-1",
       "type": "enemy-rapid-response",
-      "position": { "x": 18, "y": 18 },
+      "position": {
+        "x": 16,
+        "y": 18
+      },
       "size": 1
+    },
+    {
+      "id": "item-1764778007958",
+      "type": "wall",
+      "position": {
+        "x": 3,
+        "y": 17
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778013433",
+      "type": "wall",
+      "position": {
+        "x": 2,
+        "y": 17
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778022344",
+      "type": "computer",
+      "position": {
+        "x": 2,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778035964",
+      "type": "enemy-rapid-response",
+      "position": {
+        "x": 19,
+        "y": 17
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778054536",
+      "type": "info-drop",
+      "position": {
+        "x": 18,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778055616",
+      "type": "info-drop",
+      "position": {
+        "x": 17,
+        "y": 17
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778056681",
+      "type": "gear",
+      "position": {
+        "x": 18,
+        "y": 17
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778063191",
+      "type": "table",
+      "position": {
+        "x": 15,
+        "y": 20
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778066769",
+      "type": "table",
+      "position": {
+        "x": 20,
+        "y": 21
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778067181",
+      "type": "table",
+      "position": {
+        "x": 15,
+        "y": 14
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778069371",
+      "type": "table",
+      "position": {
+        "x": 20,
+        "y": 14
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778069536",
+      "type": "table",
+      "position": {
+        "x": 20,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778078304",
+      "type": "table",
+      "position": {
+        "x": 15,
+        "y": 21
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778088685",
+      "type": "table",
+      "position": {
+        "x": 4,
+        "y": 19
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778092082",
+      "type": "table",
+      "position": {
+        "x": 29,
+        "y": 16
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778094805",
+      "type": "table",
+      "position": {
+        "x": 31,
+        "y": 16
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764778095240",
+      "type": "table",
+      "position": {
+        "x": 30,
+        "y": 16
+      },
+      "size": 1
+    }
+  ],
+  "zones": [
+    {
+      "id": "zone-1764777689303",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "width": 36,
+      "height": 8,
+      "color": "rgba(225, 20, 20, 0.3)",
+      "label": "Deployment Zone"
+    },
+    {
+      "id": "zone-1764777725505",
+      "position": {
+        "x": 0,
+        "y": 28
+      },
+      "width": 36,
+      "height": 8,
+      "color": "rgba(52, 58, 234, 0.3)",
+      "label": "Deployment Zone"
     }
   ],
   "startPositions": {
     "player1": [
-      { "x": 4, "y": 14 },
-      { "x": 4, "y": 16 },
-      { "x": 4, "y": 18 },
-      { "x": 4, "y": 20 },
-      { "x": 4, "y": 22 }
+      {
+        "x": 14,
+        "y": 30
+      },
+      {
+        "x": 16,
+        "y": 29
+      },
+      {
+        "x": 18,
+        "y": 30
+      },
+      {
+        "x": 20,
+        "y": 29
+      },
+      {
+        "x": 22,
+        "y": 30
+      }
     ],
     "player2": [
-      { "x": 30, "y": 14 },
-      { "x": 30, "y": 16 },
-      { "x": 30, "y": 18 },
-      { "x": 30, "y": 20 },
-      { "x": 30, "y": 22 }
+      {
+        "x": 13,
+        "y": 5
+      },
+      {
+        "x": 15,
+        "y": 6
+      },
+      {
+        "x": 17,
+        "y": 5
+      },
+      {
+        "x": 19,
+        "y": 6
+      },
+      {
+        "x": 21,
+        "y": 5
+      }
     ]
   }
 }

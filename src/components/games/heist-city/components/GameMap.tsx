@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { MapState, CharacterToken as CharacterTokenType, MapItem as MapItemType, Position, ItemType } from '../types';
+import { MapState, CharacterToken as CharacterTokenType, MapItem as MapItemType, MapZone as MapZoneType, Position, ItemType } from '../types';
 import {
   SVG_WIDTH,
   SVG_HEIGHT,
@@ -15,18 +15,25 @@ import {
 } from '../data/mapConstants';
 import CharacterToken from './CharacterToken';
 import MapItem from './MapItem';
+import MapZone from './MapZone';
+import ZonePropertiesPanel from './ZonePropertiesPanel';
 import MapToolbar, { MapTool } from './MapToolbar';
 import MapSettings from './MapSettings';
 import MapLegend from './MapLegend';
+import DiceRoller from './DiceRoller';
+import GameLog, { LogEntry } from './GameLog';
 
 interface GameMapProps {
   mapState: MapState;
   onMapStateChange?: (mapState: MapState) => void;
   onSelectionChange?: (selection: { type: 'token' | 'item' | null; id: string | null; name: string; position: Position } | null) => void;
   readOnly?: boolean;
+  onDiceRoll?: (dice1: number, dice2: number, total: number) => void;
+  lastDiceRoll?: { dice1: number; dice2: number; total: number; roller?: string } | null;
+  logEntries?: LogEntry[];
 }
 
-const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelectionChange, readOnly = false }) => {
+const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelectionChange, readOnly = false, onDiceRoll, lastDiceRoll, logEntries = [] }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -38,12 +45,21 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
   // Dragging state
   const [draggedToken, setDraggedToken] = useState<string | null>(null);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [draggedZone, setDraggedZone] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [hoveredGrid, setHoveredGrid] = useState<Position | null>(null);
   const [cursorPosition, setCursorPosition] = useState<Position | null>(null);
   const [dragOffset, setDragOffset] = useState<Position | null>(null);
   const [tempDragPosition, setTempDragPosition] = useState<Position | null>(null);
   const tempDragPositionRef = useRef<Position | null>(null);
+
+  // Zone resizing state
+  const [resizingZone, setResizingZone] = useState<string | null>(null);
+  const [resizeHandle, setResizeHandle] = useState<'nw' | 'ne' | 'se' | 'sw' | 'n' | 'e' | 's' | 'w' | null>(null);
+  const [resizeStartSize, setResizeStartSize] = useState<{ width: number; height: number; position: Position } | null>(null);
+  const [resizeStartCursor, setResizeStartCursor] = useState<Position | null>(null);
+  const [zoneCounter, setZoneCounter] = useState(1);
 
   // Pan state
   const [isPanning, setIsPanning] = useState(false);
@@ -249,6 +265,132 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
     [readOnly, mapState, onMapStateChange]
   );
 
+  // Add new zone to map (editor mode)
+  const handleAddZone = useCallback(() => {
+    if (readOnly) return;
+
+    const newZone: MapZoneType = {
+      id: `zone-${Date.now()}`,
+      position: { x: 15, y: 15 }, // Near center
+      width: 3,
+      height: 3,
+      color: 'rgba(147, 51, 234, 0.3)', // Semi-transparent purple
+      label: `Zone ${zoneCounter}`,
+    };
+
+    setZoneCounter(zoneCounter + 1);
+    onMapStateChange?.({
+      ...mapState,
+      zones: [...mapState.zones, newZone]
+    });
+  }, [readOnly, mapState, onMapStateChange, zoneCounter]);
+
+  // Handle importing a map
+  const handleImportMap = useCallback((mapData: {
+    items: MapItemType[];
+    zones: MapZoneType[];
+    startPositions?: { player1: Position[]; player2: Position[] };
+    characterData?: CharacterTokenType[];
+  }) => {
+    if (readOnly) return;
+
+    // Update items and zones
+    const newMapState = {
+      ...mapState,
+      items: mapData.items || [],
+      zones: mapData.zones || [],
+    };
+
+    // Priority 1: Use full character data if provided (includes stats, state, equipment, position)
+    if (mapData.characterData && mapData.characterData.length > 0) {
+      newMapState.characters = mapData.characterData;
+    }
+    // Priority 2: Update character positions only if startPositions provided
+    else if (mapData.startPositions) {
+      const updatedCharacters = mapState.characters.map((char) => {
+        const positions = char.playerNumber === 1
+          ? mapData.startPositions!.player1
+          : mapData.startPositions!.player2;
+        const index = parseInt(char.id.split('-').pop() || '0') - 1;
+
+        if (positions && positions[index]) {
+          return {
+            ...char,
+            position: positions[index],
+          };
+        }
+        return char;
+      });
+
+      newMapState.characters = updatedCharacters;
+    }
+
+    onMapStateChange?.(newMapState);
+  }, [readOnly, mapState, onMapStateChange]);
+
+  // Handle zone click
+  const handleZoneClick = useCallback(
+    (zone: MapZoneType) => {
+      if (readOnly) return;
+      const isCurrentlySelected = zone.id === selectedZone;
+      setSelectedZone(isCurrentlySelected ? null : zone.id);
+      // Clear item selection when selecting a zone
+      setSelectedItem(null);
+      onSelectionChange?.(null);
+    },
+    [selectedZone, onSelectionChange, readOnly]
+  );
+
+  // Handle zone drag start
+  const handleZoneMouseDown = useCallback(
+    (zone: MapZoneType, e: React.MouseEvent) => {
+      if (readOnly || activeTool !== 'editor') return;
+
+      // Calculate offset from cursor to zone top-left
+      const svgCoords = screenToSVG(e.clientX, e.clientY);
+      const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
+      const offset = {
+        x: zone.position.x - posInches.x,
+        y: zone.position.y - posInches.y
+      };
+
+      setDraggedZone(zone.id);
+      setDragOffset(offset);
+    },
+    [readOnly, activeTool, screenToSVG]
+  );
+
+  // Handle zone resize start
+  const handleResizeHandleMouseDown = useCallback(
+    (zone: MapZoneType, e: React.MouseEvent, handle: 'nw' | 'ne' | 'se' | 'sw' | 'n' | 'e' | 's' | 'w') => {
+      if (readOnly || activeTool !== 'editor') return;
+      e.stopPropagation();
+
+      const svgCoords = screenToSVG(e.clientX, e.clientY);
+      const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
+
+      setResizingZone(zone.id);
+      setResizeHandle(handle);
+      setResizeStartSize({ width: zone.width, height: zone.height, position: zone.position });
+      setResizeStartCursor(posInches);
+    },
+    [readOnly, activeTool, screenToSVG]
+  );
+
+  // Handle zone property update
+  const handleZoneUpdate = useCallback(
+    (updatedZone: MapZoneType) => {
+      if (readOnly) return;
+
+      const updatedZones = mapState.zones.map((z) =>
+        z.id === updatedZone.id ? updatedZone : z
+      );
+
+      onMapStateChange?.({ ...mapState, zones: updatedZones });
+    },
+    [readOnly, mapState, onMapStateChange]
+  );
+
   // Handle mouse move
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
@@ -312,6 +454,82 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
           setTempDragPosition(adjustedPos);
         });
       }
+
+      // Handle zone dragging (editor mode)
+      if (draggedZone && activeTool === 'editor' && dragOffset) {
+        const adjustedPos = {
+          x: posInches.x + dragOffset.x,
+          y: posInches.y + dragOffset.y
+        };
+        const snapPos = settings.snapToGrid ? snapToGridUtil(adjustedPos) : adjustedPos;
+
+        const updatedZones = mapState.zones.map((z) =>
+          z.id === draggedZone ? { ...z, position: snapPos } : z
+        );
+        onMapStateChange?.({ ...mapState, zones: updatedZones });
+      }
+
+      // Handle zone resizing (editor mode)
+      if (resizingZone && resizeHandle && resizeStartSize && resizeStartCursor && activeTool === 'editor') {
+        const zone = mapState.zones.find((z) => z.id === resizingZone);
+        if (!zone) return;
+
+        const dx = posInches.x - resizeStartCursor.x;
+        const dy = posInches.y - resizeStartCursor.y;
+
+        let newWidth = resizeStartSize.width;
+        let newHeight = resizeStartSize.height;
+        let newPosition = { ...resizeStartSize.position };
+
+        // Calculate new size and position based on handle
+        switch (resizeHandle) {
+          case 'nw':
+            newWidth = Math.max(1, resizeStartSize.width - dx);
+            newHeight = Math.max(1, resizeStartSize.height - dy);
+            newPosition.x = resizeStartSize.position.x + (resizeStartSize.width - newWidth);
+            newPosition.y = resizeStartSize.position.y + (resizeStartSize.height - newHeight);
+            break;
+          case 'ne':
+            newWidth = Math.max(1, resizeStartSize.width + dx);
+            newHeight = Math.max(1, resizeStartSize.height - dy);
+            newPosition.y = resizeStartSize.position.y + (resizeStartSize.height - newHeight);
+            break;
+          case 'se':
+            newWidth = Math.max(1, resizeStartSize.width + dx);
+            newHeight = Math.max(1, resizeStartSize.height + dy);
+            break;
+          case 'sw':
+            newWidth = Math.max(1, resizeStartSize.width - dx);
+            newHeight = Math.max(1, resizeStartSize.height + dy);
+            newPosition.x = resizeStartSize.position.x + (resizeStartSize.width - newWidth);
+            break;
+          case 'n':
+            newHeight = Math.max(1, resizeStartSize.height - dy);
+            newPosition.y = resizeStartSize.position.y + (resizeStartSize.height - newHeight);
+            break;
+          case 'e':
+            newWidth = Math.max(1, resizeStartSize.width + dx);
+            break;
+          case 's':
+            newHeight = Math.max(1, resizeStartSize.height + dy);
+            break;
+          case 'w':
+            newWidth = Math.max(1, resizeStartSize.width - dx);
+            newPosition.x = resizeStartSize.position.x + (resizeStartSize.width - newWidth);
+            break;
+        }
+
+        // Snap to grid: round width, height, and position to integers
+        newWidth = Math.round(newWidth);
+        newHeight = Math.round(newHeight);
+        newPosition.x = Math.round(newPosition.x);
+        newPosition.y = Math.round(newPosition.y);
+
+        const updatedZones = mapState.zones.map((z) =>
+          z.id === resizingZone ? { ...z, width: newWidth, height: newHeight, position: newPosition } : z
+        );
+        onMapStateChange?.({ ...mapState, zones: updatedZones });
+      }
     },
     [
       screenToSVG,
@@ -322,8 +540,15 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       activeTool,
       draggedToken,
       draggedItem,
+      draggedZone,
       dragOffset,
       settings.snapToGrid,
+      resizingZone,
+      resizeHandle,
+      resizeStartSize,
+      resizeStartCursor,
+      mapState,
+      onMapStateChange,
     ]
   );
 
@@ -389,7 +614,21 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       setHoveredGrid(null);
       setCursorPosition(null);
     }
-  }, [isPanning, rulerStart, activeTool, draggedToken, draggedItem, tempDragPosition, mapState, onMapStateChange, settings.snapToGrid]);
+
+    // End zone dragging (editor mode)
+    if (draggedZone) {
+      setDraggedZone(null);
+      setDragOffset(null);
+    }
+
+    // End zone resizing (editor mode)
+    if (resizingZone) {
+      setResizingZone(null);
+      setResizeHandle(null);
+      setResizeStartSize(null);
+      setResizeStartCursor(null);
+    }
+  }, [isPanning, rulerStart, activeTool, draggedToken, draggedItem, draggedZone, resizingZone, tempDragPosition, mapState, onMapStateChange, settings.snapToGrid]);
 
   // Handle token click
   const handleTokenClick = useCallback(
@@ -446,15 +685,27 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
     [selectedItem, onSelectionChange, readOnly, activeTool]
   );
 
-  // Handle delete selected item
+  // Handle delete selected item or zone
   const handleDeleteItem = useCallback(() => {
-    if (!selectedItem || readOnly || activeTool !== 'editor') return;
+    if (readOnly || activeTool !== 'editor') return;
 
-    const updatedItems = mapState.items.filter((item) => item.id !== selectedItem);
-    onMapStateChange?.({ ...mapState, items: updatedItems });
-    setSelectedItem(null);
-    onSelectionChange?.(null);
-  }, [selectedItem, readOnly, activeTool, mapState, onMapStateChange, onSelectionChange]);
+    // Delete zone if selected
+    if (selectedZone) {
+      const updatedZones = mapState.zones.filter((zone) => zone.id !== selectedZone);
+      onMapStateChange?.({ ...mapState, zones: updatedZones });
+      setSelectedZone(null);
+      onSelectionChange?.(null);
+      return;
+    }
+
+    // Delete item if selected
+    if (selectedItem) {
+      const updatedItems = mapState.items.filter((item) => item.id !== selectedItem);
+      onMapStateChange?.({ ...mapState, items: updatedItems });
+      setSelectedItem(null);
+      onSelectionChange?.(null);
+    }
+  }, [selectedItem, selectedZone, readOnly, activeTool, mapState, onMapStateChange, onSelectionChange]);
 
   // Handle keyboard events for delete
   useEffect(() => {
@@ -668,90 +919,132 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
         />
       )}
 
-      {/* Map and Legend Container */}
+      {/* Map, Legend, and Dice Roller Container */}
       <div className="flex gap-4">
-        {/* Map */}
+        {/* Map Legend and Game Log (Left) */}
+        <div className="flex-shrink-0 w-64 space-y-4">
+          <MapLegend
+            editorMode={activeTool === 'editor'}
+            onAddItem={handleAddItem}
+            onAddZone={handleAddZone}
+            existingItems={mapState.items.map(item => item.type)}
+            allItems={mapState.items}
+            allZones={mapState.zones}
+            allCharacters={mapState.characters}
+            onImportMap={handleImportMap}
+          />
+          <GameLog entries={logEntries} />
+        </div>
+
+        {/* Map (Center) */}
         <svg
-        ref={svgRef}
-        width="100%"
-        height={600}
-        viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-        className={`bg-gray-900 rounded-lg shadow-xl ${getCursorClass()}`}
-        style={{ userSelect: 'none' }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        {/* Grid background */}
-        <rect width={inchesToPixels(MAP_SIZE_INCHES)} height={inchesToPixels(MAP_SIZE_INCHES)} fill="#1f2937" />
+          ref={svgRef}
+          width="100%"
+          height={600}
+          viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
+          className={`bg-gray-900 rounded-lg shadow-xl ${getCursorClass()}`}
+          style={{ userSelect: 'none' }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {/* Grid background */}
+          <rect width={inchesToPixels(MAP_SIZE_INCHES)} height={inchesToPixels(MAP_SIZE_INCHES)} fill="#1f2937" />
 
-        {/* Grid lines */}
-        <g>{renderGrid()}</g>
+          {/* Grid lines */}
+          <g>{renderGrid()}</g>
 
-        {/* Grid coordinates */}
-        <g>{renderCoordinates()}</g>
+          {/* Grid coordinates */}
+          <g>{renderCoordinates()}</g>
 
-        {/* Hovered grid highlight */}
-        {renderHoveredGrid()}
+          {/* Hovered grid highlight */}
+          {renderHoveredGrid()}
 
-        {/* Map items */}
-        {settings.showItems && (
+          {/* Map zones (below items) */}
           <g>
-            {mapState.items.map((item) => {
-              // Use temporary position if this item is being dragged
-              const displayItem = item.id === draggedItem && tempDragPosition
-                ? { ...item, position: tempDragPosition }
-                : item;
-
+            {mapState.zones.map((zone) => {
+              const selectedZoneObj = selectedZone === zone.id ? mapState.zones.find((z) => z.id === selectedZone) : null;
               return (
-                <MapItem
-                  key={item.id}
-                  item={displayItem}
-                  onMouseDown={(e) => handleItemMouseDown(item, e)}
-                  onClick={handleItemClick}
-                  isSelected={item.id === selectedItem}
-                  isDragging={item.id === draggedItem}
+                <MapZone
+                  key={zone.id}
+                  zone={zone}
+                  isSelected={zone.id === selectedZone}
+                  editorMode={activeTool === 'editor'}
+                  onClick={handleZoneClick}
+                  onMouseDown={(e) => handleZoneMouseDown(zone, e)}
+                  onResizeHandleMouseDown={(e, handle) => handleResizeHandleMouseDown(zone, e, handle)}
+                  isDragging={zone.id === draggedZone}
                 />
               );
             })}
           </g>
-        )}
 
-        {/* Character tokens */}
-        <g>
-          {mapState.characters.map((token) => {
-            // Use temporary position if this token is being dragged
-            const displayToken = token.id === draggedToken && tempDragPosition
-              ? { ...token, position: tempDragPosition }
-              : token;
+          {/* Map items */}
+          {settings.showItems && (
+            <g>
+              {mapState.items.map((item) => {
+                // Use temporary position if this item is being dragged
+                const displayItem = item.id === draggedItem && tempDragPosition
+                  ? { ...item, position: tempDragPosition }
+                  : item;
 
-            return (
-              <CharacterToken
-                key={token.id}
-                token={displayToken}
-                onMouseDown={handleTokenMouseDown}
-                onClick={handleTokenClick}
-                isDragging={token.id === draggedToken}
-              />
-            );
-          })}
-        </g>
+                return (
+                  <MapItem
+                    key={item.id}
+                    item={displayItem}
+                    onMouseDown={(e) => handleItemMouseDown(item, e)}
+                    onClick={handleItemClick}
+                    isSelected={item.id === selectedItem}
+                    isDragging={item.id === draggedItem}
+                  />
+                );
+              })}
+            </g>
+          )}
 
-        {/* Ruler */}
-        {renderRuler()}
-      </svg>
+          {/* Character tokens */}
+          <g>
+            {mapState.characters.map((token) => {
+              // Use temporary position if this token is being dragged
+              const displayToken = token.id === draggedToken && tempDragPosition
+                ? { ...token, position: tempDragPosition }
+                : token;
 
-      {/* Map Legend */}
-      <div className="flex-shrink-0 w-64">
-        <MapLegend
-          editorMode={activeTool === 'editor'}
-          onAddItem={handleAddItem}
-          existingItems={mapState.items.map(item => item.type)}
-          allItems={mapState.items}
-        />
+              return (
+                <CharacterToken
+                  key={token.id}
+                  token={displayToken}
+                  onMouseDown={handleTokenMouseDown}
+                  onClick={handleTokenClick}
+                  isDragging={token.id === draggedToken}
+                />
+              );
+            })}
+          </g>
+
+          {/* Ruler */}
+          {renderRuler()}
+        </svg>
+
+        {/* Dice Roller and Game Log (Right) */}
+        <div className="flex-shrink-0 w-64 space-y-4">
+          <DiceRoller
+            onRoll={onDiceRoll}
+            lastRoll={lastDiceRoll}
+          />
+          <GameLog entries={logEntries} />
+        </div>
       </div>
-    </div>
+
+      {/* Zone Properties Panel */}
+      {selectedZone && activeTool === 'editor' && (
+        <ZonePropertiesPanel
+          zone={mapState.zones.find((z) => z.id === selectedZone)!}
+          onUpdate={handleZoneUpdate}
+          onClose={() => setSelectedZone(null)}
+        />
+      )}
     </div>
   );
 };

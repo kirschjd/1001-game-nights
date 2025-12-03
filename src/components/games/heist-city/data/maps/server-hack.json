@@ -4,239 +4,1831 @@
   "description": "Infiltrate the data center and hack the mainframe",
   "items": [
     {
-      "id": "server-room-outer",
+      "id": "wall-block-1764778783395-117",
       "type": "wall",
-      "position": { "x": 12, "y": 12 },
-      "width": 12,
-      "height": 12,
+      "position": {
+        "x": 10,
+        "y": 15
+      },
       "destructible": true,
-      "health": 15
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-118",
+      "type": "wall",
+      "position": {
+        "x": 0,
+        "y": 24
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-119",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-120",
+      "type": "wall",
+      "position": {
+        "x": 1,
+        "y": 24
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-121",
+      "type": "wall",
+      "position": {
+        "x": 17,
+        "y": 9
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-122",
+      "type": "wall",
+      "position": {
+        "x": 14,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-123",
+      "type": "wall",
+      "position": {
+        "x": 18,
+        "y": 9
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-124",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-125",
+      "type": "wall",
+      "position": {
+        "x": 17,
+        "y": 6
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-126",
+      "type": "wall",
+      "position": {
+        "x": 14,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-127",
+      "type": "wall",
+      "position": {
+        "x": 19,
+        "y": 6
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-128",
+      "type": "wall",
+      "position": {
+        "x": 17,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-129",
+      "type": "wall",
+      "position": {
+        "x": 21,
+        "y": 6
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-130",
+      "type": "wall",
+      "position": {
+        "x": 17,
+        "y": 23
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-131",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 9
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-132",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-133",
+      "type": "wall",
+      "position": {
+        "x": 21,
+        "y": 9
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-134",
+      "type": "wall",
+      "position": {
+        "x": 21,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-135",
+      "type": "wall",
+      "position": {
+        "x": 21,
+        "y": 12
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-136",
+      "type": "wall",
+      "position": {
+        "x": 21,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-137",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 12
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-138",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-139",
+      "type": "wall",
+      "position": {
+        "x": 22,
+        "y": 15
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-140",
+      "type": "wall",
+      "position": {
+        "x": 23,
+        "y": 27
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-141",
+      "type": "wall",
+      "position": {
+        "x": 6,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-142",
+      "type": "wall",
+      "position": {
+        "x": 34,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-143",
+      "type": "wall",
+      "position": {
+        "x": 7,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-144",
+      "type": "wall",
+      "position": {
+        "x": 21,
+        "y": 15
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-145",
+      "type": "wall",
+      "position": {
+        "x": 7,
+        "y": 20
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-146",
+      "type": "wall",
+      "position": {
+        "x": 31,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-147",
+      "type": "wall",
+      "position": {
+        "x": 6,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-148",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-149",
+      "type": "wall",
+      "position": {
+        "x": 2,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-150",
+      "type": "wall",
+      "position": {
+        "x": 32,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-151",
+      "type": "wall",
+      "position": {
+        "x": 3,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-152",
+      "type": "wall",
+      "position": {
+        "x": 35,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-153",
+      "type": "wall",
+      "position": {
+        "x": 1,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-154",
+      "type": "wall",
+      "position": {
+        "x": 30,
+        "y": 22
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-155",
+      "type": "wall",
+      "position": {
+        "x": 0,
+        "y": 19
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-156",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 24
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-157",
+      "type": "wall",
+      "position": {
+        "x": 2,
+        "y": 24
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-158",
+      "type": "wall",
+      "position": {
+        "x": 23,
+        "y": 24
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-159",
+      "type": "wall",
+      "position": {
+        "x": 3,
+        "y": 24
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
+    },
+    {
+      "id": "wall-block-1764778783395-160",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 27
+      },
+      "destructible": true,
+      "health": 15,
+      "size": 1
     },
     {
       "id": "server-rack-1",
       "type": "table",
-      "position": { "x": 15, "y": 15 },
+      "position": {
+        "x": 2,
+        "y": 21
+      },
       "width": 2,
       "height": 2,
       "moveable": false,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "server-rack-2",
       "type": "table",
-      "position": { "x": 19, "y": 15 },
+      "position": {
+        "x": 9,
+        "y": 23
+      },
       "width": 2,
       "height": 2,
       "moveable": false,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "server-rack-3",
       "type": "table",
-      "position": { "x": 15, "y": 19 },
+      "position": {
+        "x": 2,
+        "y": 22
+      },
       "width": 2,
       "height": 2,
       "moveable": false,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "server-rack-4",
       "type": "table",
-      "position": { "x": 19, "y": 19 },
+      "position": {
+        "x": 10,
+        "y": 24
+      },
       "width": 2,
       "height": 2,
       "moveable": false,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "workstation-1",
       "type": "table",
-      "position": { "x": 6, "y": 6 },
+      "position": {
+        "x": 24,
+        "y": 24
+      },
       "width": 2,
       "height": 1,
       "moveable": true,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "workstation-2",
       "type": "table",
-      "position": { "x": 28, "y": 6 },
+      "position": {
+        "x": 25,
+        "y": 24
+      },
       "width": 2,
       "height": 1,
       "moveable": true,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "workstation-3",
       "type": "table",
-      "position": { "x": 6, "y": 29 },
+      "position": {
+        "x": 9,
+        "y": 24
+      },
       "width": 2,
       "height": 1,
       "moveable": true,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "workstation-4",
       "type": "table",
-      "position": { "x": 28, "y": 29 },
+      "position": {
+        "x": 25,
+        "y": 27
+      },
       "width": 2,
       "height": 1,
       "moveable": true,
-      "provideCover": true
+      "provideCover": true,
+      "size": 2
     },
     {
       "id": "computer-1",
       "type": "computer",
-      "position": { "x": 6, "y": 8 },
-      "size": 1,
-      "interactive": true
-    },
-    {
-      "id": "computer-2",
-      "type": "computer",
-      "position": { "x": 30, "y": 8 },
-      "size": 1,
-      "interactive": true
-    },
-    {
-      "id": "computer-3",
-      "type": "computer",
-      "position": { "x": 6, "y": 28 },
-      "size": 1,
-      "interactive": true
-    },
-    {
-      "id": "computer-4",
-      "type": "computer",
-      "position": { "x": 30, "y": 28 },
+      "position": {
+        "x": 15,
+        "y": 15
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "mainframe-1",
       "type": "computer",
-      "position": { "x": 16, "y": 18 },
+      "position": {
+        "x": 1,
+        "y": 21
+      },
       "size": 1,
       "interactive": true,
-      "properties": { "mainframe": true }
+      "properties": {
+        "mainframe": true
+      }
     },
     {
       "id": "mainframe-2",
       "type": "computer",
-      "position": { "x": 20, "y": 18 },
+      "position": {
+        "x": 30,
+        "y": 16
+      },
       "size": 1,
       "interactive": true,
-      "properties": { "mainframe": true }
+      "properties": {
+        "mainframe": true
+      }
     },
     {
       "id": "gear-1",
       "type": "gear",
-      "position": { "x": 3, "y": 18 },
+      "position": {
+        "x": 1,
+        "y": 22
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "gear-2",
       "type": "gear",
-      "position": { "x": 33, "y": 18 },
-      "size": 1,
-      "interactive": true
-    },
-    {
-      "id": "info-1",
-      "type": "info-drop",
-      "position": { "x": 18, "y": 3 },
-      "size": 1,
-      "interactive": true
-    },
-    {
-      "id": "info-2",
-      "type": "info-drop",
-      "position": { "x": 18, "y": 33 },
+      "position": {
+        "x": 33,
+        "y": 18
+      },
       "size": 1,
       "interactive": true
     },
     {
       "id": "teleporter-1",
       "type": "teleporter",
-      "position": { "x": 9, "y": 18 },
+      "position": {
+        "x": 0,
+        "y": 20
+      },
       "size": 1,
-      "properties": { "pairId": 1 }
+      "properties": {
+        "pairId": 1
+      }
     },
     {
       "id": "teleporter-2",
       "type": "teleporter",
-      "position": { "x": 27, "y": 18 },
+      "position": {
+        "x": 17,
+        "y": 19
+      },
       "size": 1,
-      "properties": { "pairId": 1 }
-    },
-    {
-      "id": "camera-1",
-      "type": "enemy-camera",
-      "position": { "x": 12, "y": 12 },
-      "size": 1,
-      "rotation": 135
-    },
-    {
-      "id": "camera-2",
-      "type": "enemy-camera",
-      "position": { "x": 24, "y": 12 },
-      "size": 1,
-      "rotation": 225
+      "properties": {
+        "pairId": 1
+      }
     },
     {
       "id": "camera-3",
       "type": "enemy-camera",
-      "position": { "x": 12, "y": 24 },
+      "position": {
+        "x": 17,
+        "y": 24
+      },
       "size": 1,
       "rotation": 45
     },
     {
-      "id": "camera-4",
-      "type": "enemy-camera",
-      "position": { "x": 24, "y": 24 },
-      "size": 1,
-      "rotation": 315
-    },
-    {
       "id": "guard-1",
       "type": "enemy-security-guard",
-      "position": { "x": 18, "y": 12 },
+      "position": {
+        "x": 32,
+        "y": 25
+      },
       "size": 1
     },
     {
       "id": "guard-2",
       "type": "enemy-security-guard",
-      "position": { "x": 18, "y": 24 },
+      "position": {
+        "x": 6,
+        "y": 24
+      },
       "size": 1
     },
     {
-      "id": "rapid-response-1",
-      "type": "enemy-rapid-response",
-      "position": { "x": 14, "y": 18 },
+      "id": "item-1764778984404",
+      "type": "table",
+      "position": {
+        "x": 11,
+        "y": 23
+      },
       "size": 1
     },
     {
-      "id": "rapid-response-2",
-      "type": "enemy-rapid-response",
-      "position": { "x": 22, "y": 18 },
+      "id": "item-1764778984862",
+      "type": "table",
+      "position": {
+        "x": 11,
+        "y": 24
+      },
       "size": 1
+    },
+    {
+      "id": "item-1764778985979",
+      "type": "table",
+      "position": {
+        "x": 10,
+        "y": 23
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779021486",
+      "type": "teleporter",
+      "position": {
+        "x": 18,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779026961",
+      "type": "info-drop",
+      "position": {
+        "x": 18,
+        "y": 19
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779027156",
+      "type": "info-drop",
+      "position": {
+        "x": 17,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779116673",
+      "type": "table",
+      "position": {
+        "x": 26,
+        "y": 27
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779117386",
+      "type": "table",
+      "position": {
+        "x": 24,
+        "y": 27
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779118391",
+      "type": "table",
+      "position": {
+        "x": 26,
+        "y": 24
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779132934",
+      "type": "table",
+      "position": {
+        "x": 28,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779133550",
+      "type": "table",
+      "position": {
+        "x": 29,
+        "y": 19
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779134314",
+      "type": "table",
+      "position": {
+        "x": 29,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779135109",
+      "type": "table",
+      "position": {
+        "x": 28,
+        "y": 19
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779150455",
+      "type": "gear",
+      "position": {
+        "x": 28,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779157056",
+      "type": "enemy-security-guard",
+      "position": {
+        "x": 27,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779195803",
+      "type": "wall",
+      "position": {
+        "x": 14,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779195976",
+      "type": "wall",
+      "position": {
+        "x": 18,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779196208",
+      "type": "wall",
+      "position": {
+        "x": 18,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779196403",
+      "type": "wall",
+      "position": {
+        "x": 17,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779196597",
+      "type": "wall",
+      "position": {
+        "x": 17,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779196785",
+      "type": "wall",
+      "position": {
+        "x": 16,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779197041",
+      "type": "wall",
+      "position": {
+        "x": 20,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779197235",
+      "type": "wall",
+      "position": {
+        "x": 18,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779197431",
+      "type": "wall",
+      "position": {
+        "x": 4,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779197632",
+      "type": "wall",
+      "position": {
+        "x": 2,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779197827",
+      "type": "wall",
+      "position": {
+        "x": 14,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779198210",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779291612",
+      "type": "wall",
+      "position": {
+        "x": 28,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779292017",
+      "type": "wall",
+      "position": {
+        "x": 30,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779292421",
+      "type": "wall",
+      "position": {
+        "x": 29,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779292609",
+      "type": "wall",
+      "position": {
+        "x": 27,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779292760",
+      "type": "wall",
+      "position": {
+        "x": 32,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779292925",
+      "type": "wall",
+      "position": {
+        "x": 5,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779293075",
+      "type": "wall",
+      "position": {
+        "x": 7,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779293225",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 14
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779293389",
+      "type": "wall",
+      "position": {
+        "x": 26,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779293545",
+      "type": "wall",
+      "position": {
+        "x": 6,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779293735",
+      "type": "wall",
+      "position": {
+        "x": 9,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779293906",
+      "type": "wall",
+      "position": {
+        "x": 8,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779294087",
+      "type": "wall",
+      "position": {
+        "x": 14,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779294266",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779294440",
+      "type": "wall",
+      "position": {
+        "x": 13,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779394156",
+      "type": "enemy-security-guard",
+      "position": {
+        "x": 12,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779429729",
+      "type": "wall",
+      "position": {
+        "x": 4,
+        "y": 8
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779429916",
+      "type": "wall",
+      "position": {
+        "x": 7,
+        "y": 8
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779430096",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 8
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779430261",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779430442",
+      "type": "wall",
+      "position": {
+        "x": 31,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779461927",
+      "type": "wall",
+      "position": {
+        "x": 3,
+        "y": 6
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779462497",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 11
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779462655",
+      "type": "wall",
+      "position": {
+        "x": 10,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779488921",
+      "type": "wall",
+      "position": {
+        "x": 26,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779489101",
+      "type": "wall",
+      "position": {
+        "x": 29,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779489251",
+      "type": "wall",
+      "position": {
+        "x": 30,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779489402",
+      "type": "wall",
+      "position": {
+        "x": 34,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779489544",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779489710",
+      "type": "wall",
+      "position": {
+        "x": 34,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779489852",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779490017",
+      "type": "wall",
+      "position": {
+        "x": 30,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779490174",
+      "type": "wall",
+      "position": {
+        "x": 29,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779490347",
+      "type": "wall",
+      "position": {
+        "x": 26,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779490505",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779490670",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779490841",
+      "type": "wall",
+      "position": {
+        "x": 34,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779491007",
+      "type": "wall",
+      "position": {
+        "x": 33,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779491179",
+      "type": "wall",
+      "position": {
+        "x": 30,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779491345",
+      "type": "wall",
+      "position": {
+        "x": 29,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779491555",
+      "type": "wall",
+      "position": {
+        "x": 26,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779491726",
+      "type": "wall",
+      "position": {
+        "x": 25,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779539346",
+      "type": "enemy-camera",
+      "position": {
+        "x": 29,
+        "y": 16
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779547874",
+      "type": "enemy-security-guard",
+      "position": {
+        "x": 27,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779556133",
+      "type": "wall",
+      "position": {
+        "x": 4,
+        "y": 11
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779556328",
+      "type": "wall",
+      "position": {
+        "x": 7,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779556477",
+      "type": "wall",
+      "position": {
+        "x": 4,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779556650",
+      "type": "wall",
+      "position": {
+        "x": 1,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779556800",
+      "type": "wall",
+      "position": {
+        "x": 1,
+        "y": 14
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779556965",
+      "type": "wall",
+      "position": {
+        "x": 1,
+        "y": 11
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779557108",
+      "type": "wall",
+      "position": {
+        "x": 1,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779557264",
+      "type": "wall",
+      "position": {
+        "x": 1,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779557422",
+      "type": "wall",
+      "position": {
+        "x": 1,
+        "y": 8
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779557586",
+      "type": "wall",
+      "position": {
+        "x": 7,
+        "y": 15
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779588106",
+      "type": "wall",
+      "position": {
+        "x": 4,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779588294",
+      "type": "wall",
+      "position": {
+        "x": 7,
+        "y": 9
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779588444",
+      "type": "wall",
+      "position": {
+        "x": 7,
+        "y": 14
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779588600",
+      "type": "wall",
+      "position": {
+        "x": 4,
+        "y": 12
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779588751",
+      "type": "wall",
+      "position": {
+        "x": 4,
+        "y": 14
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779588923",
+      "type": "wall",
+      "position": {
+        "x": 7,
+        "y": 11
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779604269",
+      "type": "enemy-camera",
+      "position": {
+        "x": 4,
+        "y": 16
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779611095",
+      "type": "gear",
+      "position": {
+        "x": 5,
+        "y": 14
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779625381",
+      "type": "enemy-rapid-response",
+      "position": {
+        "x": 10,
+        "y": 20
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764779625921",
+      "type": "enemy-rapid-response",
+      "position": {
+        "x": 25,
+        "y": 20
+      },
+      "size": 1
+    }
+  ],
+  "zones": [
+    {
+      "id": "zone-1764778817646",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "width": 36,
+      "height": 6,
+      "color": "rgba(55, 52, 234, 0.3)",
+      "label": "Deployment Zone"
+    },
+    {
+      "id": "zone-1764779692045",
+      "position": {
+        "x": 0,
+        "y": 30
+      },
+      "width": 36,
+      "height": 6,
+      "color": "rgba(231, 19, 19, 0.3)",
+      "label": "Deployment Zone"
     }
   ],
   "startPositions": {
     "player1": [
-      { "x": 2, "y": 2 },
-      { "x": 2, "y": 4 },
-      { "x": 4, "y": 2 },
-      { "x": 4, "y": 4 },
-      { "x": 3, "y": 3 }
+      {
+        "x": 2,
+        "y": 2
+      },
+      {
+        "x": 2,
+        "y": 4
+      },
+      {
+        "x": 4,
+        "y": 2
+      },
+      {
+        "x": 4,
+        "y": 4
+      },
+      {
+        "x": 3,
+        "y": 3
+      }
     ],
     "player2": [
-      { "x": 33, "y": 33 },
-      { "x": 33, "y": 32 },
-      { "x": 32, "y": 33 },
-      { "x": 32, "y": 32 },
-      { "x": 33, "y": 33 }
+      {
+        "x": 34,
+        "y": 33
+      },
+      {
+        "x": 33,
+        "y": 31
+      },
+      {
+        "x": 32,
+        "y": 33
+      },
+      {
+        "x": 31,
+        "y": 31
+      },
+      {
+        "x": 30,
+        "y": 33
+      }
     ]
-  }
+  },
+  "characterData": [
+    {
+      "id": "p1-token-1",
+      "playerId": "9w777ldsG4ZfV_-zAAAc",
+      "playerNumber": 1,
+      "position": {
+        "x": 2,
+        "y": 2
+      },
+      "color": "#3b82f6",
+      "name": "P1 Face",
+      "role": "Face",
+      "stats": {
+        "movement": 4,
+        "meleeSkill": 8,
+        "ballisticSkill": 9,
+        "wounds": 6,
+        "maxWounds": 6,
+        "defense": 8,
+        "hack": 8,
+        "con": 6
+      },
+      "state": "Overt",
+      "isSelected": false
+    },
+    {
+      "id": "p1-token-2",
+      "playerId": "9w777ldsG4ZfV_-zAAAc",
+      "playerNumber": 1,
+      "position": {
+        "x": 2,
+        "y": 4
+      },
+      "color": "#3b82f6",
+      "name": "P1 Muscle",
+      "role": "Muscle",
+      "stats": {
+        "movement": 3,
+        "meleeSkill": 7,
+        "ballisticSkill": 8,
+        "wounds": 9,
+        "maxWounds": 9,
+        "defense": 7,
+        "hack": 10,
+        "con": 9
+      },
+      "state": "Overt",
+      "isSelected": false
+    },
+    {
+      "id": "p1-token-3",
+      "playerId": "9w777ldsG4ZfV_-zAAAc",
+      "playerNumber": 1,
+      "position": {
+        "x": 4,
+        "y": 2
+      },
+      "color": "#3b82f6",
+      "name": "P1 Ninja",
+      "role": "Ninja",
+      "stats": {
+        "movement": 5,
+        "meleeSkill": 7,
+        "ballisticSkill": 9,
+        "wounds": 7,
+        "maxWounds": 7,
+        "defense": 7,
+        "hack": 8,
+        "con": 7
+      },
+      "state": "Overt",
+      "isSelected": false
+    },
+    {
+      "id": "p1-token-4",
+      "playerId": "9w777ldsG4ZfV_-zAAAc",
+      "playerNumber": 1,
+      "position": {
+        "x": 4,
+        "y": 4
+      },
+      "color": "#3b82f6",
+      "name": "P1 Brain",
+      "role": "Brain",
+      "stats": {
+        "movement": 3,
+        "meleeSkill": 9,
+        "ballisticSkill": 8,
+        "wounds": 6,
+        "maxWounds": 6,
+        "defense": 9,
+        "hack": 6,
+        "con": 8
+      },
+      "state": "Overt",
+      "isSelected": false
+    },
+    {
+      "id": "p1-token-5",
+      "playerId": "9w777ldsG4ZfV_-zAAAc",
+      "playerNumber": 1,
+      "position": {
+        "x": 3,
+        "y": 3
+      },
+      "color": "#3b82f6",
+      "name": "P1 Spook",
+      "role": "Spook",
+      "stats": {
+        "movement": 5,
+        "meleeSkill": 8,
+        "ballisticSkill": 7,
+        "wounds": 8,
+        "maxWounds": 8,
+        "defense": 8,
+        "hack": 8,
+        "con": 8
+      },
+      "state": "Overt",
+      "isSelected": false
+    },
+    {
+      "id": "p2-token-1",
+      "playerId": "HLmUTIY7CjacLAEzAAAY",
+      "playerNumber": 2,
+      "position": {
+        "x": 34,
+        "y": 33
+      },
+      "color": "#ef4444",
+      "name": "P2 Face",
+      "role": "Face",
+      "stats": {
+        "movement": 4,
+        "meleeSkill": 8,
+        "ballisticSkill": 9,
+        "wounds": 6,
+        "maxWounds": 6,
+        "defense": 8,
+        "hack": 8,
+        "con": 6
+      },
+      "state": "Overt",
+      "isSelected": true
+    },
+    {
+      "id": "p2-token-2",
+      "playerId": "HLmUTIY7CjacLAEzAAAY",
+      "playerNumber": 2,
+      "position": {
+        "x": 33,
+        "y": 31
+      },
+      "color": "#ef4444",
+      "name": "P2 Muscle",
+      "role": "Muscle",
+      "stats": {
+        "movement": 3,
+        "meleeSkill": 7,
+        "ballisticSkill": 8,
+        "wounds": 9,
+        "maxWounds": 9,
+        "defense": 7,
+        "hack": 10,
+        "con": 9
+      },
+      "state": "Overt",
+      "isSelected": true
+    },
+    {
+      "id": "p2-token-3",
+      "playerId": "HLmUTIY7CjacLAEzAAAY",
+      "playerNumber": 2,
+      "position": {
+        "x": 32,
+        "y": 33
+      },
+      "color": "#ef4444",
+      "name": "P2 Ninja",
+      "role": "Ninja",
+      "stats": {
+        "movement": 5,
+        "meleeSkill": 7,
+        "ballisticSkill": 9,
+        "wounds": 7,
+        "maxWounds": 7,
+        "defense": 7,
+        "hack": 8,
+        "con": 7
+      },
+      "state": "Overt",
+      "isSelected": false
+    },
+    {
+      "id": "p2-token-4",
+      "playerId": "HLmUTIY7CjacLAEzAAAY",
+      "playerNumber": 2,
+      "position": {
+        "x": 31,
+        "y": 31
+      },
+      "color": "#ef4444",
+      "name": "P2 Brain",
+      "role": "Brain",
+      "stats": {
+        "movement": 3,
+        "meleeSkill": 9,
+        "ballisticSkill": 8,
+        "wounds": 6,
+        "maxWounds": 6,
+        "defense": 9,
+        "hack": 6,
+        "con": 8
+      },
+      "state": "Overt",
+      "isSelected": true
+    },
+    {
+      "id": "p2-token-5",
+      "playerId": "HLmUTIY7CjacLAEzAAAY",
+      "playerNumber": 2,
+      "position": {
+        "x": 30,
+        "y": 33
+      },
+      "color": "#ef4444",
+      "name": "P2 Spook",
+      "role": "Spook",
+      "stats": {
+        "movement": 5,
+        "meleeSkill": 8,
+        "ballisticSkill": 7,
+        "wounds": 8,
+        "maxWounds": 8,
+        "defense": 8,
+        "hack": 8,
+        "con": 8
+      },
+      "state": "Overt",
+      "isSelected": false
+    }
+  ]
 }
