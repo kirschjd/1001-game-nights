@@ -1,0 +1,330 @@
+ {
+    "items": [
+    {
+      "id": "Plink Gun",
+      "type": "Ranged",
+      "Cost": 5,
+      "Attacks": 1,
+      "Range": 7,
+      "Damage": 1,
+      "Notice": {},
+      "Special": {}
+    },    
+    {
+      "id": "Silenced Plink Gun",
+      "type": "Ranged",
+      "Cost": 10,
+      "Attacks": 1,
+      "Range": 7,
+      "Damage": 1,
+      "Notice": { "Hidden": true },
+      "Special": {}
+    },
+    {
+      "id": "Dart Gun",
+      "type": "Ranged",
+      "Cost": 7,
+      "Attacks": 1,
+      "Range": 5,
+      "Damage": 3,
+      "Notice": { "Hidden": true,
+                  "Disguised": true },
+      "Special": { "Reload": true}
+    }, 
+    {
+      "id": "Grapple Gun",
+      "type": "Ranged",
+      "Cost": 8,
+      "Attacks": 1,
+      "Range": 5,
+      "Damage": 2,
+      "Notice": {},
+      "Special": { "Pull": true}
+    }, 
+    {
+      "id": "Shotgun",
+      "type": "Ranged",
+      "Cost": 20,
+      "Attacks": 2,
+      "Range": 4,
+      "Damage": 3,
+      "Notice": {},
+      "Special": { "Reload": true}
+    }, 
+    {
+      "id": "Long Gun",
+      "type": "Ranged",
+      "Cost": 25,
+      "Attacks": 1,
+      "Range": 20,
+      "Damage": 4,
+      "Notice": {},
+      "Special": { "Reload": true}
+    }, 
+    {
+      "id": "Silenced Long Gun",
+      "type": "Ranged",
+      "Cost": 25,
+      "Attacks": 1,
+      "Range": 20,
+      "Damage": 4,
+      "Notice": { "Hidden": true },
+      "Special": { "Reload": true}
+    }, 
+    {
+      "id": "Machine Gun",
+      "type": "Ranged",
+      "Cost": 25,
+      "Attacks": 3,
+      "Range": 12,
+      "Damage": 2,
+      "Notice": {},
+      "Special": {}
+    }, 
+    {
+      "id": "Uzi",
+      "type": "Ranged",
+      "Cost": 16,
+      "Attacks": 3,
+      "Range": 10,
+      "Damage": 1,
+      "Notice": {},
+      "Special": {}
+    }, 
+    {
+      "id": "Lazer",
+      "type": "Ranged",
+      "Cost": 20,
+      "Attacks": 2,
+      "Range": 25,
+      "Damage": 2,
+      "Notice": { "Disguised": true },
+      "Special": { "Anti-tech": true}
+    }, 
+    {
+      "id": "Rocket",
+      "type": "Ranged",
+      "Cost": 27,
+      "Attacks": 1,
+      "Range": 20,
+      "Damage": 5,
+      "Notice": {},
+      "Special": { "Reload": true}
+    }, 
+    {
+      "id": "Experimental Gadget",
+      "type": "Ranged",
+      "Cost": 0,
+      "Attacks": 1,
+      "Range": 7,
+      "Damage": 0,
+      "Notice": { "Hidden": true,
+                  "Disguised": true },
+      "Special": { "See Brain": true}
+    },    
+    {
+      "id": "Fist",
+      "type": "Melee",
+      "Cost": 0,
+      "Attacks": 1,
+      "Damage": 1,
+      "Notice": { "Hidden": true,
+                  "Disguised": true },
+      "Special": {}
+    },    
+    {
+      "id": "Knife",
+      "type": "Melee",
+      "Cost": 10,
+      "Attacks": 1,
+      "Damage": 2,
+      "Notice": { "Hidden": true},
+      "Special": { "Bleed": true }
+    },    
+    {
+      "id": "Katana",
+      "type": "Melee",
+      "Cost": 17,
+      "Attacks": 2,
+      "Damage": 3,
+      "Notice": { "Hidden": true},
+      "Special": {}
+    },    
+    {
+      "id": "Bonk Stick",
+      "type": "Melee",
+      "Cost": 8,
+      "Attacks": 1,
+      "Damage": 2,
+      "Notice": { "Hidden": true,
+                  "Disguised": true },
+      "Special": {}
+    },    
+    {
+      "id": "Brass Knuckles",
+      "type": "Melee",
+      "Cost": 10,
+      "Attacks": 2,
+      "Damage": 1,
+      "Notice": { "Disguised": true },
+      "Special": {}
+    },    
+    {
+      "id": "Lazer Sword",
+      "type": "Melee",
+      "Cost": 25,
+      "Attacks": 3,
+      "Damage": 4,
+      "Notice": {},
+      "Special": { "Reload": true }
+    },    
+    {
+      "id": "Crowbar",
+      "type": "Melee",
+      "Cost": 12,
+      "Attacks": 1,
+      "Damage": 2,
+      "Notice": {},
+      "Special": { "+1 Hack": true }
+    },      
+    {
+      "id": "Attach Case",
+      "type": "Melee",
+      "Cost": 11,
+      "Attacks": 1,
+      "Damage": 2,
+      "Notice": { "Disguised": true },
+      "Special": { "+1 Inventory": true }
+    },    
+    {
+      "id": "Lazer Watch",
+      "type": "Melee",
+      "Cost": 16,
+      "Attacks": 1,
+      "Damage": 3,
+      "Notice": { "Disguised": true },
+      "Special": { "+1 Con": true }
+    },    
+    {
+      "id": "Smoke",
+      "type": "Thrown",
+      "Cost": 6,
+      "Range": 6,
+      "Size": 3,
+      "Damage": 0,
+      "Notice": { "Disguised": true },
+      "Description": "Block Line of Sight"
+    },      
+    {
+      "id": "Shock",
+      "type": "Thrown",
+      "Cost": 7,
+      "Range": 6,
+      "Size": 3,
+      "Damage": 1,
+      "Notice": {},
+      "Description": "Tech Stunned for 1 turn"
+    },        
+    {
+      "id": "Freeze",
+      "type": "Thrown",
+      "Cost": 11,
+      "Range": 5,
+      "Size": 2,
+      "Damage": 0,
+      "Notice": { "Hidden": true },
+      "Description": "Non-Tech Stunned for 1 turn"
+    },      
+    {
+      "id": "Frag",
+      "type": "Thrown",
+      "Cost": 7,
+      "Range": 5,
+      "Size": 3,
+      "Damage": 2,
+      "Notice": {},
+      "Description": ""
+    },       
+    {
+      "id": "HE",
+      "type": "Thrown",
+      "Cost": 11,
+      "Range": 4,
+      "Size": 2,
+      "Damage": 3,
+      "Notice": {},
+      "Description": "Destroy Walls"
+    },    
+    {
+      "id": "Exploding Pen",
+      "type": "Thrown",
+      "Cost": 8,
+      "Range": 3,
+      "Size": 2,
+      "Damage": 4,
+      "Notice": { "Hidden": true, 
+                  "Disguised": true},
+      "Description": "Can use Con instead of W"
+    },      
+    {
+      "id": "Lockpicks",
+      "type": "Tool",
+      "Cost": 7,
+      "Description": "+2 on Hack checks"
+    },   
+    {
+      "id": "Camera Squib",
+      "type": "Tool",
+      "Cost": 7,
+      "Description": "+4 on Hack checks against cameras and turrets"
+    },    
+    {
+      "id": "Donuts",
+      "type": "Tool",
+      "Cost": 6,
+      "Description": "+2 on con checks against security guards when Alert Level is under 2"
+    },    
+    {
+      "id": "Security Uniform",
+      "type": "Tool",
+      "Cost": 16,
+      "Description": "+2 on direct attention con Checks"
+    },    
+    {
+      "id": "Maintenance Uniform",
+      "type": "Tool",
+      "Cost": 12,
+      "Description": "+2 on avoid notice con checks"
+    },    
+    {
+      "id": "Body Armor",
+      "type": "Tool",
+      "Cost": 20,
+      "Description": "+1 to Defense"
+    },    
+    {
+      "id": "Get Away Car",
+      "type": "Tool",
+      "Cost": 22,
+      "Description": "Size 6 Block, 2 actions, move 16. If alert is 3, can go through 1 wall per turn"
+    },    
+    {
+      "id": "Breaching Charge",
+      "type": "Tool",
+      "Cost": 10,
+      "Description": "2 Actions, Destroy Wall"
+    },     
+    {
+      "id": "Rabbit's Foot",
+      "type": "Tool",
+      "Cost": 10,
+      "Description": "The character holding this can burn it to reroll once per mission"
+    },     
+    {
+      "id": "4 Leaf Clover",
+      "type": "Tool",
+      "Cost": 20,
+      "Description": "Any character can burn this item to reroll once per mission"
+    }
+    ]
+ }

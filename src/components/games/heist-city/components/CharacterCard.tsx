@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
-import { CharacterToken, CharacterState } from '../types';
+import { CharacterToken, CharacterState, EquipmentItem } from '../types';
 import { CHARACTER_DATA } from '../data/characterStats';
+import { getAllEquipment, getEquipmentByIds } from '../data/equipmentLoader';
 
 interface CharacterCardProps {
   character: CharacterToken;
   isOwnedByPlayer: boolean;
   onStatsUpdate: (characterId: string, updatedStats: CharacterToken['stats']) => void;
   onStateUpdate: (characterId: string, newState: CharacterState) => void;
+  onEquipmentUpdate: (characterId: string, equipment: string[]) => void;
 }
 
-const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlayer, onStatsUpdate, onStateUpdate }) => {
+const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlayer, onStatsUpdate, onStateUpdate, onEquipmentUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedStats, setEditedStats] = useState(character.stats);
+  const [showEquipmentSelector, setShowEquipmentSelector] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
 
   const characterInfo = CHARACTER_DATA[character.role];
+  const allEquipment = getAllEquipment();
+  const equippedItems = getEquipmentByIds(character.equipment || []);
 
   const handleSave = () => {
     onStatsUpdate(character.id, editedStats);
@@ -67,10 +73,52 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
     }
   };
 
+  const handleEquipItem = (slot: number, itemId: string) => {
+    const currentEquipment = character.equipment || [];
+    const newEquipment = [...currentEquipment];
+    newEquipment[slot] = itemId;
+    onEquipmentUpdate(character.id, newEquipment);
+    setShowEquipmentSelector(false);
+    setSelectedSlot(null);
+  };
+
+  const handleRemoveItem = (slot: number) => {
+    const currentEquipment = character.equipment || [];
+    const newEquipment = currentEquipment.filter((_, index) => index !== slot);
+    onEquipmentUpdate(character.id, newEquipment);
+  };
+
+  const openEquipmentSelector = (slot: number) => {
+    setSelectedSlot(slot);
+    setShowEquipmentSelector(true);
+  };
+
+  const renderEquipmentStats = (item: EquipmentItem) => {
+    const parts: string[] = [];
+
+    if (item.type === 'Ranged' || item.type === 'Melee') {
+      if (item.Attacks) parts.push(`Att: ${item.Attacks}`);
+      if (item.Damage) parts.push(`Dmg: ${item.Damage}`);
+      if (item.Range) parts.push(`Rng: ${item.Range}`);
+    }
+
+    if (item.type === 'Thrown') {
+      if (item.Range) parts.push(`Rng: ${item.Range}`);
+      if (item.Size) parts.push(`Size: ${item.Size}`);
+      if (item.Damage) parts.push(`Dmg: ${item.Damage}`);
+    }
+
+    return parts.join(' • ');
+  };
+
   return (
     <div
       className="bg-gray-900 border-2 rounded-lg p-4 shadow-lg min-w-[300px]"
-      style={{ borderColor: character.color }}
+      style={{
+        borderColor: character.color,
+        opacity: character.exhausted ? 0.6 : 1,
+        filter: character.exhausted ? 'grayscale(0.7)' : 'none',
+      }}
     >
       {/* Header */}
       <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
@@ -165,6 +213,8 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
               <option value="Overt">Overt</option>
               <option value="Hidden">Hidden</option>
               <option value="Disguised">Disguised</option>
+              <option value="Stunned">Stunned</option>
+              <option value="Unconscious">Unconscious</option>
             </select>
           </div>
         </div>
@@ -183,16 +233,166 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
       <div className="mt-3 pt-3 border-t border-gray-700">
         <h4 className="text-xs font-semibold text-gray-400 mb-2">Equipment</h4>
         <div className="space-y-1">
-          {[1, 2, 3].map((slot) => (
-            <div
-              key={slot}
-              className="h-6 bg-gray-800 border border-gray-700 rounded text-xs text-gray-500 flex items-center justify-center"
-            >
-              Slot {slot}
-            </div>
-          ))}
+          {[0, 1, 2].map((slot) => {
+            const equippedItem = equippedItems[slot];
+
+            // Determine background color based on item type
+            const getItemBgColor = (type: string) => {
+              switch (type) {
+                case 'Ranged': return 'bg-yellow-900/30 border-yellow-600/50';
+                case 'Melee': return 'bg-green-900/30 border-green-600/50';
+                case 'Thrown': return 'bg-orange-900/30 border-orange-600/50';
+                case 'Tool': return 'bg-gray-800/50 border-gray-600/50';
+                default: return 'bg-gray-800 border-gray-600';
+              }
+            };
+
+            // Format stats for display
+            const renderItemDetails = (item: EquipmentItem) => {
+              const parts: string[] = [];
+
+              if (item.type === 'Ranged') {
+                // Ranged: Att, Dmg, Rng, notices, specials
+                if (item.Attacks) parts.push(`Att:${item.Attacks}`);
+                if (item.Damage) parts.push(`Dmg:${item.Damage}`);
+                if (item.Range) parts.push(`Rng:${item.Range}`);
+
+                const notices = [];
+                if (item.Notice?.Hidden) notices.push('Hidden');
+                if (item.Notice?.Disguised) notices.push('Disguised');
+                if (notices.length > 0) parts.push(notices.join('/'));
+
+                if (item.Special && Object.keys(item.Special).length > 0) {
+                  parts.push(Object.keys(item.Special).join(', '));
+                }
+              } else if (item.type === 'Melee') {
+                // Melee: Att, Dmg, notices, specials
+                if (item.Attacks) parts.push(`Att:${item.Attacks}`);
+                if (item.Damage) parts.push(`Dmg:${item.Damage}`);
+
+                const notices = [];
+                if (item.Notice?.Hidden) notices.push('Hidden');
+                if (item.Notice?.Disguised) notices.push('Disguised');
+                if (notices.length > 0) parts.push(notices.join('/'));
+
+                if (item.Special && Object.keys(item.Special).length > 0) {
+                  parts.push(Object.keys(item.Special).join(', '));
+                }
+              } else if (item.type === 'Thrown') {
+                // Thrown: Rng, size, notices, description
+                if (item.Range) parts.push(`Rng:${item.Range}`);
+                if (item.Size) parts.push(`Size:${item.Size}`);
+
+                const notices = [];
+                if (item.Notice?.Hidden) notices.push('Hidden');
+                if (item.Notice?.Disguised) notices.push('Disguised');
+                if (notices.length > 0) parts.push(notices.join('/'));
+
+                if (item.Description) parts.push(item.Description);
+              } else if (item.type === 'Tool') {
+                // Tool: description only
+                if (item.Description) parts.push(item.Description);
+              }
+
+              return parts.join(' • ');
+            };
+
+            return (
+              <div key={slot} className="relative">
+                {equippedItem ? (
+                  <div className={`border rounded p-2 ${getItemBgColor(equippedItem.type)}`}>
+                    <div className="flex justify-between items-start mb-1">
+                      <div className="text-xs font-bold text-white truncate flex-1">{equippedItem.id}</div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-semibold text-amber-400">{equippedItem.Cost}</span>
+                        {isOwnedByPlayer && (
+                          <button
+                            onClick={() => handleRemoveItem(slot)}
+                            className="text-red-400 hover:text-red-300 text-xs leading-none"
+                            title="Remove"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-gray-300 leading-relaxed">
+                      {renderItemDetails(equippedItem)}
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => openEquipmentSelector(slot)}
+                    disabled={!isOwnedByPlayer}
+                    className={`w-full h-8 border border-dashed rounded text-xs flex items-center justify-center ${
+                      isOwnedByPlayer
+                        ? 'border-gray-600 text-gray-500 hover:border-gray-500 hover:text-gray-400 cursor-pointer'
+                        : 'border-gray-700 text-gray-600 cursor-not-allowed'
+                    }`}
+                  >
+                    + Add Equipment
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
+
+      {/* Equipment Selector Modal */}
+      {showEquipmentSelector && selectedSlot !== null && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border-2 border-purple-500 rounded-lg p-4 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-white">Select Equipment</h3>
+              <button
+                onClick={() => {
+                  setShowEquipmentSelector(false);
+                  setSelectedSlot(null);
+                }}
+                className="text-gray-400 hover:text-white text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {allEquipment.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleEquipItem(selectedSlot, item.id)}
+                  className="w-full bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded p-3 text-left transition-colors"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="text-sm font-bold text-white">{item.id}</div>
+                      <div className="text-xs text-gray-400 mt-1">{item.type} • Cost: {item.Cost}</div>
+                      {renderEquipmentStats(item) && (
+                        <div className="text-xs text-blue-400 mt-1">{renderEquipmentStats(item)}</div>
+                      )}
+                      {item.Description && (
+                        <div className="text-xs text-gray-500 mt-1 italic">{item.Description}</div>
+                      )}
+                      {(item.Notice?.Hidden || item.Notice?.Disguised) && (
+                        <div className="text-xs text-green-400 mt-1">
+                          {item.Notice.Hidden && 'Hidden'}
+                          {item.Notice.Hidden && item.Notice.Disguised && ' • '}
+                          {item.Notice.Disguised && 'Disguised'}
+                        </div>
+                      )}
+                      {item.Special && Object.keys(item.Special).length > 0 && (
+                        <div className="text-xs text-yellow-400 mt-1">
+                          Special: {Object.keys(item.Special).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Abilities (Always Visible) */}
       <div className="mt-3 pt-3 border-t border-gray-700">

@@ -1,4 +1,4 @@
-import { MapDefinition, MapItem, MapState, CharacterToken, Position, CharacterRole } from '../types';
+import { MapDefinition, MapItem, MapState, CharacterToken, Position } from '../types';
 import { GRID_SIZE_INCHES } from './mapConstants';
 import { INITIAL_CHARACTER_STATS, CHARACTER_ROLES } from './characterStats';
 

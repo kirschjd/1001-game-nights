@@ -68,6 +68,42 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     console.log(`🎲 Broadcasted dice roll (${dice1}, ${dice2} = ${total}) to lobby ${lobbyId}`);
   });
 
+  /**
+   * Handle game info updates (turn number, victory points)
+   * This syncs game info across all players in the lobby
+   */
+  socket.on('heist-city-game-info-update', (data) => {
+    const { lobbyId, turnNumber, blueVictoryPoints, redVictoryPoints } = data;
+
+    if (!lobbyId || turnNumber === undefined) {
+      socket.emit('error', { message: 'Missing required game info data' });
+      return;
+    }
+
+    const game = games.get(lobbyId);
+    if (!game || game.state.type !== 'heist-city') {
+      socket.emit('error', { message: 'Heist City game not found' });
+      return;
+    }
+
+    // Store game info in game state
+    if (!game.state.gameInfo) {
+      game.state.gameInfo = {};
+    }
+    game.state.gameInfo.turnNumber = turnNumber;
+    game.state.gameInfo.blueVictoryPoints = blueVictoryPoints || 0;
+    game.state.gameInfo.redVictoryPoints = redVictoryPoints || 0;
+
+    // Broadcast to all other players in the lobby
+    socket.to(lobbyId).emit('heist-city-game-info-update', {
+      turnNumber,
+      blueVictoryPoints,
+      redVictoryPoints
+    });
+
+    console.log(`📊 Broadcasted game info update to lobby ${lobbyId} (Turn: ${turnNumber})`);
+  });
+
 }
 
 module.exports = {

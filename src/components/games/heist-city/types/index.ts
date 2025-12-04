@@ -55,7 +55,7 @@ export interface MapZone {
 }
 
 export type CharacterRole = 'Face' | 'Muscle' | 'Ninja' | 'Brain' | 'Spook';
-export type CharacterState = 'Overt' | 'Hidden' | 'Disguised';
+export type CharacterState = 'Overt' | 'Hidden' | 'Disguised' | 'Stunned' | 'Unconscious';
 
 export interface CharacterStats {
   movement: number; // M
@@ -66,6 +66,24 @@ export interface CharacterStats {
   defense: number; // D
   hack: number; // H
   con: number; // C
+}
+
+export interface EquipmentItem {
+  id: string;
+  type: 'Ranged' | 'Melee' | 'Thrown' | 'Tool';
+  Cost: number;
+  Attacks?: number;
+  Range?: number;
+  Damage?: number;
+  Size?: number;
+  Notice?: {
+    Hidden?: boolean;
+    Disguised?: boolean;
+  };
+  Special?: {
+    [key: string]: boolean;
+  };
+  Description?: string;
 }
 
 export interface CharacterToken {
@@ -79,6 +97,9 @@ export interface CharacterToken {
   stats: CharacterStats;
   state: CharacterState;
   isSelected?: boolean;
+  exhausted?: boolean;
+  equipment?: string[]; // Array of equipment item IDs (max 3)
+  actions?: string[]; // Array of action names (max 3)
 }
 
 export interface Player {

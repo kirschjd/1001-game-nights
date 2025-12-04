@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 interface DiceRollerProps {
   onRoll?: (dice1: number, dice2: number, total: number) => void;

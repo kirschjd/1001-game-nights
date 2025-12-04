@@ -33,7 +33,7 @@ const GameLog: React.FC<GameLogProps> = ({ entries }) => {
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
       <h3 className="text-sm font-bold text-white mb-3">Game Log</h3>
 
-      <div ref={scrollContainerRef} className="space-y-2 max-h-64 overflow-y-auto">
+      <div ref={scrollContainerRef} className="space-y-2 max-h-40 overflow-y-auto">
         {entries.length === 0 ? (
           <div className="text-xs text-gray-500 italic">No activity yet</div>
         ) : (

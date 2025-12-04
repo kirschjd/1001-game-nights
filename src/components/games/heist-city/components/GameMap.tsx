@@ -22,6 +22,8 @@ import MapSettings from './MapSettings';
 import MapLegend from './MapLegend';
 import DiceRoller from './DiceRoller';
 import GameLog, { LogEntry } from './GameLog';
+import { getRoleAbilities } from '../data/roleAbilities';
+import { getEquipmentByIds } from '../data/equipmentLoader';
 
 interface GameMapProps {
   mapState: MapState;
@@ -31,9 +33,52 @@ interface GameMapProps {
   onDiceRoll?: (dice1: number, dice2: number, total: number) => void;
   lastDiceRoll?: { dice1: number; dice2: number; total: number; roller?: string } | null;
   logEntries?: LogEntry[];
+  selectedObject?: { type: 'token' | 'item'; id: string; name: string; position: Position } | null;
+  onExhaustToggle?: (characterId: string) => void;
+  onActionUpdate?: (characterId: string, actions: string[]) => void;
 }
 
-const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelectionChange, readOnly = false, onDiceRoll, lastDiceRoll, logEntries = [] }) => {
+/**
+ * Generate available actions for a character based on their stats, role, and equipment
+ */
+const getAvailableActions = (character: CharacterTokenType): string[] => {
+  const actions: string[] = [];
+
+  // Core actions with stats
+  actions.push(`Move (${character.stats.movement}")`);
+  actions.push(`Hack (${character.stats.hack}+)`);
+  actions.push(`Con (${character.stats.con}+)`);
+
+  // Role-specific abilities
+  const roleAbilities = getRoleAbilities(character.role);
+  roleAbilities.forEach(ability => {
+    actions.push(ability);
+  });
+
+  // Equipment-based actions
+  const equipment = getEquipmentByIds(character.equipment || []);
+  let hasMeleeWeapon = false;
+
+  equipment.forEach(item => {
+    if (item.type === 'Ranged') {
+      actions.push(`${item.id} (BS ${character.stats.ballisticSkill}+)`);
+    } else if (item.type === 'Thrown') {
+      actions.push(`${item.id} (BS ${character.stats.ballisticSkill}+)`);
+    } else if (item.type === 'Melee') {
+      hasMeleeWeapon = true;
+      actions.push(`${item.id} (MS ${character.stats.meleeSkill}+)`);
+    }
+  });
+
+  // Add Fist as default melee weapon if no melee weapon equipped
+  if (!hasMeleeWeapon) {
+    actions.push(`Fist (MS ${character.stats.meleeSkill}+)`);
+  }
+
+  return actions;
+};
+
+const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelectionChange, readOnly = false, onDiceRoll, lastDiceRoll, logEntries = [], selectedObject, onExhaustToggle, onActionUpdate }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -48,11 +93,13 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
   const [draggedZone, setDraggedZone] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
-  const [hoveredGrid, setHoveredGrid] = useState<Position | null>(null);
+  const [, setHoveredGrid] = useState<Position | null>(null);
   const [cursorPosition, setCursorPosition] = useState<Position | null>(null);
   const [dragOffset, setDragOffset] = useState<Position | null>(null);
   const [tempDragPosition, setTempDragPosition] = useState<Position | null>(null);
   const tempDragPositionRef = useRef<Position | null>(null);
+  const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingConfirmed, setIsDraggingConfirmed] = useState(false);
 
   // Zone resizing state
   const [resizingZone, setResizingZone] = useState<string | null>(null);
@@ -125,6 +172,57 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       height: newHeight,
     });
   }, [zoom, panOffset]);
+
+  // Handle keyboard controls for moving selected tokens (WASD)
+  useEffect(() => {
+    if (readOnly || activeTool !== 'select') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if a selected token exists
+      const selectedToken = mapState.characters.find(char => char.isSelected);
+      if (!selectedToken) return;
+
+      // Prevent default browser behavior for these keys
+      if (['w', 'a', 's', 'd'].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+      }
+
+      const moveAmount = 1; // Move 1 inch at a time
+      let newPosition = { ...selectedToken.position };
+
+      switch (e.key.toLowerCase()) {
+        case 'w': // Move up
+          newPosition.y = Math.max(0, newPosition.y - moveAmount);
+          break;
+        case 's': // Move down
+          newPosition.y = Math.min(35, newPosition.y + moveAmount);
+          break;
+        case 'a': // Move left
+          newPosition.x = Math.max(0, newPosition.x - moveAmount);
+          break;
+        case 'd': // Move right
+          newPosition.x = Math.min(35, newPosition.x + moveAmount);
+          break;
+        default:
+          return; // Ignore other keys
+      }
+
+      // Apply snap to grid if enabled
+      if (settings.snapToGrid) {
+        newPosition = snapToGridUtil(newPosition);
+      }
+
+      // Update the selected token's position
+      const updatedCharacters = mapState.characters.map(char =>
+        char.id === selectedToken.id ? { ...char, position: newPosition } : char
+      );
+
+      onMapStateChange?.({ ...mapState, characters: updatedCharacters });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [readOnly, activeTool, mapState, onMapStateChange, settings.snapToGrid]);
 
   // Add native wheel event listener to prevent browser zoom
   useEffect(() => {
@@ -206,12 +304,36 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
     [activeTool, readOnly, screenToSVG]
   );
 
-  // Handle token drag start
+  // Handle token drag start and selection
   const handleTokenMouseDown = useCallback(
     (token: CharacterTokenType, e: React.MouseEvent) => {
       if (readOnly || activeTool !== 'select') return;
 
-      // Calculate offset from cursor to token center
+      // Handle selection on mousedown
+      const isCurrentlySelected = token.isSelected;
+      const updatedCharacters = mapState.characters.map((t) => ({
+        ...t,
+        isSelected: t.id === token.id ? !t.isSelected : t.isSelected,
+      }));
+      onMapStateChange?.({ ...mapState, characters: updatedCharacters });
+
+      // Notify parent of selection change
+      if (!isCurrentlySelected) {
+        onSelectionChange?.({
+          type: 'token',
+          id: token.id,
+          name: token.name,
+          position: token.position,
+        });
+      } else {
+        onSelectionChange?.(null);
+      }
+
+      // Store initial mouse position for drag threshold
+      setDragStartPosition({ x: e.clientX, y: e.clientY });
+      setIsDraggingConfirmed(false);
+
+      // Calculate offset from cursor to token center for dragging
       const svgCoords = screenToSVG(e.clientX, e.clientY);
       const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
       const offset = {
@@ -222,7 +344,7 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       setDraggedToken(token.id);
       setDragOffset(offset);
     },
-    [readOnly, activeTool, screenToSVG]
+    [readOnly, activeTool, screenToSVG, mapState, onMapStateChange, onSelectionChange]
   );
 
   // Handle item drag start (editor mode)
@@ -417,6 +539,21 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
 
       // Handle token dragging
       if (draggedToken && activeTool === 'select' && dragOffset) {
+        // Check if we've exceeded the drag threshold
+        if (!isDraggingConfirmed && dragStartPosition) {
+          const dx = e.clientX - dragStartPosition.x;
+          const dy = e.clientY - dragStartPosition.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const DRAG_THRESHOLD = 5; // pixels
+
+          if (distance > DRAG_THRESHOLD) {
+            setIsDraggingConfirmed(true);
+          } else {
+            // Haven't moved enough yet, don't drag
+            return;
+          }
+        }
+
         // Apply drag offset to keep item under cursor
         const adjustedPos = {
           x: posInches.x + dragOffset.x,
@@ -549,6 +686,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       resizeStartCursor,
       mapState,
       onMapStateChange,
+      isDraggingConfirmed,
+      dragStartPosition,
     ]
   );
 
@@ -566,28 +705,34 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
     }
 
     // End token dragging
-    if (draggedToken && tempDragPositionRef.current) {
-      let finalPosition = tempDragPositionRef.current;
-      if (settings.snapToGrid) {
-        finalPosition = snapToGridUtil(tempDragPositionRef.current);
+    if (draggedToken) {
+      // Only update position if dragging was confirmed (exceeded threshold)
+      if (isDraggingConfirmed && tempDragPositionRef.current) {
+        let finalPosition = tempDragPositionRef.current;
+        if (settings.snapToGrid) {
+          finalPosition = snapToGridUtil(tempDragPositionRef.current);
+        }
+
+        if (!isWithinBounds(finalPosition)) {
+          finalPosition.x = Math.max(0, Math.min(35, finalPosition.x));
+          finalPosition.y = Math.max(0, Math.min(35, finalPosition.y));
+        }
+
+        const updatedCharacters = mapState.characters.map((t) =>
+          t.id === draggedToken ? { ...t, position: finalPosition } : t
+        );
+
+        onMapStateChange?.({ ...mapState, characters: updatedCharacters });
       }
 
-      if (!isWithinBounds(finalPosition)) {
-        finalPosition.x = Math.max(0, Math.min(35, finalPosition.x));
-        finalPosition.y = Math.max(0, Math.min(35, finalPosition.y));
-      }
-
-      const updatedCharacters = mapState.characters.map((t) =>
-        t.id === draggedToken ? { ...t, position: finalPosition } : t
-      );
-
-      onMapStateChange?.({ ...mapState, characters: updatedCharacters });
       setDraggedToken(null);
       setDragOffset(null);
       setTempDragPosition(null);
       tempDragPositionRef.current = null;
       setHoveredGrid(null);
       setCursorPosition(null);
+      setDragStartPosition(null);
+      setIsDraggingConfirmed(false);
     }
 
     // End item dragging (editor mode)
@@ -628,33 +773,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       setResizeStartSize(null);
       setResizeStartCursor(null);
     }
-  }, [isPanning, rulerStart, activeTool, draggedToken, draggedItem, draggedZone, resizingZone, tempDragPosition, mapState, onMapStateChange, settings.snapToGrid]);
+  }, [isPanning, rulerStart, activeTool, draggedToken, draggedItem, draggedZone, resizingZone, mapState, onMapStateChange, settings.snapToGrid, isDraggingConfirmed]);
 
-  // Handle token click
-  const handleTokenClick = useCallback(
-    (token: CharacterTokenType) => {
-      if (readOnly || activeTool !== 'select') return;
-      const isCurrentlySelected = token.isSelected;
-      const updatedCharacters = mapState.characters.map((t) => ({
-        ...t,
-        isSelected: t.id === token.id ? !t.isSelected : t.isSelected,
-      }));
-      onMapStateChange?.({ ...mapState, characters: updatedCharacters });
-
-      // Notify parent of selection change
-      if (!isCurrentlySelected) {
-        onSelectionChange?.({
-          type: 'token',
-          id: token.id,
-          name: token.name,
-          position: token.position,
-        });
-      } else {
-        onSelectionChange?.(null);
-      }
-    },
-    [mapState, onMapStateChange, onSelectionChange, readOnly, activeTool]
-  );
 
   // Handle item click
   const handleItemClick = useCallback(
@@ -964,7 +1084,6 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
           {/* Map zones (below items) */}
           <g>
             {mapState.zones.map((zone) => {
-              const selectedZoneObj = selectedZone === zone.id ? mapState.zones.find((z) => z.id === selectedZone) : null;
               return (
                 <MapZone
                   key={zone.id}
@@ -1016,7 +1135,6 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
                   key={token.id}
                   token={displayToken}
                   onMouseDown={handleTokenMouseDown}
-                  onClick={handleTokenClick}
                   isDragging={token.id === draggedToken}
                 />
               );
@@ -1027,13 +1145,78 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
           {renderRuler()}
         </svg>
 
-        {/* Dice Roller and Game Log (Right) */}
+        {/* Dice Roller and Selection Info (Right) */}
         <div className="flex-shrink-0 w-64 space-y-4">
           <DiceRoller
             onRoll={onDiceRoll}
             lastRoll={lastDiceRoll}
           />
-          <GameLog entries={logEntries} />
+
+          {/* Selection Info Panel */}
+          {selectedObject && selectedObject.type === 'token' && (() => {
+            const character = mapState.characters.find(c => c.id === selectedObject.id);
+            if (!character) return null;
+
+            const handleActionChange = (slotIndex: number, actionName: string) => {
+              if (!onActionUpdate) return;
+              const currentActions = character.actions || [];
+              const newActions = [...currentActions];
+
+              if (actionName === '') {
+                // Remove action
+                newActions.splice(slotIndex, 1);
+              } else {
+                newActions[slotIndex] = actionName;
+              }
+
+              onActionUpdate(character.id, newActions);
+            };
+
+            return (
+              <div className="bg-purple-900/30 border border-purple-500/50 p-4 rounded-lg">
+                {/* Name and Position Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-sm font-bold text-white">{selectedObject.name}</h3>
+                  <span className="text-xs text-gray-400">
+                    ({selectedObject.position.x.toFixed(1)}", {selectedObject.position.y.toFixed(1)}")
+                  </span>
+                </div>
+
+                {/* Actions Section */}
+                <div className="space-y-2 mb-3">
+                  <p className="text-xs font-semibold text-purple-400">Actions:</p>
+
+                  {[0, 1, 2].map((slotIndex) => {
+                    const currentAction = character.actions?.[slotIndex] || '';
+                    const availableActions = getAvailableActions(character);
+                    return (
+                      <select
+                        key={slotIndex}
+                        value={currentAction}
+                        onChange={(e) => handleActionChange(slotIndex, e.target.value)}
+                        className="w-full px-2 py-1.5 bg-gray-800 border border-purple-500/30 rounded text-white text-xs hover:border-purple-500/50 focus:outline-none focus:border-purple-500"
+                      >
+                        <option value="">-- Select Action --</option>
+                        {availableActions.map((action) => (
+                          <option key={action} value={action}>{action}</option>
+                        ))}
+                      </select>
+                    );
+                  })}
+                </div>
+
+                {/* Exhaust Button */}
+                {onExhaustToggle && (
+                  <button
+                    onClick={() => onExhaustToggle(selectedObject.id)}
+                    className="w-full px-3 py-2 rounded-lg font-semibold text-white text-xs transition-all bg-purple-600 hover:bg-purple-700 active:scale-95"
+                  >
+                    {character.exhausted ? 'Unexhaust Character' : 'Exhaust Character'}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 

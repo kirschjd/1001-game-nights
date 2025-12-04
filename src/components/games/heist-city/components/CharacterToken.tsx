@@ -5,14 +5,12 @@ import { inchesToPixels, TOKEN_RADIUS, GRID_CENTER_OFFSET } from '../data/mapCon
 interface CharacterTokenProps {
   token: CharacterTokenType;
   onMouseDown?: (token: CharacterTokenType, e: React.MouseEvent) => void;
-  onClick?: (token: CharacterTokenType) => void;
   isDragging?: boolean;
 }
 
 const CharacterToken: React.FC<CharacterTokenProps> = ({
   token,
   onMouseDown,
-  onClick,
   isDragging,
 }) => {
   // Center tokens in grid squares by adding offset
@@ -24,16 +22,27 @@ const CharacterToken: React.FC<CharacterTokenProps> = ({
     onMouseDown?.(token, e);
   };
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onClick?.(token);
+  // Determine opacity and filter based on status
+  const getTokenOpacity = () => {
+    if (token.state === 'Unconscious') return 0.3;
+    if (token.exhausted) return 0.5;
+    return 1;
+  };
+
+  const getTokenFilter = () => {
+    if (token.state === 'Unconscious') return 'grayscale(1)';
+    if (token.exhausted) return 'grayscale(0.7)';
+    return 'none';
   };
 
   return (
     <g
       className={`cursor-move ${isDragging ? 'opacity-70 no-transition' : ''}`}
       onMouseDown={handleMouseDown}
-      onClick={handleClick}
+      opacity={getTokenOpacity()}
+      style={{
+        filter: getTokenFilter(),
+      }}
     >
       {/* Outer glow for selected state */}
       {token.isSelected && (

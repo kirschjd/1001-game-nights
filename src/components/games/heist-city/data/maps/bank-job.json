@@ -832,7 +832,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-147",
@@ -843,7 +844,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-149",
@@ -854,7 +856,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-150",
@@ -865,7 +868,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-151",
@@ -876,7 +880,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-152",
@@ -887,7 +892,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-153",
@@ -898,7 +904,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-154",
@@ -909,7 +916,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-155",
@@ -920,7 +928,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-156",
@@ -931,7 +940,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-158",
@@ -942,7 +952,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-160",
@@ -953,7 +964,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-162",
@@ -964,7 +976,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "wall-block-1764775301445-164",
@@ -975,7 +988,8 @@
       },
       "destructible": true,
       "health": 10,
-      "size": 1
+      "size": 1,
+      "maxHealth": 10
     },
     {
       "id": "desk-1",
@@ -1004,43 +1018,11 @@
       "size": 3
     },
     {
-      "id": "computer-1",
-      "type": "computer",
-      "position": {
-        "x": 32,
-        "y": 18
-      },
-      "size": 1,
-      "interactive": true,
-      "destructible": false
-    },
-    {
-      "id": "computer-2",
-      "type": "computer",
-      "position": {
-        "x": 32,
-        "y": 17
-      },
-      "size": 1,
-      "interactive": true,
-      "destructible": false
-    },
-    {
-      "id": "gear-1",
-      "type": "gear",
-      "position": {
-        "x": 12,
-        "y": 12
-      },
-      "size": 1,
-      "interactive": true
-    },
-    {
       "id": "gear-2",
       "type": "gear",
       "position": {
-        "x": 26,
-        "y": 11
+        "x": 3,
+        "y": 18
       },
       "size": 1,
       "interactive": true
@@ -1534,20 +1516,45 @@
         "y": 20
       },
       "size": 1
+    },
+    {
+      "id": "item-1764864121859",
+      "type": "info-drop",
+      "position": {
+        "x": 33,
+        "y": 19
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764864123996",
+      "type": "info-drop",
+      "position": {
+        "x": 33,
+        "y": 18
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764864124416",
+      "type": "info-drop",
+      "position": {
+        "x": 32,
+        "y": 19
+      },
+      "size": 1
+    },
+    {
+      "id": "item-1764864124829",
+      "type": "info-drop",
+      "position": {
+        "x": 32,
+        "y": 18
+      },
+      "size": 1
     }
   ],
   "zones": [
-    {
-      "id": "zone-1764776906398",
-      "position": {
-        "x": 0,
-        "y": 0
-      },
-      "width": 36,
-      "height": 6,
-      "color": "rgba(52, 82, 234, 0.3)",
-      "label": "Deployment Zone"
-    },
     {
       "id": "zone-1764776909090",
       "position": {
@@ -1557,6 +1564,17 @@
       "width": 36,
       "height": 6,
       "color": "rgba(234, 52, 52, 0.3)",
+      "label": "Deployment Zone"
+    },
+    {
+      "id": "zone-1764864307821",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "width": 36,
+      "height": 6,
+      "color": "rgba(39, 52, 236, 0.3)",
       "label": "Deployment Zone"
     }
   ],
@@ -1585,25 +1603,267 @@
     ],
     "player2": [
       {
-        "x": 33,
+        "x": 34,
         "y": 33
       },
       {
         "x": 33,
         "y": 32
+      },
+      {
+        "x": 30,
+        "y": 33
+      },
+      {
+        "x": 32,
+        "y": 33
       },
       {
         "x": 31,
-        "y": 33
-      },
-      {
-        "x": 32,
-        "y": 33
-      },
-      {
-        "x": 32,
         "y": 32
       }
     ]
-  }
+  },
+  "characterData": [
+    {
+      "id": "p1-token-1",
+      "playerId": "1qIKDltjCjRJv5SRAAAo",
+      "playerNumber": 1,
+      "position": {
+        "x": 2,
+        "y": 2
+      },
+      "color": "#3b82f6",
+      "name": "P1 Face",
+      "role": "Face",
+      "stats": {
+        "movement": 4,
+        "meleeSkill": 8,
+        "ballisticSkill": 9,
+        "wounds": 6,
+        "maxWounds": 6,
+        "defense": 8,
+        "hack": 8,
+        "con": 6
+      },
+      "state": "Overt",
+      "isSelected": false
+    },
+    {
+      "id": "p1-token-2",
+      "playerId": "1qIKDltjCjRJv5SRAAAo",
+      "playerNumber": 1,
+      "position": {
+        "x": 2,
+        "y": 4
+      },
+      "color": "#3b82f6",
+      "name": "P1 Muscle",
+      "role": "Muscle",
+      "stats": {
+        "movement": 3,
+        "meleeSkill": 7,
+        "ballisticSkill": 8,
+        "wounds": 9,
+        "maxWounds": 9,
+        "defense": 7,
+        "hack": 10,
+        "con": 9
+      },
+      "state": "Overt",
+      "isSelected": true
+    },
+    {
+      "id": "p1-token-3",
+      "playerId": "1qIKDltjCjRJv5SRAAAo",
+      "playerNumber": 1,
+      "position": {
+        "x": 3,
+        "y": 3
+      },
+      "color": "#3b82f6",
+      "name": "P1 Ninja",
+      "role": "Ninja",
+      "stats": {
+        "movement": 5,
+        "meleeSkill": 7,
+        "ballisticSkill": 9,
+        "wounds": 7,
+        "maxWounds": 7,
+        "defense": 7,
+        "hack": 8,
+        "con": 7
+      },
+      "state": "Overt",
+      "isSelected": true
+    },
+    {
+      "id": "p1-token-4",
+      "playerId": "1qIKDltjCjRJv5SRAAAo",
+      "playerNumber": 1,
+      "position": {
+        "x": 4,
+        "y": 2
+      },
+      "color": "#3b82f6",
+      "name": "P1 Brain",
+      "role": "Brain",
+      "stats": {
+        "movement": 3,
+        "meleeSkill": 9,
+        "ballisticSkill": 8,
+        "wounds": 6,
+        "maxWounds": 6,
+        "defense": 9,
+        "hack": 6,
+        "con": 8
+      },
+      "state": "Overt",
+      "isSelected": true
+    },
+    {
+      "id": "p1-token-5",
+      "playerId": "1qIKDltjCjRJv5SRAAAo",
+      "playerNumber": 1,
+      "position": {
+        "x": 4,
+        "y": 4
+      },
+      "color": "#3b82f6",
+      "name": "P1 Spook",
+      "role": "Spook",
+      "stats": {
+        "movement": 5,
+        "meleeSkill": 8,
+        "ballisticSkill": 7,
+        "wounds": 8,
+        "maxWounds": 8,
+        "defense": 8,
+        "hack": 8,
+        "con": 8
+      },
+      "state": "Overt",
+      "isSelected": false
+    },
+    {
+      "id": "p2-token-1",
+      "playerId": "eRiiv60LRpFWGQkFAAAp",
+      "playerNumber": 2,
+      "position": {
+        "x": 34,
+        "y": 33
+      },
+      "color": "#ef4444",
+      "name": "P2 Face",
+      "role": "Face",
+      "stats": {
+        "movement": 4,
+        "meleeSkill": 8,
+        "ballisticSkill": 9,
+        "wounds": 6,
+        "maxWounds": 6,
+        "defense": 8,
+        "hack": 8,
+        "con": 6
+      },
+      "state": "Overt",
+      "isSelected": true
+    },
+    {
+      "id": "p2-token-2",
+      "playerId": "eRiiv60LRpFWGQkFAAAp",
+      "playerNumber": 2,
+      "position": {
+        "x": 33,
+        "y": 32
+      },
+      "color": "#ef4444",
+      "name": "P2 Muscle",
+      "role": "Muscle",
+      "stats": {
+        "movement": 3,
+        "meleeSkill": 7,
+        "ballisticSkill": 8,
+        "wounds": 9,
+        "maxWounds": 9,
+        "defense": 7,
+        "hack": 10,
+        "con": 9
+      },
+      "state": "Overt",
+      "isSelected": false
+    },
+    {
+      "id": "p2-token-3",
+      "playerId": "eRiiv60LRpFWGQkFAAAp",
+      "playerNumber": 2,
+      "position": {
+        "x": 30,
+        "y": 33
+      },
+      "color": "#ef4444",
+      "name": "P2 Ninja",
+      "role": "Ninja",
+      "stats": {
+        "movement": 5,
+        "meleeSkill": 7,
+        "ballisticSkill": 9,
+        "wounds": 7,
+        "maxWounds": 7,
+        "defense": 7,
+        "hack": 8,
+        "con": 7
+      },
+      "state": "Overt",
+      "isSelected": true
+    },
+    {
+      "id": "p2-token-4",
+      "playerId": "eRiiv60LRpFWGQkFAAAp",
+      "playerNumber": 2,
+      "position": {
+        "x": 32,
+        "y": 33
+      },
+      "color": "#ef4444",
+      "name": "P2 Brain",
+      "role": "Brain",
+      "stats": {
+        "movement": 3,
+        "meleeSkill": 9,
+        "ballisticSkill": 8,
+        "wounds": 6,
+        "maxWounds": 6,
+        "defense": 9,
+        "hack": 6,
+        "con": 8
+      },
+      "state": "Overt",
+      "isSelected": false
+    },
+    {
+      "id": "p2-token-5",
+      "playerId": "eRiiv60LRpFWGQkFAAAp",
+      "playerNumber": 2,
+      "position": {
+        "x": 31,
+        "y": 32
+      },
+      "color": "#ef4444",
+      "name": "P2 Spook",
+      "role": "Spook",
+      "stats": {
+        "movement": 5,
+        "meleeSkill": 8,
+        "ballisticSkill": 7,
+        "wounds": 8,
+        "maxWounds": 8,
+        "defense": 8,
+        "hack": 8,
+        "con": 8
+      },
+      "state": "Overt",
+      "isSelected": true
+    }
+  ]
 }
