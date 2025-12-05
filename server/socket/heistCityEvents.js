@@ -199,6 +199,38 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     console.log(`📏 Broadcasted ruler update to lobby ${lobbyId}`);
   });
 
+  /**
+   * Handle request for current game state
+   * This allows clients to sync on load/refresh
+   */
+  socket.on('request-game-state', (data) => {
+    const { lobbyId } = data;
+
+    if (!lobbyId) {
+      socket.emit('error', { message: 'Missing lobbyId' });
+      return;
+    }
+
+    const game = games.get(lobbyId);
+    const lobby = lobbies.get(lobbyId);
+
+    if (!game || !lobby) {
+      console.log(`⚠️  No game state found for lobby ${lobbyId}`);
+      return;
+    }
+
+    // Only send state for Heist City games
+    if (game.state.type === 'heist-city') {
+      // Send the current game state to the requesting client
+      socket.emit('game-started', {
+        ...game.state,
+        players: lobby.players,
+      });
+
+      console.log(`🔄 Sent current game state to client in lobby ${lobbyId}`);
+    }
+  });
+
 }
 
 module.exports = {

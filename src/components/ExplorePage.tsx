@@ -86,23 +86,26 @@ const ExplorePage: React.FC = () => {
       id: 'heist-city',
       name: 'Heist City',
       players: '2 players',
-      duration: '30-45 minutes',
-      description: 'A tactical heist game on a 36" x 36" grid. Control 5 characters each to complete objectives while avoiding security!',
+      duration: '5 turns (~45 min)',
+      description: 'Squad-based heist skirmish where you control 5 unique crew members. Steal objectives, avoid detection, and escape before the SWAT arrives!',
       rules: [
-        'Each player controls 5 character tokens on a 36" × 36" map',
-        'Move characters strategically to complete objectives',
-        'Collect gear, access computers, and retrieve intel',
-        'Avoid enemy cameras, guards, and rapid response units',
-        'Use teleporters to quickly navigate the map',
-        'Plan your route carefully - security is everywhere!',
-        'Complete your objectives before your opponent'
+        'Players alternate activating crew members (3 actions each: Move, Shoot, Hack, Con, Special)',
+        'Each crew member has unique stats and abilities (Face, Muscle, Ninja, Brain, Spook)',
+        'Manage stealth states: Hidden and Disguised units avoid detection, Overt units raise alerts',
+        'Alert system escalates from passive guards → active turrets → SWAT reinforcements',
+        'Roll 2d6 for attacks (MS/BS), defense (D), hacking (H), and conning (C)',
+        'Earn Victory Points by KOing enemies, uploading intel, extracting objectives, and escaping',
+        'Combat: Attack → Defense roll → Apply damage. 0 Wounds = Stunned, then Unconscious',
+        'Win by earning the most VP across 5 turns or controlling the map'
       ],
       features: [
-        '🗺️ Interactive 36" × 36" grid map',
-        '🎮 Drag-and-drop character movement',
-        '📹 Dynamic security systems',
-        '⚡ Teleporter mechanics',
-        '🎯 Strategic objective-based gameplay'
+        '🎭 5 character classes with unique roles and special abilities',
+        '🕵️ Stealth mechanics: Hidden, Disguised, and Overt states',
+        '🚨 Dynamic 4-level alert system with escalating threats',
+        '🎲 Dice-based skill checks for combat, hacking, and social engineering',
+        '🗺️ 5 unique maps: Bank Job, Jail Break, Server Hack, Train Robbery, Treasure Hunt',
+        '📏 Interactive tools: Drag-and-drop units, ruler, dice roller, game log',
+        '💾 Real-time multiplayer sync with map editor mode'
       ],
       status: 'available'
     }

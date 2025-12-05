@@ -787,51 +787,58 @@ const LobbyPage: React.FC = () => {
 
               <div className="space-y-4 text-gray-300">
                 <p className="text-lg">
-                  A tactical heist game on a 36" × 36" grid. Control 5 characters each to complete objectives while avoiding security!
+                  Squad-based heist skirmish. Control 5 unique crew members, steal objectives, avoid detection, and escape before the SWAT arrives!
                 </p>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">📋 How to Play</h3>
-                  <ol className="space-y-2 text-sm">
-                    <li><strong>1.</strong> Each player controls 5 character tokens on a 36" × 36" map</li>
-                    <li><strong>2.</strong> Move characters strategically to complete objectives</li>
-                    <li><strong>3.</strong> Collect gear, access computers, and retrieve intel</li>
-                    <li><strong>4.</strong> Avoid enemy cameras, guards, and rapid response units</li>
-                    <li><strong>5.</strong> Use teleporters to quickly navigate the map</li>
-                    <li><strong>6.</strong> Plan your route carefully - security is everywhere!</li>
-                    <li><strong>7.</strong> Complete your objectives before your opponent</li>
-                  </ol>
-                </div>
 
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">🎮 Game Info</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><strong>Players:</strong> 2 players</div>
-                    <div><strong>Duration:</strong> 30-45 minutes</div>
-                    <div><strong>Difficulty:</strong> Medium</div>
-                    <div><strong>Strategy:</strong> Tactical Movement</div>
+                    <div><strong>Players:</strong> 2+ players</div>
+                    <div><strong>Duration:</strong> 5 turns (~45 min)</div>
+                    <div><strong>Difficulty:</strong> Medium-High</div>
+                    <div><strong>Strategy:</strong> Tactical Skirmish</div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">✨ Features</h3>
+                  <h3 className="text-lg font-semibold text-white mb-2">📋 Turn Structure</h3>
+                  <ol className="space-y-2 text-sm">
+                    <li><strong>1.</strong> Players alternate activating crew members (3 actions each: Move, Shoot, Hack, Con, Special)</li>
+                    <li><strong>2.</strong> Each crew has unique stats and abilities (Face, Muscle, Ninja, Brain, Spook)</li>
+                    <li><strong>3.</strong> After all activations, NPCs act simultaneously (Mob Phase)</li>
+                    <li><strong>4.</strong> End of turn: Resolve effects, check alert level</li>
+                  </ol>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">🎲 Core Mechanics</h3>
                   <ul className="space-y-1 text-sm">
-                    <li>• <strong>Interactive Map:</strong> Drag-and-drop character movement on a precise grid</li>
-                    <li>• <strong>Security Systems:</strong> Cameras, guards, and rapid response units</li>
-                    <li>• <strong>Strategic Items:</strong> Gear, computers, info drops, and teleporters</li>
-                    <li>• <strong>Grid-based Movement:</strong> 1-inch grid squares for precise positioning</li>
-                    <li>• <strong>Visual Feedback:</strong> Real-time position tracking and selection</li>
+                    <li>• <strong>Stealth States:</strong> Hidden and Disguised units avoid detection, Overt units raise alerts</li>
+                    <li>• <strong>Alert System:</strong> Escalates from passive guards → active turrets → SWAT reinforcements</li>
+                    <li>• <strong>Dice Rolls:</strong> 2d6 for attacks (MS/BS), defense (D), hacking (H), and conning (C)</li>
+                    <li>• <strong>Combat:</strong> Attack → Defense roll → Apply damage. 0 Wounds = Stunned, then Unconscious</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">🏆 Victory Points</h3>
+                  <ul className="space-y-1 text-sm">
+                    <li>• First KO on enemy unit: <strong>+1 VP</strong></li>
+                    <li>• Reveal hidden/disguised enemy: <strong>+1 VP</strong></li>
+                    <li>• Upload intel (hack computers): <strong>+1 VP</strong></li>
+                    <li>• Extract intel to deployment zone: <strong>+3 VP</strong></li>
+                    <li>• Crew member in deployment zone at end: <strong>+2 VP</strong></li>
                   </ul>
                 </div>
 
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">💡 Tips</h3>
                   <ul className="space-y-1 text-sm">
-                    <li>• Plan your route to avoid camera vision cones</li>
-                    <li>• Use walls and tables as cover from security</li>
-                    <li>• Teleporters can save time but may be monitored</li>
-                    <li>• Split your team to cover more objectives simultaneously</li>
-                    <li>• Watch your opponent's movements for strategic opportunities</li>
+                    <li>• Use Hidden/Disguised states to avoid triggering alerts</li>
+                    <li>• Watch the alert level - SWAT spawns at level 3!</li>
+                    <li>• Each character class has unique strengths (Face cons, Ninja stealth, etc.)</li>
+                    <li>• Wounded units become Stunned before Unconscious - extract them!</li>
+                    <li>• Balance VP objectives: KOs vs intel upload vs safe extraction</li>
                   </ul>
                 </div>
               </div>

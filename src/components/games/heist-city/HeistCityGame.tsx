@@ -98,6 +98,10 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
       setGameState(state);
     });
 
+    // Request current game state from server when component mounts
+    // This handles the case where we missed the initial game-started event
+    socket.emit('request-game-state', { lobbyId });
+
     // Listen for map state updates from other players
     socket.on('heist-city-map-state-update', (newMapState: MapState) => {
       console.log('Received map state update from server:', newMapState);
@@ -176,7 +180,7 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
       socket.off('heist-city-map-loaded');
       socket.off('heist-city-ruler-update');
     };
-  }, [socket, gameState]);
+  }, [socket, gameState, lobbyId]);
 
   // Handle map state changes (e.g., token movement)
   const handleMapStateChange = (newMapState: MapState) => {
