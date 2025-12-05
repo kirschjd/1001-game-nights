@@ -109,6 +109,15 @@ export interface Player {
   tokens: CharacterToken[];
 }
 
+/**
+ * Tracks which player has selected which character
+ */
+export interface PlayerSelection {
+  playerId: string;
+  characterId: string;
+  playerNumber: 1 | 2 | 'observer'; // For color-coding the focus ring
+}
+
 export interface MapState {
   items: MapItem[];
   characters: CharacterToken[];

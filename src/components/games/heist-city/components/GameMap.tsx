@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { MapState, CharacterToken as CharacterTokenType, MapItem as MapItemType, MapZone as MapZoneType, Position, ItemType } from '../types';
+import { MapState, CharacterToken as CharacterTokenType, MapItem as MapItemType, MapZone as MapZoneType, Position, ItemType, PlayerSelection } from '../types';
 import {
   SVG_WIDTH,
   SVG_HEIGHT,
@@ -24,18 +24,28 @@ import DiceRoller from './DiceRoller';
 import GameLog, { LogEntry } from './GameLog';
 import { getRoleAbilities } from '../data/roleAbilities';
 import { getEquipmentByIds } from '../data/equipmentLoader';
+import { isMovableEnemy, getEnemyStats, isEnemyUnit } from '../data/enemyStats';
 
 interface GameMapProps {
   mapState: MapState;
   onMapStateChange?: (mapState: MapState) => void;
-  onSelectionChange?: (selection: { type: 'token' | 'item' | null; id: string | null; name: string; position: Position } | null) => void;
+  onSelectionChange?: (characterId: string | null) => void; // Now just passes character ID
   readOnly?: boolean;
   onDiceRoll?: (dice1: number, dice2: number, total: number) => void;
   lastDiceRoll?: { dice1: number; dice2: number; total: number; roller?: string } | null;
   logEntries?: LogEntry[];
-  selectedObject?: { type: 'token' | 'item'; id: string; name: string; position: Position } | null;
+  playerSelections: PlayerSelection[]; // All player selections
+  currentPlayerId: string; // Current player's ID
+  currentPlayerNumber: 1 | 2 | 'observer'; // Current player's number for color-coding
   onExhaustToggle?: (characterId: string) => void;
   onActionUpdate?: (characterId: string, actions: string[]) => void;
+  onLoadMap?: (mapId: string) => void;
+  sharedRulerState?: {
+    start: Position | null;
+    end: Position | null;
+    playerId: string | null;
+  } | null;
+  onRulerUpdate?: (start: Position | null, end: Position | null) => void;
 }
 
 /**
@@ -78,9 +88,42 @@ const getAvailableActions = (character: CharacterTokenType): string[] => {
   return actions;
 };
 
-const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelectionChange, readOnly = false, onDiceRoll, lastDiceRoll, logEntries = [], selectedObject, onExhaustToggle, onActionUpdate }) => {
+const GameMap: React.FC<GameMapProps> = ({
+  mapState,
+  onMapStateChange,
+  onSelectionChange,
+  readOnly = false,
+  onDiceRoll,
+  lastDiceRoll,
+  logEntries = [],
+  playerSelections,
+  currentPlayerId,
+  currentPlayerNumber,
+  onExhaustToggle,
+  onActionUpdate,
+  onLoadMap,
+  sharedRulerState,
+  onRulerUpdate,
+}) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to get all players who have selected a character
+  const getSelectingPlayers = useCallback(
+    (characterId: string): Array<1 | 2 | 'observer'> => {
+      return playerSelections
+        .filter(sel => sel.characterId === characterId)
+        .map(sel => sel.playerNumber);
+    },
+    [playerSelections]
+  );
+
+  // Get the character selected by the current player
+  const getCurrentPlayerSelection = useCallback((): CharacterTokenType | null => {
+    const selection = playerSelections.find(sel => sel.playerId === currentPlayerId);
+    if (!selection) return null;
+    return mapState.characters.find(char => char.id === selection.characterId) || null;
+  }, [playerSelections, currentPlayerId, mapState.characters]);
 
   // Tool and view state
   const [activeTool, setActiveTool] = useState<MapTool>('select');
@@ -112,10 +155,6 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-
-  // Ruler state
-  const [rulerStart, setRulerStart] = useState<Position | null>(null);
-  const [rulerEnd, setRulerEnd] = useState<Position | null>(null);
 
   // Settings state
   const [showSettings, setShowSettings] = useState(false);
@@ -178,8 +217,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
     if (readOnly || activeTool !== 'select') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if a selected token exists
-      const selectedToken = mapState.characters.find(char => char.isSelected);
+      // Check if current player has a selected token
+      const selectedToken = getCurrentPlayerSelection();
       if (!selectedToken) return;
 
       // Prevent default browser behavior for these keys
@@ -222,7 +261,7 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [readOnly, activeTool, mapState, onMapStateChange, settings.snapToGrid]);
+  }, [readOnly, activeTool, mapState, onMapStateChange, settings.snapToGrid, getCurrentPlayerSelection]);
 
   // Add native wheel event listener to prevent browser zoom
   useEffect(() => {
@@ -292,16 +331,24 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
 
       const svgCoords = screenToSVG(e.clientX, e.clientY);
 
+      // Right-click pan - works with any tool
+      if (e.button === 2) {
+        e.preventDefault(); // Prevent context menu
+        setIsPanning(true);
+        setPanStart({ x: e.clientX, y: e.clientY });
+        return;
+      }
+
+      // Left-click tool-specific behavior
       if (activeTool === 'pan') {
         setIsPanning(true);
         setPanStart({ x: e.clientX, y: e.clientY });
       } else if (activeTool === 'ruler') {
         const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
-        setRulerStart(posInches);
-        setRulerEnd(posInches);
+        onRulerUpdate?.(posInches, posInches);
       }
     },
-    [activeTool, readOnly, screenToSVG]
+    [activeTool, readOnly, screenToSVG, onRulerUpdate]
   );
 
   // Handle token drag start and selection
@@ -309,24 +356,15 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
     (token: CharacterTokenType, e: React.MouseEvent) => {
       if (readOnly || activeTool !== 'select') return;
 
-      // Handle selection on mousedown
-      const isCurrentlySelected = token.isSelected;
-      const updatedCharacters = mapState.characters.map((t) => ({
-        ...t,
-        isSelected: t.id === token.id ? !t.isSelected : t.isSelected,
-      }));
-      onMapStateChange?.({ ...mapState, characters: updatedCharacters });
+      // Check if current player already has this character selected
+      const currentSelection = playerSelections.find(sel => sel.playerId === currentPlayerId);
+      const isCurrentlySelected = currentSelection?.characterId === token.id;
 
-      // Notify parent of selection change
-      if (!isCurrentlySelected) {
-        onSelectionChange?.({
-          type: 'token',
-          id: token.id,
-          name: token.name,
-          position: token.position,
-        });
+      // Notify parent of selection change (toggle selection)
+      if (isCurrentlySelected) {
+        onSelectionChange?.(null); // Deselect
       } else {
-        onSelectionChange?.(null);
+        onSelectionChange?.(token.id); // Select this character
       }
 
       // Store initial mouse position for drag threshold
@@ -344,13 +382,21 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       setDraggedToken(token.id);
       setDragOffset(offset);
     },
-    [readOnly, activeTool, screenToSVG, mapState, onMapStateChange, onSelectionChange]
+    [readOnly, activeTool, screenToSVG, playerSelections, currentPlayerId, onSelectionChange]
   );
 
-  // Handle item drag start (editor mode)
+  // Handle item drag start (editor mode or movable enemies in select mode)
   const handleItemMouseDown = useCallback(
     (item: MapItemType, e: React.MouseEvent) => {
-      if (readOnly || activeTool !== 'editor') return;
+      if (readOnly) return;
+
+      // Allow dragging in editor mode, or in select mode if it's a movable enemy
+      const canDrag = activeTool === 'editor' || (activeTool === 'select' && isMovableEnemy(item.type));
+      if (!canDrag) return;
+
+      // Store initial mouse position for drag threshold
+      setDragStartPosition({ x: e.clientX, y: e.clientY });
+      setIsDraggingConfirmed(false);
 
       // Calculate offset from cursor to item center
       const svgCoords = screenToSVG(e.clientX, e.clientY);
@@ -362,6 +408,7 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
 
       setDraggedItem(item.id);
       setDragOffset(offset);
+      setSelectedItem(item.id); // Select the enemy when dragging in select mode
     },
     [readOnly, activeTool, screenToSVG]
   );
@@ -458,9 +505,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       setSelectedZone(isCurrentlySelected ? null : zone.id);
       // Clear item selection when selecting a zone
       setSelectedItem(null);
-      onSelectionChange?.(null);
     },
-    [selectedZone, onSelectionChange, readOnly]
+    [selectedZone, readOnly]
   );
 
   // Handle zone drag start
@@ -532,8 +578,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       }
 
       // Handle ruler
-      if (rulerStart && activeTool === 'ruler') {
-        setRulerEnd(posInches);
+      if (sharedRulerState?.start && activeTool === 'ruler') {
+        onRulerUpdate?.(sharedRulerState.start, posInches);
         return;
       }
 
@@ -572,24 +618,44 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
         });
       }
 
-      // Handle item dragging (editor mode)
-      if (draggedItem && activeTool === 'editor' && dragOffset) {
-        // Apply drag offset to keep item under cursor
-        const adjustedPos = {
-          x: posInches.x + dragOffset.x,
-          y: posInches.y + dragOffset.y
-        };
-        const snapPos = settings.snapToGrid ? snapToGridUtil(adjustedPos) : adjustedPos;
-        setHoveredGrid(snapPos);
-        setCursorPosition(adjustedPos);
+      // Handle item dragging (editor mode or movable enemies in select mode)
+      if (draggedItem && dragOffset) {
+        const item = mapState.items.find(i => i.id === draggedItem);
+        const canDrag = activeTool === 'editor' || (activeTool === 'select' && item && isMovableEnemy(item.type));
 
-        // Update ref immediately (no re-render)
-        tempDragPositionRef.current = adjustedPos;
+        if (canDrag) {
+          // Check if we've exceeded the drag threshold
+          if (!isDraggingConfirmed && dragStartPosition) {
+            const dx = e.clientX - dragStartPosition.x;
+            const dy = e.clientY - dragStartPosition.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const DRAG_THRESHOLD = 5; // pixels
 
-        // Schedule state update on next animation frame for smooth rendering
-        requestAnimationFrame(() => {
-          setTempDragPosition(adjustedPos);
-        });
+            if (distance > DRAG_THRESHOLD) {
+              setIsDraggingConfirmed(true);
+            } else {
+              // Haven't moved enough yet, don't drag
+              return;
+            }
+          }
+
+          // Apply drag offset to keep item under cursor
+          const adjustedPos = {
+            x: posInches.x + dragOffset.x,
+            y: posInches.y + dragOffset.y
+          };
+          const snapPos = settings.snapToGrid ? snapToGridUtil(adjustedPos) : adjustedPos;
+          setHoveredGrid(snapPos);
+          setCursorPosition(adjustedPos);
+
+          // Update ref immediately (no re-render)
+          tempDragPositionRef.current = adjustedPos;
+
+          // Schedule state update on next animation frame for smooth rendering
+          requestAnimationFrame(() => {
+            setTempDragPosition(adjustedPos);
+          });
+        }
       }
 
       // Handle zone dragging (editor mode)
@@ -673,7 +739,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       isPanning,
       panStart,
       zoom,
-      rulerStart,
+      sharedRulerState,
+      onRulerUpdate,
       activeTool,
       draggedToken,
       draggedItem,
@@ -699,10 +766,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       setPanStart(null);
     }
 
-    // End ruler
-    if (rulerStart && activeTool === 'ruler') {
-      // Ruler measurement is complete, keep it visible
-    }
+    // End ruler - keep it visible after mouse up
+    // (ruler state is managed in parent via sharedRulerState)
 
     // End token dragging
     if (draggedToken) {
@@ -735,29 +800,38 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       setIsDraggingConfirmed(false);
     }
 
-    // End item dragging (editor mode)
-    if (draggedItem && tempDragPositionRef.current) {
-      let finalPosition = tempDragPositionRef.current;
-      if (settings.snapToGrid) {
-        finalPosition = snapToGridUtil(tempDragPositionRef.current);
+    // End item dragging (editor mode or movable enemies in select mode)
+    if (draggedItem) {
+      const item = mapState.items.find(i => i.id === draggedItem);
+      const canDrag = activeTool === 'editor' || (activeTool === 'select' && item && isMovableEnemy(item.type));
+
+      // Only update position if dragging was confirmed (exceeded threshold)
+      if (canDrag && isDraggingConfirmed && tempDragPositionRef.current) {
+        let finalPosition = tempDragPositionRef.current;
+        if (settings.snapToGrid) {
+          finalPosition = snapToGridUtil(tempDragPositionRef.current);
+        }
+
+        if (!isWithinBounds(finalPosition)) {
+          finalPosition.x = Math.max(0, Math.min(35, finalPosition.x));
+          finalPosition.y = Math.max(0, Math.min(35, finalPosition.y));
+        }
+
+        const updatedItems = mapState.items.map((i) =>
+          i.id === draggedItem ? { ...i, position: finalPosition } : i
+        );
+
+        onMapStateChange?.({ ...mapState, items: updatedItems });
       }
 
-      if (!isWithinBounds(finalPosition)) {
-        finalPosition.x = Math.max(0, Math.min(35, finalPosition.x));
-        finalPosition.y = Math.max(0, Math.min(35, finalPosition.y));
-      }
-
-      const updatedItems = mapState.items.map((i) =>
-        i.id === draggedItem ? { ...i, position: finalPosition } : i
-      );
-
-      onMapStateChange?.({ ...mapState, items: updatedItems });
       setDraggedItem(null);
       setDragOffset(null);
       setTempDragPosition(null);
       tempDragPositionRef.current = null;
       setHoveredGrid(null);
       setCursorPosition(null);
+      setDragStartPosition(null);
+      setIsDraggingConfirmed(false);
     }
 
     // End zone dragging (editor mode)
@@ -773,7 +847,7 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       setResizeStartSize(null);
       setResizeStartCursor(null);
     }
-  }, [isPanning, rulerStart, activeTool, draggedToken, draggedItem, draggedZone, resizingZone, mapState, onMapStateChange, settings.snapToGrid, isDraggingConfirmed]);
+  }, [isPanning, activeTool, draggedToken, draggedItem, draggedZone, resizingZone, mapState, onMapStateChange, settings.snapToGrid, isDraggingConfirmed]);
 
 
   // Handle item click
@@ -784,25 +858,10 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       const isCurrentlySelected = item.id === selectedItem;
       setSelectedItem(isCurrentlySelected ? null : item.id);
 
-      // Notify parent of selection change
-      if (!isCurrentlySelected) {
-        // Format item type as readable name
-        const itemName = item.type
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-
-        onSelectionChange?.({
-          type: 'item',
-          id: item.id,
-          name: itemName,
-          position: item.position,
-        });
-      } else {
-        onSelectionChange?.(null);
-      }
+      // Items don't participate in character selection system
+      // They just toggle local selectedItem state for editor purposes
     },
-    [selectedItem, onSelectionChange, readOnly, activeTool]
+    [selectedItem, readOnly, activeTool]
   );
 
   // Handle delete selected item or zone
@@ -814,7 +873,6 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       const updatedZones = mapState.zones.filter((zone) => zone.id !== selectedZone);
       onMapStateChange?.({ ...mapState, zones: updatedZones });
       setSelectedZone(null);
-      onSelectionChange?.(null);
       return;
     }
 
@@ -823,9 +881,8 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
       const updatedItems = mapState.items.filter((item) => item.id !== selectedItem);
       onMapStateChange?.({ ...mapState, items: updatedItems });
       setSelectedItem(null);
-      onSelectionChange?.(null);
     }
-  }, [selectedItem, selectedZone, readOnly, activeTool, mapState, onMapStateChange, onSelectionChange]);
+  }, [selectedItem, selectedZone, readOnly, activeTool, mapState, onMapStateChange]);
 
   // Handle keyboard events for delete
   useEffect(() => {
@@ -957,13 +1014,13 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
 
   // Render ruler
   const renderRuler = () => {
-    if (!rulerStart || !rulerEnd) return null;
+    if (!sharedRulerState?.start || !sharedRulerState?.end) return null;
 
-    const x1 = inchesToPixels(rulerStart.x);
-    const y1 = inchesToPixels(rulerStart.y);
-    const x2 = inchesToPixels(rulerEnd.x);
-    const y2 = inchesToPixels(rulerEnd.y);
-    const distance = calculateDistance(rulerStart, rulerEnd);
+    const x1 = inchesToPixels(sharedRulerState.start.x);
+    const y1 = inchesToPixels(sharedRulerState.start.y);
+    const x2 = inchesToPixels(sharedRulerState.end.x);
+    const y2 = inchesToPixels(sharedRulerState.end.y);
+    const distance = calculateDistance(sharedRulerState.start, sharedRulerState.end);
 
     return (
       <g>
@@ -1011,8 +1068,7 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
         activeTool={activeTool}
         onToolChange={(tool) => {
           setActiveTool(tool);
-          setRulerStart(null);
-          setRulerEnd(null);
+          onRulerUpdate?.(null, null); // Clear ruler when changing tools
         }}
         zoom={zoom}
         onZoomIn={handleZoomIn}
@@ -1023,6 +1079,7 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
         showSettings={showSettings}
         selectedItemId={selectedItem}
         onDeleteItem={handleDeleteItem}
+        onLoadMap={onLoadMap}
       />
 
       {/* Settings Panel */}
@@ -1068,6 +1125,7 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onContextMenu={(e) => e.preventDefault()}
         >
           {/* Grid background */}
           <rect width={inchesToPixels(MAP_SIZE_INCHES)} height={inchesToPixels(MAP_SIZE_INCHES)} fill="#1f2937" />
@@ -1136,6 +1194,7 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
                   token={displayToken}
                   onMouseDown={handleTokenMouseDown}
                   isDragging={token.id === draggedToken}
+                  selectingPlayers={getSelectingPlayers(token.id)}
                 />
               );
             })}
@@ -1152,9 +1211,9 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
             lastRoll={lastDiceRoll}
           />
 
-          {/* Selection Info Panel */}
-          {selectedObject && selectedObject.type === 'token' && (() => {
-            const character = mapState.characters.find(c => c.id === selectedObject.id);
+          {/* Character Selection Info Panel */}
+          {(() => {
+            const character = getCurrentPlayerSelection();
             if (!character) return null;
 
             const handleActionChange = (slotIndex: number, actionName: string) => {
@@ -1176,9 +1235,9 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
               <div className="bg-purple-900/30 border border-purple-500/50 p-4 rounded-lg">
                 {/* Name and Position Header */}
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-sm font-bold text-white">{selectedObject.name}</h3>
+                  <h3 className="text-sm font-bold text-white">{character.name}</h3>
                   <span className="text-xs text-gray-400">
-                    ({selectedObject.position.x.toFixed(1)}", {selectedObject.position.y.toFixed(1)}")
+                    ({character.position.x.toFixed(1)}", {character.position.y.toFixed(1)}")
                   </span>
                 </div>
 
@@ -1208,12 +1267,74 @@ const GameMap: React.FC<GameMapProps> = ({ mapState, onMapStateChange, onSelecti
                 {/* Exhaust Button */}
                 {onExhaustToggle && (
                   <button
-                    onClick={() => onExhaustToggle(selectedObject.id)}
+                    onClick={() => onExhaustToggle(character.id)}
                     className="w-full px-3 py-2 rounded-lg font-semibold text-white text-xs transition-all bg-purple-600 hover:bg-purple-700 active:scale-95"
                   >
                     {character.exhausted ? 'Unexhaust Character' : 'Exhaust Character'}
                   </button>
                 )}
+              </div>
+            );
+          })()}
+
+          {/* Enemy Unit Selection Info Panel */}
+          {(() => {
+            if (!selectedItem) return null;
+            const item = mapState.items.find(i => i.id === selectedItem);
+            if (!item || !isEnemyUnit(item.type)) return null;
+
+            const enemyStats = getEnemyStats(item.type);
+            if (!enemyStats) return null;
+
+            return (
+              <div className="bg-red-900/30 border border-red-500/50 p-4 rounded-lg">
+                {/* Name and Position Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-sm font-bold text-white">{enemyStats.name}</h3>
+                  <span className="text-xs text-gray-400">
+                    ({item.position.x.toFixed(1)}", {item.position.y.toFixed(1)}")
+                  </span>
+                </div>
+
+                {/* Stats Display */}
+                <div className="space-y-1 text-xs text-white">
+                  {enemyStats.movement !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">M:</span>
+                      <span className="font-semibold">{enemyStats.movement}</span>
+                    </div>
+                  )}
+                  {enemyStats.meleeSkill !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">MS:</span>
+                      <span className="font-semibold">{enemyStats.meleeSkill}</span>
+                    </div>
+                  )}
+                  {enemyStats.ballisticSkill !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">BS:</span>
+                      <span className="font-semibold">{enemyStats.ballisticSkill}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">W:</span>
+                    <span className="font-semibold">{enemyStats.wounds}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Def:</span>
+                    <span className="font-semibold">{enemyStats.defense}</span>
+                  </div>
+                  {enemyStats.range !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Range:</span>
+                      <span className="font-semibold">{enemyStats.range}"</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Dam:</span>
+                    <span className="font-semibold">{enemyStats.damage}</span>
+                  </div>
+                </div>
               </div>
             );
           })()}

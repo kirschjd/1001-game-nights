@@ -6,12 +6,14 @@ interface CharacterTokenProps {
   token: CharacterTokenType;
   onMouseDown?: (token: CharacterTokenType, e: React.MouseEvent) => void;
   isDragging?: boolean;
+  selectingPlayers?: Array<1 | 2 | 'observer'>; // Player numbers who have selected this character
 }
 
 const CharacterToken: React.FC<CharacterTokenProps> = ({
   token,
   onMouseDown,
   isDragging,
+  selectingPlayers = [],
 }) => {
   // Center tokens in grid squares by adding offset
   const x = inchesToPixels(token.position.x + GRID_CENTER_OFFSET);
@@ -35,6 +37,13 @@ const CharacterToken: React.FC<CharacterTokenProps> = ({
     return 'none';
   };
 
+  // Get focus ring color based on player number
+  const getFocusRingColor = (playerNumber: 1 | 2 | 'observer'): string => {
+    if (playerNumber === 1) return '#3b82f6'; // blue-500 (Player 1 controls Blue team)
+    if (playerNumber === 2) return '#ef4444'; // red-500 (Player 2 controls Red team)
+    return '#eab308'; // yellow-500 for observers
+  };
+
   return (
     <g
       className={`cursor-move ${isDragging ? 'opacity-70 no-transition' : ''}`}
@@ -44,18 +53,19 @@ const CharacterToken: React.FC<CharacterTokenProps> = ({
         filter: getTokenFilter(),
       }}
     >
-      {/* Outer glow for selected state */}
-      {token.isSelected && (
+      {/* Focus rings for each player who has selected this character */}
+      {selectingPlayers.map((playerNumber, index) => (
         <circle
+          key={`focus-ring-${playerNumber}-${index}`}
           cx={x}
           cy={y}
-          r={TOKEN_RADIUS + 4}
+          r={TOKEN_RADIUS + 4 + (index * 3)} // Stack rings outward if multiple players select same character
           fill="none"
-          stroke="#fff"
+          stroke={getFocusRingColor(playerNumber)}
           strokeWidth={2}
-          opacity={0.6}
+          opacity={0.8}
         />
-      )}
+      ))}
 
       {/* Main token circle */}
       <circle

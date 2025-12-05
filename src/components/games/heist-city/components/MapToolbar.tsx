@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 export type MapTool = 'select' | 'pan' | 'ruler' | 'editor';
 
@@ -14,6 +14,7 @@ interface MapToolbarProps {
   showSettings: boolean;
   selectedItemId?: string | null;
   onDeleteItem?: () => void;
+  onLoadMap?: (mapId: string) => void;
 }
 
 const MapToolbar: React.FC<MapToolbarProps> = ({
@@ -28,13 +29,44 @@ const MapToolbar: React.FC<MapToolbarProps> = ({
   showSettings,
   selectedItemId,
   onDeleteItem,
+  onLoadMap,
 }) => {
+  const [showMapMenu, setShowMapMenu] = useState(false);
+  const mapMenuRef = useRef<HTMLDivElement>(null);
+
   const tools: { id: MapTool; icon: string; label: string }[] = [
     { id: 'select', icon: '👆', label: 'Select (Move tokens)' },
     { id: 'pan', icon: '✋', label: 'Pan (Drag map)' },
     { id: 'ruler', icon: '📏', label: 'Ruler (Measure distance)' },
     { id: 'editor', icon: '✏️', label: 'Editor (Move/Add map elements)' },
   ];
+
+  const availableMaps = [
+    { id: 'bank-job', name: 'Bank Job' },
+    { id: 'jail-break', name: 'Jail Break' },
+    { id: 'server-hack', name: 'Server Hack' },
+    { id: 'train-robbery', name: 'Train Robbery' },
+    { id: 'treasure-hunt', name: 'Treasure Hunt' },
+  ];
+
+  // Close map menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mapMenuRef.current && !mapMenuRef.current.contains(event.target as Node)) {
+        setShowMapMenu(false);
+      }
+    };
+
+    if (showMapMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMapMenu]);
+
+  const handleLoadMap = (mapId: string) => {
+    onLoadMap?.(mapId);
+    setShowMapMenu(false);
+  };
 
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-2 mb-4">
@@ -106,6 +138,35 @@ const MapToolbar: React.FC<MapToolbarProps> = ({
         >
           <span className="text-lg">⚙️</span>
         </button>
+
+        {/* Map Loader */}
+        {onLoadMap && (
+          <div className="relative" ref={mapMenuRef}>
+            <button
+              onClick={() => setShowMapMenu(!showMapMenu)}
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+              title="Load Map"
+            >
+              <span className="text-lg">🗺️</span>
+            </button>
+            {showMapMenu && (
+              <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-[180px]">
+                <div className="py-1">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Load Map</div>
+                  {availableMaps.map((map) => (
+                    <button
+                      key={map.id}
+                      onClick={() => handleLoadMap(map.id)}
+                      className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 transition-colors"
+                    >
+                      {map.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Delete Button (Editor Mode Only) */}
         {activeTool === 'editor' && selectedItemId && onDeleteItem && (

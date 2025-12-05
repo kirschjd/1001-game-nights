@@ -104,6 +104,101 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     console.log(`📊 Broadcasted game info update to lobby ${lobbyId} (Turn: ${turnNumber})`);
   });
 
+  /**
+   * Handle player selection changes
+   * This syncs character selections across all players in the lobby
+   */
+  socket.on('heist-city-selection-change', (data) => {
+    const { lobbyId, selections } = data;
+
+    if (!lobbyId || !selections) {
+      socket.emit('error', { message: 'Missing required selection data' });
+      return;
+    }
+
+    const game = games.get(lobbyId);
+    if (!game || game.state.type !== 'heist-city') {
+      socket.emit('error', { message: 'Heist City game not found' });
+      return;
+    }
+
+    // Store selections in game state
+    game.state.playerSelections = selections;
+
+    // Broadcast to all players in the lobby (including sender for consistency)
+    io.to(lobbyId).emit('heist-city-selection-update', selections);
+
+    console.log(`🎯 Broadcasted selection update to lobby ${lobbyId}`);
+  });
+
+  /**
+   * Handle map loading
+   * This syncs new map across all players and resets game state
+   */
+  socket.on('heist-city-map-load', (data) => {
+    const { lobbyId, mapId, mapState, turnNumber, blueVictoryPoints, redVictoryPoints } = data;
+
+    if (!lobbyId || !mapId || !mapState) {
+      socket.emit('error', { message: 'Missing required map load data' });
+      return;
+    }
+
+    const game = games.get(lobbyId);
+    if (!game || game.state.type !== 'heist-city') {
+      socket.emit('error', { message: 'Heist City game not found' });
+      return;
+    }
+
+    // Update game state with new map
+    game.state.mapState = mapState;
+    game.state.mapId = mapId;
+
+    // Reset game info
+    if (!game.state.gameInfo) {
+      game.state.gameInfo = {};
+    }
+    game.state.gameInfo.turnNumber = turnNumber;
+    game.state.gameInfo.blueVictoryPoints = blueVictoryPoints;
+    game.state.gameInfo.redVictoryPoints = redVictoryPoints;
+
+    // Clear selections
+    game.state.playerSelections = [];
+
+    // Broadcast to all players in the lobby (including sender)
+    io.to(lobbyId).emit('heist-city-map-loaded', {
+      mapState,
+      turnNumber,
+      blueVictoryPoints,
+      redVictoryPoints,
+    });
+
+    console.log(`🗺️  Loaded map "${mapId}" in lobby ${lobbyId}`);
+  });
+
+  /**
+   * Handle ruler updates
+   * This syncs ruler tool across all players
+   */
+  socket.on('heist-city-ruler-update', (data) => {
+    const { lobbyId, start, end, playerId } = data;
+
+    if (!lobbyId) {
+      socket.emit('error', { message: 'Missing required ruler data' });
+      return;
+    }
+
+    const lobby = lobbies.get(lobbyId);
+    if (!lobby) {
+      socket.emit('error', { message: 'Lobby not found' });
+      return;
+    }
+
+    // Broadcast ruler update to all players in the lobby (including sender)
+    io.to(lobbyId).emit('heist-city-ruler-update', { start, end, playerId });
+
+    console.log(`📏 Broadcasted ruler update to lobby ${lobbyId}`);
+  });
+
 }
 
 module.exports = {
