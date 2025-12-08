@@ -1,8 +1,11 @@
 // Type definitions for Heist City game
 
+// Grid type for hybrid grid support
+export type GridType = 'square' | 'hex';
+
 export interface Position {
-  x: number; // Position in inches (0-36)
-  y: number; // Position in inches (0-36)
+  x: number; // Position in inches (0-36) for square, axial q for hex
+  y: number; // Position in inches (0-36) for square, axial r for hex
 }
 
 export interface GridPosition {
@@ -162,6 +165,7 @@ export interface MapDefinition {
   id: string; // Unique identifier for the map
   name: string;
   description: string;
+  gridType?: GridType; // Grid type for the map (defaults to 'square')
   items: MapDefinitionItem[];
   zones?: MapZone[]; // Optional zones
   startPositions: {

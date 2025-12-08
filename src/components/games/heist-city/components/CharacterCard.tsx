@@ -16,6 +16,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
   const [editedStats, setEditedStats] = useState(character.stats);
   const [showEquipmentSelector, setShowEquipmentSelector] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [equipmentSearch, setEquipmentSearch] = useState('');
 
   const characterInfo = CHARACTER_DATA[character.role];
   const allEquipment = getAllEquipment();
@@ -80,6 +81,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
     onEquipmentUpdate(character.id, newEquipment);
     setShowEquipmentSelector(false);
     setSelectedSlot(null);
+    setEquipmentSearch('');
   };
 
   const handleRemoveItem = (slot: number) => {
@@ -128,33 +130,31 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
           </h3>
           <p className="text-xs text-gray-500">{character.name}</p>
         </div>
-        {isOwnedByPlayer && (
-          <div>
-            {!isEditing ? (
+        <div>
+          {!isEditing ? (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+            >
+              Edit
+            </button>
+          ) : (
+            <div className="flex gap-2">
               <button
-                onClick={() => setIsEditing(true)}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+                onClick={handleSave}
+                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
               >
-                Edit
+                Save
               </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSave}
-                  className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+              <button
+                onClick={handleCancel}
+                className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats - Two Rows */}
@@ -305,15 +305,13 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
                       <div className="text-xs font-bold text-white truncate flex-1">{equippedItem.id}</div>
                       <div className="flex items-center gap-1">
                         <span className="text-xs font-semibold text-amber-400">{equippedItem.Cost}</span>
-                        {isOwnedByPlayer && (
-                          <button
-                            onClick={() => handleRemoveItem(slot)}
-                            className="text-red-400 hover:text-red-300 text-xs leading-none"
-                            title="Remove"
-                          >
-                            ✕
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleRemoveItem(slot)}
+                          className="text-red-400 hover:text-red-300 text-xs leading-none"
+                          title="Remove"
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
                     <div className="text-[10px] text-gray-300 leading-relaxed">
@@ -323,12 +321,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
                 ) : (
                   <button
                     onClick={() => openEquipmentSelector(slot)}
-                    disabled={!isOwnedByPlayer}
-                    className={`w-full h-8 border border-dashed rounded text-xs flex items-center justify-center ${
-                      isOwnedByPlayer
-                        ? 'border-gray-600 text-gray-500 hover:border-gray-500 hover:text-gray-400 cursor-pointer'
-                        : 'border-gray-700 text-gray-600 cursor-not-allowed'
-                    }`}
+                    className="w-full h-8 border border-dashed rounded text-xs flex items-center justify-center border-gray-600 text-gray-500 hover:border-gray-500 hover:text-gray-400 cursor-pointer"
                   >
                     + Add Equipment
                   </button>
@@ -342,13 +335,14 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
       {/* Equipment Selector Modal */}
       {showEquipmentSelector && selectedSlot !== null && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border-2 border-purple-500 rounded-lg p-4 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+          <div className="bg-gray-900 border-2 border-purple-500 rounded-lg p-4 max-w-2xl w-full max-h-[80vh] flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white">Select Equipment</h3>
               <button
                 onClick={() => {
                   setShowEquipmentSelector(false);
                   setSelectedSlot(null);
+                  setEquipmentSearch('');
                 }}
                 className="text-gray-400 hover:text-white text-xl"
               >
@@ -356,8 +350,30 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
               </button>
             </div>
 
-            <div className="space-y-2">
-              {allEquipment.map((item) => (
+            {/* Search Input */}
+            <div className="mb-4">
+              <input
+                type="text"
+                value={equipmentSearch}
+                onChange={(e) => setEquipmentSearch(e.target.value)}
+                placeholder="Search equipment..."
+                autoFocus
+                className="w-full px-3 py-2 bg-gray-800 border border-purple-500/50 rounded text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500"
+              />
+            </div>
+
+            <div className="space-y-2 overflow-y-auto flex-1">
+              {allEquipment
+                .filter((item) => {
+                  if (!equipmentSearch) return true;
+                  const search = equipmentSearch.toLowerCase();
+                  return (
+                    item.id.toLowerCase().includes(search) ||
+                    item.type.toLowerCase().includes(search) ||
+                    (item.Description?.toLowerCase().includes(search) ?? false)
+                  );
+                })
+                .map((item) => (
                 <button
                   key={item.id}
                   onClick={() => handleEquipItem(selectedSlot, item.id)}

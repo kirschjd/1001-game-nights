@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { ItemType, MapItem, MapZone, CharacterToken, Position } from '../types';
 import { ITEM_STYLES } from '../data/mapConstants';
 
+interface GameInfo {
+  turnNumber: number;
+  blueVictoryPoints: number;
+  redVictoryPoints: number;
+}
+
 interface MapLegendProps {
   editorMode: boolean;
   onAddItem?: (itemType: ItemType) => void;
@@ -10,11 +16,13 @@ interface MapLegendProps {
   allItems?: MapItem[];
   allZones?: MapZone[];
   allCharacters?: CharacterToken[];
+  gameInfo?: GameInfo;
   onImportMap?: (mapData: {
     items: MapItem[];
     zones: MapZone[];
     startPositions?: { player1: Position[]; player2: Position[] };
     characterData?: CharacterToken[];
+    gameInfo?: GameInfo;
   }) => void;
 }
 
@@ -207,7 +215,7 @@ const renderItemIcon = (itemType: ItemType) => {
   }
 };
 
-const MapLegend: React.FC<MapLegendProps> = ({ editorMode, onAddItem, onAddZone, existingItems, allItems = [], allZones = [], allCharacters = [], onImportMap }) => {
+const MapLegend: React.FC<MapLegendProps> = ({ editorMode, onAddItem, onAddZone, existingItems, allItems = [], allZones = [], allCharacters = [], gameInfo, onImportMap }) => {
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
@@ -240,7 +248,16 @@ const MapLegend: React.FC<MapLegendProps> = ({ editorMode, onAddItem, onAddZone,
         stats: c.stats,
         state: c.state,
         isSelected: c.isSelected,
+        equipment: c.equipment || [],
+        exhausted: c.exhausted || false,
+        actions: c.actions || [],
       })),
+      // Include game info if available
+      gameInfo: gameInfo || {
+        turnNumber: 1,
+        blueVictoryPoints: 0,
+        redVictoryPoints: 0,
+      },
     };
     return JSON.stringify(exportData, null, 2);
   };

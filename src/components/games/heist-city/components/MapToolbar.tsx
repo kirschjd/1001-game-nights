@@ -47,6 +47,7 @@ const MapToolbar: React.FC<MapToolbarProps> = ({
     { id: 'server-hack', name: 'Server Hack' },
     { id: 'train-robbery', name: 'Train Robbery' },
     { id: 'treasure-hunt', name: 'Treasure Hunt' },
+    { id: 'hex-demo', name: 'Hex Demo (Experimental)' },
   ];
 
   // Close map menu when clicking outside

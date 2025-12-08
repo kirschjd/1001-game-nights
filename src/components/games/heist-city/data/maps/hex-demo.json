@@ -1,0 +1,107 @@
+{
+  "id": "hex-demo",
+  "name": "Hex Demo",
+  "description": "A demonstration map using hexagonal grid layout",
+  "gridType": "hex",
+  "items": [
+    {
+      "id": "wall-1",
+      "type": "wall",
+      "position": { "x": 10, "y": 5 }
+    },
+    {
+      "id": "wall-2",
+      "type": "wall",
+      "position": { "x": 11, "y": 5 }
+    },
+    {
+      "id": "wall-3",
+      "type": "wall",
+      "position": { "x": 12, "y": 5 }
+    },
+    {
+      "id": "wall-4",
+      "type": "wall",
+      "position": { "x": 13, "y": 5 }
+    },
+    {
+      "id": "wall-5",
+      "type": "wall",
+      "position": { "x": 14, "y": 5 }
+    },
+    {
+      "id": "computer-1",
+      "type": "computer",
+      "position": { "x": 20, "y": 10 }
+    },
+    {
+      "id": "computer-2",
+      "type": "computer",
+      "position": { "x": 22, "y": 12 }
+    },
+    {
+      "id": "gear-1",
+      "type": "gear",
+      "position": { "x": 15, "y": 8 }
+    },
+    {
+      "id": "teleporter-1",
+      "type": "teleporter",
+      "position": { "x": 5, "y": 15 }
+    },
+    {
+      "id": "teleporter-2",
+      "type": "teleporter",
+      "position": { "x": 30, "y": 20 }
+    },
+    {
+      "id": "enemy-turret-1",
+      "type": "enemy-camera",
+      "position": { "x": 18, "y": 15 }
+    },
+    {
+      "id": "enemy-guard-1",
+      "type": "enemy-security-guard",
+      "position": { "x": 25, "y": 18 }
+    },
+    {
+      "id": "enemy-rr-1",
+      "type": "enemy-rapid-response",
+      "position": { "x": 12, "y": 20 }
+    }
+  ],
+  "zones": [
+    {
+      "id": "zone-deploy-1",
+      "position": { "x": 2, "y": 2 },
+      "width": 6,
+      "height": 6,
+      "color": "rgba(59, 130, 246, 0.3)",
+      "label": "P1 Deploy"
+    },
+    {
+      "id": "zone-deploy-2",
+      "position": { "x": 28, "y": 25 },
+      "width": 6,
+      "height": 6,
+      "color": "rgba(239, 68, 68, 0.3)",
+      "label": "P2 Deploy"
+    }
+  ],
+  "startPositions": {
+    "player1": [
+      { "x": 3, "y": 3 },
+      { "x": 4, "y": 3 },
+      { "x": 5, "y": 3 },
+      { "x": 3, "y": 4 },
+      { "x": 4, "y": 4 }
+    ],
+    "player2": [
+      { "x": 30, "y": 27 },
+      { "x": 31, "y": 27 },
+      { "x": 32, "y": 27 },
+      { "x": 30, "y": 28 },
+      { "x": 31, "y": 28 }
+    ]
+  }
+}

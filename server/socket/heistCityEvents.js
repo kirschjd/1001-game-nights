@@ -136,7 +136,7 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
    * This syncs new map across all players and resets game state
    */
   socket.on('heist-city-map-load', (data) => {
-    const { lobbyId, mapId, mapState, turnNumber, blueVictoryPoints, redVictoryPoints } = data;
+    const { lobbyId, mapId, mapState, gridType, turnNumber, blueVictoryPoints, redVictoryPoints } = data;
 
     if (!lobbyId || !mapId || !mapState) {
       socket.emit('error', { message: 'Missing required map load data' });
@@ -152,6 +152,7 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     // Update game state with new map
     game.state.mapState = mapState;
     game.state.mapId = mapId;
+    game.state.gridType = gridType || 'square'; // Store grid type
 
     // Reset game info
     if (!game.state.gameInfo) {
@@ -167,12 +168,13 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     // Broadcast to all players in the lobby (including sender)
     io.to(lobbyId).emit('heist-city-map-loaded', {
       mapState,
+      gridType: gridType || 'square',
       turnNumber,
       blueVictoryPoints,
       redVictoryPoints,
     });
 
-    console.log(`🗺️  Loaded map "${mapId}" in lobby ${lobbyId}`);
+    console.log(`🗺️  Loaded map "${mapId}" (${gridType || 'square'} grid) in lobby ${lobbyId}`);
   });
 
   /**
@@ -197,6 +199,36 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     io.to(lobbyId).emit('heist-city-ruler-update', { start, end, playerId });
 
     console.log(`📏 Broadcasted ruler update to lobby ${lobbyId}`);
+  });
+
+  /**
+   * Handle player name changes
+   * This syncs name changes across all players in the lobby
+   */
+  socket.on('heist-city-name-change', (data) => {
+    const { lobbyId, playerId, newName } = data;
+
+    if (!lobbyId || !playerId || !newName) {
+      socket.emit('error', { message: 'Missing required name change data' });
+      return;
+    }
+
+    const lobby = lobbies.get(lobbyId);
+    if (!lobby) {
+      socket.emit('error', { message: 'Lobby not found' });
+      return;
+    }
+
+    // Update the player's name in the lobby
+    const player = lobby.players.find(p => p.id === playerId);
+    if (player) {
+      player.name = newName;
+    }
+
+    // Broadcast name update to all players in the lobby (including sender)
+    io.to(lobbyId).emit('heist-city-name-update', { playerId, newName });
+
+    console.log(`📛 Player ${playerId} changed name to "${newName}" in lobby ${lobbyId}`);
   });
 
   /**

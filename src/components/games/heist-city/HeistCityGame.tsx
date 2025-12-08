@@ -2,8 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Socket } from 'socket.io-client';
 import { GameMap } from './components';
 import CharacterCard from './components/CharacterCard';
-import { MapState, CharacterToken, CharacterState, PlayerSelection, Position } from './types';
-import { loadMap } from './data/mapLoader';
+import { MapState, CharacterToken, CharacterState, PlayerSelection, Position, GridType } from './types';
+import { loadMap, getMapDefinition } from './data/mapLoader';
 import { LogEntry } from './components/GameLog';
 import { getEquipmentByIds } from './data/equipmentLoader';
 
@@ -23,7 +23,10 @@ interface GameState {
 const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId }) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [mapState, setMapState] = useState<MapState | null>(null);
+  const [gridType, setGridType] = useState<GridType>('square');
   const [playerSelections, setPlayerSelections] = useState<PlayerSelection[]>([]);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
   const [lastDiceRoll, setLastDiceRoll] = useState<{
     dice1: number;
     dice2: number;
@@ -85,13 +88,15 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
 
         // Load the map
         try {
-          const initialMapState = loadMap(mapId, player1Id, player2Id);
-          setMapState(initialMapState);
+          const loadedMap = loadMap(mapId, player1Id, player2Id);
+          setMapState(loadedMap);
+          setGridType(loadedMap.gridType);
         } catch (error) {
           console.error('Error loading map:', error);
           // Fallback to bank-job if map loading fails
-          const initialMapState = loadMap('bank-job', player1Id, player2Id);
-          setMapState(initialMapState);
+          const loadedMap = loadMap('bank-job', player1Id, player2Id);
+          setMapState(loadedMap);
+          setGridType(loadedMap.gridType);
         }
       }
 
@@ -148,12 +153,16 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     // Listen for map load events
     socket.on('heist-city-map-loaded', (data: {
       mapState: MapState;
+      gridType?: GridType;
       turnNumber: number;
       blueVictoryPoints: number;
       redVictoryPoints: number;
     }) => {
       console.log('Received map load event:', data);
       setMapState(data.mapState);
+      if (data.gridType) {
+        setGridType(data.gridType);
+      }
       setTurnNumber(data.turnNumber);
       setBlueVictoryPoints(data.blueVictoryPoints);
       setRedVictoryPoints(data.redVictoryPoints);
@@ -170,6 +179,23 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
       setRulerState(data.start && data.end ? data : null);
     });
 
+    // Listen for player name updates
+    socket.on('heist-city-name-update', (data: {
+      playerId: string;
+      newName: string;
+    }) => {
+      console.log('Received name update:', data);
+      setGameState(prev => {
+        if (!prev || !prev.players) return prev;
+        return {
+          ...prev,
+          players: prev.players.map(p =>
+            p.id === data.playerId ? { ...p, name: data.newName } : p
+          ),
+        };
+      });
+    });
+
     return () => {
       socket.off('gameStateUpdate');
       socket.off('game-started');
@@ -179,6 +205,7 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
       socket.off('heist-city-selection-update');
       socket.off('heist-city-map-loaded');
       socket.off('heist-city-ruler-update');
+      socket.off('heist-city-name-update');
     };
   }, [socket, gameState, lobbyId]);
 
@@ -318,6 +345,36 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     socket.emit('heist-city-ruler-update', { lobbyId, ...rulerData });
   };
 
+  // Handle player name change
+  const handleNameChange = () => {
+    if (!editedName.trim()) return;
+
+    // Update local state
+    setGameState(prev => {
+      if (!prev || !prev.players) return prev;
+      return {
+        ...prev,
+        players: prev.players.map(p =>
+          p.id === playerId ? { ...p, name: editedName.trim() } : p
+        ),
+      };
+    });
+
+    // Emit to server
+    socket.emit('heist-city-name-change', {
+      lobbyId,
+      playerId,
+      newName: editedName.trim(),
+    });
+
+    setIsEditingName(false);
+  };
+
+  // Get current player's name
+  const currentPlayerName = useMemo(() => {
+    return gameState?.players?.find(p => p.id === playerId)?.name || 'Unknown';
+  }, [gameState?.players, playerId]);
+
   // Handle map loading
   const handleLoadMap = (mapId: string) => {
     if (!gameState) return;
@@ -327,11 +384,11 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     const player2Id = gameState.players?.[1]?.id || 'player-2';
 
     // Load new map with starting positions
-    const newMapState = loadMap(mapId, player1Id, player2Id);
+    const loadedMap = loadMap(mapId, player1Id, player2Id);
 
     // Preserve equipment on characters
     if (mapState) {
-      newMapState.characters = newMapState.characters.map(newChar => {
+      loadedMap.characters = loadedMap.characters.map(newChar => {
         const oldChar = mapState.characters.find(c =>
           c.playerId === newChar.playerId && c.role === newChar.role
         );
@@ -349,14 +406,16 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     setRedVictoryPoints(0);
     setPlayerSelections([]); // Clear all selections
 
-    // Update map state
-    setMapState(newMapState);
+    // Update map state and grid type
+    setMapState(loadedMap);
+    setGridType(loadedMap.gridType);
 
     // Emit to server
     socket.emit('heist-city-map-load', {
       lobbyId,
       mapId,
-      mapState: newMapState,
+      mapState: loadedMap,
+      gridType: loadedMap.gridType,
       turnNumber: 1,
       blueVictoryPoints: 0,
       redVictoryPoints: 0,
@@ -367,10 +426,11 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
   const handlePassTurn = () => {
     if (!mapState) return;
 
-    // Unexhaust all characters except unconscious ones
+    // Unexhaust all characters except unconscious ones, and reset actions
     const updatedCharacters = mapState.characters.map(char => ({
       ...char,
       exhausted: char.state === 'Unconscious' ? true : false, // Keep unconscious characters exhausted
+      actions: [], // Reset all selected actions for the new turn
     }));
 
     const newMapState = {
@@ -431,7 +491,69 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
   return (
     <div className="heist-city-game p-6 bg-gray-950 min-h-screen">
       <div className="max-w-[1550px] mx-auto">
-        <h1 className="text-3xl font-bold text-white mb-6">Heist City</h1>
+        <h1 className="text-3xl font-bold text-white mb-4">Heist City</h1>
+
+        {/* Player List */}
+        <div className="mb-6 bg-gray-800 p-3 rounded-lg">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="text-sm text-gray-400">Players:</span>
+            {gameState?.players?.map((player, index) => {
+              const isCurrentPlayer = player.id === playerId;
+              const playerColor = index === 0 ? 'text-blue-400' : 'text-red-400';
+
+              return (
+                <div key={player.id} className="flex items-center gap-2">
+                  {isCurrentPlayer && isEditingName ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleNameChange();
+                          if (e.key === 'Escape') setIsEditingName(false);
+                        }}
+                        autoFocus
+                        className="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm w-32 focus:outline-none focus:border-purple-500"
+                      />
+                      <button
+                        onClick={handleNameChange}
+                        className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setIsEditingName(false)}
+                        className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className={`font-semibold ${playerColor}`}>
+                        {player.name}
+                        {isCurrentPlayer && ' (You)'}
+                      </span>
+                      {isCurrentPlayer && (
+                        <button
+                          onClick={() => {
+                            setEditedName(player.name);
+                            setIsEditingName(true);
+                          }}
+                          className="text-gray-400 hover:text-white text-xs"
+                          title="Edit name"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Game Map */}
         <GameMap
@@ -439,6 +561,7 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
           onMapStateChange={handleMapStateChange}
           onSelectionChange={handleSelectionChange}
           readOnly={false}
+          gridType={gridType}
           onDiceRoll={handleDiceRoll}
           lastDiceRoll={lastDiceRoll}
           logEntries={logEntries}
@@ -450,6 +573,12 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
           onLoadMap={handleLoadMap}
           sharedRulerState={rulerState}
           onRulerUpdate={handleRulerUpdate}
+          gameInfo={{ turnNumber, blueVictoryPoints, redVictoryPoints }}
+          onGameInfoChange={(info) => {
+            setTurnNumber(info.turnNumber);
+            setBlueVictoryPoints(info.blueVictoryPoints);
+            setRedVictoryPoints(info.redVictoryPoints);
+          }}
         />
 
         {/* Game Info */}

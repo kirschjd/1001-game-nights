@@ -1,5 +1,5 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { MapState, CharacterToken as CharacterTokenType, MapItem as MapItemType, MapZone as MapZoneType, Position, ItemType, PlayerSelection } from '../types';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { MapState, CharacterToken as CharacterTokenType, MapItem as MapItemType, MapZone as MapZoneType, Position, ItemType, PlayerSelection, GridType } from '../types';
 import {
   SVG_WIDTH,
   SVG_HEIGHT,
@@ -25,12 +25,22 @@ import GameLog, { LogEntry } from './GameLog';
 import { getRoleAbilities } from '../data/roleAbilities';
 import { getEquipmentByIds, getAllEquipment, getEquipmentById } from '../data/equipmentLoader';
 import { isMovableEnemy, getEnemyStats, isEnemyUnit } from '../data/enemyStats';
+import { createGridUtils, GridUtils } from '../data/gridUtils';
+import { getStateInfo } from '../data/stateAbilities';
+import { getActionCost, canSelectAction, getActionCostDisplay } from '../data/actionCosts';
+
+interface GameInfo {
+  turnNumber: number;
+  blueVictoryPoints: number;
+  redVictoryPoints: number;
+}
 
 interface GameMapProps {
   mapState: MapState;
   onMapStateChange?: (mapState: MapState) => void;
   onSelectionChange?: (characterId: string | null) => void; // Now just passes character ID
   readOnly?: boolean;
+  gridType?: GridType; // Grid type: 'square' (default) or 'hex'
   onDiceRoll?: (dice1: number, dice2: number, total: number) => void;
   lastDiceRoll?: { dice1: number; dice2: number; total: number; roller?: string } | null;
   logEntries?: LogEntry[];
@@ -46,6 +56,8 @@ interface GameMapProps {
     playerId: string | null;
   } | null;
   onRulerUpdate?: (start: Position | null, end: Position | null) => void;
+  gameInfo?: GameInfo; // Turn number and victory points for export
+  onGameInfoChange?: (gameInfo: GameInfo) => void; // Callback when importing game info
 }
 
 /**
@@ -93,6 +105,7 @@ const GameMap: React.FC<GameMapProps> = ({
   onMapStateChange,
   onSelectionChange,
   readOnly = false,
+  gridType = 'square',
   onDiceRoll,
   lastDiceRoll,
   logEntries = [],
@@ -104,7 +117,11 @@ const GameMap: React.FC<GameMapProps> = ({
   onLoadMap,
   sharedRulerState,
   onRulerUpdate,
+  gameInfo,
+  onGameInfoChange,
 }) => {
+  // Create grid utilities based on grid type (memoized to prevent recreation)
+  const gridUtils = useMemo<GridUtils>(() => createGridUtils(gridType), [gridType]);
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -465,6 +482,7 @@ const GameMap: React.FC<GameMapProps> = ({
     zones: MapZoneType[];
     startPositions?: { player1: Position[]; player2: Position[] };
     characterData?: CharacterTokenType[];
+    gameInfo?: GameInfo;
   }) => {
     if (readOnly) return;
 
@@ -500,7 +518,12 @@ const GameMap: React.FC<GameMapProps> = ({
     }
 
     onMapStateChange?.(newMapState);
-  }, [readOnly, mapState, onMapStateChange]);
+
+    // If gameInfo was provided in the import, restore it
+    if (mapData.gameInfo && onGameInfoChange) {
+      onGameInfoChange(mapData.gameInfo);
+    }
+  }, [readOnly, mapState, onMapStateChange, onGameInfoChange]);
 
   // Handle zone click
   const handleZoneClick = useCallback(
@@ -864,20 +887,17 @@ const GameMap: React.FC<GameMapProps> = ({
       // Check if this item is draggable (movable enemy in select mode, or any item in editor mode)
       const canDrag = activeTool === 'editor' || (activeTool === 'select' && isMovableEnemy(item.type));
 
-      // For draggable items, handleItemMouseDown already selected them, so clicking again should deselect
-      // For non-draggable items (turrets, gear), toggle selection normally
-      const isCurrentlySelected = item.id === selectedItem;
-
+      // For draggable items, selection is handled by mouseDown - don't toggle here
+      // This prevents the click event from immediately deselecting after mouseDown selected
+      // User must click elsewhere (background) to deselect
       if (canDrag) {
-        // Draggable items: only deselect if already selected, don't re-select (mouseDown handles that)
-        if (isCurrentlySelected) {
-          setSelectedItem(null);
-        }
-        // If not selected, mouseDown will have selected it, so don't do anything here
-      } else {
-        // Non-draggable items: toggle selection
-        setSelectedItem(isCurrentlySelected ? null : item.id);
+        // Draggable items: selection/deselection handled by mouseDown, do nothing on click
+        return;
       }
+
+      // Non-draggable items (turrets, gear): toggle selection normally
+      const isCurrentlySelected = item.id === selectedItem;
+      setSelectedItem(isCurrentlySelected ? null : item.id);
     },
     [selectedItem, readOnly, activeTool]
   );
@@ -926,75 +946,33 @@ const GameMap: React.FC<GameMapProps> = ({
     return Math.sqrt(dx * dx + dy * dy);
   }, []);
 
-  // Render grid lines
+  // Render grid lines (supports both square and hex grids)
   const renderGrid = () => {
     if (!settings.showGrid) return null;
-    const lines: JSX.Element[] = [];
-    const mapSizePixels = inchesToPixels(MAP_SIZE_INCHES);
-
-    for (let i = 0; i <= GRID_COLUMNS; i++) {
-      const x = inchesToPixels(i * GRID_SIZE_INCHES);
-      lines.push(
-        <line
-          key={`v-${i}`}
-          x1={x}
-          y1={0}
-          x2={x}
-          y2={mapSizePixels}
-          stroke="#374151"
-          strokeWidth={i % 6 === 0 ? 1.5 : 0.5}
-          opacity={i % 6 === 0 ? 0.6 : 0.3}
-        />
-      );
-    }
-
-    for (let i = 0; i <= GRID_ROWS; i++) {
-      const y = inchesToPixels(i * GRID_SIZE_INCHES);
-      lines.push(
-        <line
-          key={`h-${i}`}
-          x1={0}
-          y1={y}
-          x2={mapSizePixels}
-          y2={y}
-          stroke="#374151"
-          strokeWidth={i % 6 === 0 ? 1.5 : 0.5}
-          opacity={i % 6 === 0 ? 0.6 : 0.3}
-        />
-      );
-    }
-
-    return lines;
+    return gridUtils.renderGridElements(true);
   };
 
-  // Render hovered grid highlight
+  // Render hovered grid highlight (supports both square and hex grids)
   const renderHoveredGrid = () => {
     if (!cursorPosition || (!draggedToken && !draggedItem)) return null;
 
-    // Center the shadow on the cursor position
-    const x = inchesToPixels(cursorPosition.x + GRID_CENTER_OFFSET);
-    const y = inchesToPixels(cursorPosition.y + GRID_CENTER_OFFSET);
-    const size = inchesToPixels(GRID_SIZE_INCHES);
-
-    return (
-      <rect
-        x={x - size / 2}
-        y={y - size / 2}
-        width={size}
-        height={size}
-        fill="#fff"
-        opacity={0.1}
-        pointerEvents="none"
-      />
-    );
+    // For square grids, snap to grid center; for hex grids, use the current position
+    const snappedPosition = gridUtils.snapToGrid(cursorPosition);
+    return gridUtils.renderCellHighlight(snappedPosition, '#fff', 0.1);
   };
 
-  // Render grid coordinates
+  // Render grid coordinates (supports both square and hex grids)
   const renderCoordinates = () => {
     if (!settings.showCoordinates) return null;
-    const coords: JSX.Element[] = [];
 
-    // Display coordinates every 6 inches, plus the final edge at 35
+    // For square grids, use the traditional inch markers
+    // For hex grids, use axial coordinate labels
+    if (gridType === 'hex') {
+      return gridUtils.renderCoordinateLabels();
+    }
+
+    // Square grid: Display coordinates every 6 inches, plus the final edge at 35
+    const coords: JSX.Element[] = [];
     const coordMarkers = [0, 6, 12, 18, 24, 30, 35];
 
     coordMarkers.forEach((i) => {
@@ -1030,15 +1008,25 @@ const GameMap: React.FC<GameMapProps> = ({
     return coords;
   };
 
-  // Render ruler
+  // Render ruler (supports both square and hex grids)
   const renderRuler = () => {
     if (!sharedRulerState?.start || !sharedRulerState?.end) return null;
 
-    const x1 = inchesToPixels(sharedRulerState.start.x);
-    const y1 = inchesToPixels(sharedRulerState.start.y);
-    const x2 = inchesToPixels(sharedRulerState.end.x);
-    const y2 = inchesToPixels(sharedRulerState.end.y);
-    const distance = calculateDistance(sharedRulerState.start, sharedRulerState.end);
+    // For hex grids, convert axial coords to pixels; for square grids, use direct conversion
+    const startPixels = gridType === 'hex'
+      ? gridUtils.positionToPixels(sharedRulerState.start)
+      : { x: inchesToPixels(sharedRulerState.start.x), y: inchesToPixels(sharedRulerState.start.y) };
+    const endPixels = gridType === 'hex'
+      ? gridUtils.positionToPixels(sharedRulerState.end)
+      : { x: inchesToPixels(sharedRulerState.end.x), y: inchesToPixels(sharedRulerState.end.y) };
+
+    const x1 = startPixels.x;
+    const y1 = startPixels.y;
+    const x2 = endPixels.x;
+    const y2 = endPixels.y;
+
+    // Use gridUtils for consistent distance calculation
+    const distance = gridUtils.getDistance(sharedRulerState.start, sharedRulerState.end);
 
     return (
       <g>
@@ -1126,6 +1114,7 @@ const GameMap: React.FC<GameMapProps> = ({
             allItems={mapState.items}
             allZones={mapState.zones}
             allCharacters={mapState.characters}
+            gameInfo={gameInfo}
             onImportMap={handleImportMap}
           />
           <GameLog entries={logEntries} />
@@ -1240,24 +1229,102 @@ const GameMap: React.FC<GameMapProps> = ({
               const newActions = [...currentActions];
 
               if (actionName === '') {
-                // Remove action
-                newActions.splice(slotIndex, 1);
+                // Remove action - also clear any continuation slots
+                const previousAction = newActions[slotIndex];
+                if (previousAction) {
+                  const previousCost = getActionCost(previousAction);
+                  // Clear this slot and any continuation slots
+                  for (let i = 0; i < previousCost && slotIndex + i < 3; i++) {
+                    newActions[slotIndex + i] = '';
+                  }
+                }
+                // Clean up empty trailing slots
+                while (newActions.length > 0 && newActions[newActions.length - 1] === '') {
+                  newActions.pop();
+                }
               } else {
+                const cost = getActionCost(actionName);
+                // Set the action in the selected slot
                 newActions[slotIndex] = actionName;
+                // For multi-slot actions, fill subsequent slots with continuation marker
+                for (let i = 1; i < cost && slotIndex + i < 3; i++) {
+                  newActions[slotIndex + i] = `[${actionName} cont.]`;
+                }
               }
 
               onActionUpdate(character.id, newActions);
             };
 
+            // Check if a slot is a continuation of a multi-slot action
+            const isContinuationSlot = (slotIndex: number): boolean => {
+              const currentAction = character.actions?.[slotIndex] || '';
+              return currentAction.startsWith('[') && currentAction.endsWith(' cont.]');
+            };
+
             return (
               <div className="bg-purple-900/30 border border-purple-500/50 p-4 rounded-lg">
                 {/* Name and Position Header */}
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-start mb-3">
                   <h3 className="text-sm font-bold text-white">{character.name}</h3>
                   <span className="text-xs text-gray-400">
                     ({character.position.x.toFixed(1)}", {character.position.y.toFixed(1)}")
                   </span>
                 </div>
+
+                {/* Character Stats Summary */}
+                <div className="mb-3 p-2 bg-gray-800/50 rounded">
+                  <p className="text-xs font-semibold text-purple-400 mb-1">Stats:</p>
+                  <div className="grid grid-cols-4 gap-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">W:</span>
+                      <span className="text-white font-semibold">{character.stats.wounds}/{character.stats.maxWounds}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">M:</span>
+                      <span className="text-white font-semibold">{character.stats.movement}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">MS:</span>
+                      <span className="text-white font-semibold">{character.stats.meleeSkill}+</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">BS:</span>
+                      <span className="text-white font-semibold">{character.stats.ballisticSkill}+</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">D:</span>
+                      <span className="text-white font-semibold">{character.stats.defense}+</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">H:</span>
+                      <span className="text-white font-semibold">{character.stats.hack}+</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">C:</span>
+                      <span className="text-white font-semibold">{character.stats.con}+</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Character State Section */}
+                {(() => {
+                  const stateInfo = getStateInfo(character.state);
+                  return (
+                    <div className="mb-3 p-2 bg-gray-800/50 rounded">
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="text-xs font-semibold text-purple-400">State:</p>
+                        <span className={`text-xs font-bold ${stateInfo.color}`}>{stateInfo.name}</span>
+                      </div>
+                      <div className="space-y-1">
+                        {stateInfo.abilities.map((ability, idx) => (
+                          <div key={idx} className="text-xs">
+                            <span className="text-xs text-gray-300 mb-1">{ability.description}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Actions Section */}
                 <div className="space-y-2 mb-3">
@@ -1266,6 +1333,21 @@ const GameMap: React.FC<GameMapProps> = ({
                   {[0, 1, 2].map((slotIndex) => {
                     const currentAction = character.actions?.[slotIndex] || '';
                     const availableActions = getAvailableActions(character);
+                    const isContinuation = isContinuationSlot(slotIndex);
+
+                    // If this is a continuation slot, show a disabled indicator
+                    if (isContinuation) {
+                      const parentAction = currentAction.replace(/^\[/, '').replace(/ cont\.]$/, '');
+                      return (
+                        <div
+                          key={slotIndex}
+                          className="w-full px-2 py-1.5 bg-gray-700 border border-yellow-500/50 rounded text-yellow-400 text-xs italic"
+                        >
+                          ↳ {parentAction} (continued)
+                        </div>
+                      );
+                    }
+
                     return (
                       <select
                         key={slotIndex}
@@ -1274,9 +1356,20 @@ const GameMap: React.FC<GameMapProps> = ({
                         className="w-full px-2 py-1.5 bg-gray-800 border border-purple-500/30 rounded text-white text-xs hover:border-purple-500/50 focus:outline-none focus:border-purple-500"
                       >
                         <option value="">-- Select Action --</option>
-                        {availableActions.map((action) => (
-                          <option key={action} value={action}>{action}</option>
-                        ))}
+                        {availableActions.map((action) => {
+                          const costDisplay = getActionCostDisplay(action);
+                          const canFit = canSelectAction(action, slotIndex, 3);
+                          return (
+                            <option
+                              key={action}
+                              value={action}
+                              disabled={!canFit}
+                              className={!canFit ? 'text-gray-500' : ''}
+                            >
+                              {action}{costDisplay ? ` ${costDisplay}` : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                     );
                   })}
@@ -1380,21 +1473,37 @@ const GameMap: React.FC<GameMapProps> = ({
                 {/* Equipment Selection Dropdown */}
                 <div className="mb-3">
                   <p className="text-xs font-semibold text-yellow-400 mb-2">Equipment:</p>
-                  <select
-                    value={selectedEquipmentId}
-                    onChange={(e) => {
-                      setGearEquipment(prev => ({
-                        ...prev,
-                        [item.id]: e.target.value
-                      }));
-                    }}
-                    className="w-full px-2 py-1.5 bg-gray-800 border border-yellow-500/30 rounded text-white text-xs hover:border-yellow-500/50 focus:outline-none focus:border-yellow-500"
-                  >
-                    <option value="">-- Select Equipment --</option>
-                    {allEquipment.map((equip) => (
-                      <option key={equip.id} value={equip.id}>{equip.id}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedEquipmentId}
+                      onChange={(e) => {
+                        setGearEquipment(prev => ({
+                          ...prev,
+                          [item.id]: e.target.value
+                        }));
+                      }}
+                      className="flex-1 px-2 py-1.5 bg-gray-800 border border-yellow-500/30 rounded text-white text-xs hover:border-yellow-500/50 focus:outline-none focus:border-yellow-500"
+                    >
+                      <option value="">-- Select Equipment --</option>
+                      {allEquipment.map((equip) => (
+                        <option key={equip.id} value={equip.id}>{equip.id}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        const randomIndex = Math.floor(Math.random() * allEquipment.length);
+                        const randomEquip = allEquipment[randomIndex];
+                        setGearEquipment(prev => ({
+                          ...prev,
+                          [item.id]: randomEquip.id
+                        }));
+                      }}
+                      className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded transition-colors font-semibold"
+                      title="Select random equipment"
+                    >
+                      Random
+                    </button>
+                  </div>
                 </div>
 
                 {/* Equipment Stats Display */}

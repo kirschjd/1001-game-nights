@@ -1,4 +1,4 @@
-import { MapDefinition, MapItem, MapState, CharacterToken, Position } from '../types';
+import { MapDefinition, MapItem, MapState, CharacterToken, Position, GridType } from '../types';
 import { GRID_SIZE_INCHES } from './mapConstants';
 import { INITIAL_CHARACTER_STATS, CHARACTER_ROLES } from './characterStats';
 
@@ -8,6 +8,7 @@ import treasureHuntMap from './maps/treasure-hunt.json';
 import trainRobberyMap from './maps/train-robbery.json';
 import serverHackMap from './maps/server-hack.json';
 import jailBreakMap from './maps/jail-break.json';
+import hexDemoMap from './maps/hex-demo.json';
 
 // Map registry
 const MAP_REGISTRY: Record<string, MapDefinition> = {
@@ -16,6 +17,7 @@ const MAP_REGISTRY: Record<string, MapDefinition> = {
   'train-robbery': trainRobberyMap as MapDefinition,
   'server-hack': serverHackMap as MapDefinition,
   'jail-break': jailBreakMap as MapDefinition,
+  'hex-demo': hexDemoMap as MapDefinition,
 };
 
 /**
@@ -211,13 +213,20 @@ function createCharacterTokens(
 }
 
 /**
+ * Extended map state including grid type
+ */
+export interface LoadedMapState extends MapState {
+  gridType: GridType;
+}
+
+/**
  * Load a map by ID and create the initial map state
  */
 export function loadMap(
   mapId: string,
   player1Id: string,
   player2Id: string
-): MapState {
+): LoadedMapState {
   const mapDefinition = MAP_REGISTRY[mapId];
 
   if (!mapDefinition) {
@@ -242,6 +251,7 @@ export function loadMap(
     items: expandedItems,
     characters,
     zones: mapDefinition.zones || [],
+    gridType: mapDefinition.gridType || 'square', // Default to square for backward compatibility
   };
 }
 
