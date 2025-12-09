@@ -61,9 +61,22 @@ interface GameMapProps {
 }
 
 /**
- * Generate available actions for a character based on their stats, role, and equipment
+ * Generate available actions for a character based on their stats, role, equipment, and state
  */
 const getAvailableActions = (character: CharacterTokenType): string[] => {
+  // Get state info to check for state-based action restrictions
+  const stateInfo = getStateInfo(character.state);
+
+  // If state has exclusive actions, only those actions are available
+  if (stateInfo.exclusiveActions) {
+    // Return only the state's additional actions (or empty if none)
+    if (stateInfo.additionalActions && stateInfo.additionalActions.length > 0) {
+      return stateInfo.additionalActions.map(action => action.name);
+    }
+    // No actions available (e.g., Unconscious)
+    return [];
+  }
+
   const actions: string[] = [];
 
   // Core actions with stats
@@ -95,6 +108,13 @@ const getAvailableActions = (character: CharacterTokenType): string[] => {
   // Add Fist as default melee weapon if no melee weapon equipped
   if (!hasMeleeWeapon) {
     actions.push(`Fist (MS ${character.stats.meleeSkill}+)`);
+  }
+
+  // Add state-based additional actions (non-exclusive states like Hidden, Disguised)
+  if (stateInfo.additionalActions) {
+    stateInfo.additionalActions.forEach(action => {
+      actions.push(action.name);
+    });
   }
 
   return actions;

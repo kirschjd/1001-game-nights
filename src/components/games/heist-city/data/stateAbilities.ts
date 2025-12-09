@@ -11,10 +11,23 @@ export interface StateAbility {
   description: string;
 }
 
+/**
+ * State-based action that characters can perform based on their state
+ */
+export interface StateAction {
+  name: string;
+  actionCost: number;
+  description: string;
+}
+
 export interface StateInfo {
   name: CharacterState;
   color: string; // Tailwind color class for display
   abilities: StateAbility[];
+  // Actions added to character when in this state
+  additionalActions?: StateAction[];
+  // If true, character can ONLY use the state's actions (no normal actions)
+  exclusiveActions?: boolean;
 }
 
 /**
@@ -27,10 +40,7 @@ export const STATE_DATA: Record<CharacterState, StateInfo> = {
     color: 'text-green-400',
     abilities: [
       {
-        description: 'Move up to full M value',
-      },
-      {
-        description: 'All actions available',
+        description: '+1 to Defense rolls',
       },
     ],
   },
@@ -40,16 +50,23 @@ export const STATE_DATA: Record<CharacterState, StateInfo> = {
     color: 'text-blue-400',
     abilities: [
       {
-        description: 'Movement reduced by 1',
+        description: '+1 to Hack rolls',
       },
       {
-        description: 'Cannot be targeted by enemies',
+        description: 'Don\'t draw mob aggro',
       },
       {
-        description: '+1 damage on first attack (reveals)',
+        description: 'Can hack disguised enemies',
       },
       {
-        description: 'Attacking, running, or being adjacent to enemy reveals',
+        description: 'Bonus against undamaged enemies',
+      },
+    ],
+    additionalActions: [
+      {
+        name: 'Remove Disguise',
+        actionCost: 1,
+        description: 'Return to Overt state',
       },
     ],
   },
@@ -59,16 +76,23 @@ export const STATE_DATA: Record<CharacterState, StateInfo> = {
     color: 'text-yellow-400',
     abilities: [
       {
-        description: 'Can move through guard zones',
+        description: '+1 to Con rolls',
       },
       {
-        description: 'Enemies ignore unless suspicious',
+        description: 'Don\'t draw mob aggro',
       },
       {
-        description: 'Roll C vs enemy notice to maintain disguise',
+        description: 'Can charm mobs',
       },
       {
-        description: 'Attacking or failing Con check reveals',
+        description: 'Bonus in melee',
+      },
+    ],
+    additionalActions: [
+      {
+        name: 'Charm Mob',
+        actionCost: 1,
+        description: 'Attempt to charm a mob unit',
       },
     ],
   },
@@ -78,15 +102,17 @@ export const STATE_DATA: Record<CharacterState, StateInfo> = {
     color: 'text-orange-400',
     abilities: [
       {
-        description: 'Only 1 action per turn',
-      },
-      {
-        description: 'Cannot move this turn',
-      },
-      {
-        description: 'Becomes Overt at end of turn',
+        description: 'Can only Wake Up',
       },
     ],
+    additionalActions: [
+      {
+        name: 'Wake Up',
+        actionCost: 3,
+        description: 'Recover from stunned state, become Overt',
+      },
+    ],
+    exclusiveActions: true, // Can ONLY use Wake Up when stunned
   },
 
   Unconscious: {
@@ -96,16 +122,8 @@ export const STATE_DATA: Record<CharacterState, StateInfo> = {
       {
         description: 'Cannot take any actions',
       },
-      {
-        description: 'Defense reduced to 10',
-      },
-      {
-        description: 'Ally must spend 2 actions adjacent to revive',
-      },
-      {
-        description: 'Revives with 1 wound after 3 turns',
-      },
     ],
+    exclusiveActions: true, // No actions available when unconscious
   },
 };
 
@@ -121,4 +139,17 @@ export function getStateInfo(state: CharacterState): StateInfo {
  */
 export function getAllStates(): CharacterState[] {
   return Object.keys(STATE_DATA) as CharacterState[];
+}
+
+/**
+ * Get all state actions for action cost calculation
+ */
+export function getAllStateActions(): StateAction[] {
+  const actions: StateAction[] = [];
+  for (const stateInfo of Object.values(STATE_DATA)) {
+    if (stateInfo.additionalActions) {
+      actions.push(...stateInfo.additionalActions);
+    }
+  }
+  return actions;
 }

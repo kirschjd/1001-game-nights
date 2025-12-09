@@ -1,14 +1,15 @@
 /**
  * Action Costs for Heist City
  *
- * Derives action costs from CHARACTER_DATA to avoid duplication.
+ * Derives action costs from CHARACTER_DATA and STATE_DATA to avoid duplication.
  * Core actions (Move, Hack, Con, weapon attacks) default to 1 slot.
  */
 
 import { CHARACTER_DATA } from './characterStats';
+import { getAllStateActions } from './stateAbilities';
 
 /**
- * Build a map of ability names to their slot costs from CHARACTER_DATA
+ * Build a map of ability names to their slot costs from CHARACTER_DATA and STATE_DATA
  */
 function buildAbilityCostMap(): Map<string, number> {
   const costMap = new Map<string, number>();
@@ -18,6 +19,12 @@ function buildAbilityCostMap(): Map<string, number> {
     for (const ability of role.abilities) {
       costMap.set(ability.name, ability.actionCost);
     }
+  }
+
+  // Extract all state-based actions
+  const stateActions = getAllStateActions();
+  for (const action of stateActions) {
+    costMap.set(action.name, action.actionCost);
   }
 
   return costMap;
