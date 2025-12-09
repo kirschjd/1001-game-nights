@@ -1228,16 +1228,18 @@ const GameMap: React.FC<GameMapProps> = ({
               const currentActions = character.actions || [];
               const newActions = [...currentActions];
 
-              if (actionName === '') {
-                // Remove action - also clear any continuation slots
-                const previousAction = newActions[slotIndex];
-                if (previousAction) {
-                  const previousCost = getActionCost(previousAction);
-                  // Clear this slot and any continuation slots
-                  for (let i = 0; i < previousCost && slotIndex + i < 3; i++) {
-                    newActions[slotIndex + i] = '';
-                  }
+              // First, clear any continuation slots from the previous action in this slot
+              const previousAction = newActions[slotIndex];
+              if (previousAction && !previousAction.startsWith('[')) {
+                const previousCost = getActionCost(previousAction);
+                // Clear this slot and any continuation slots from the old action
+                for (let i = 0; i < previousCost && slotIndex + i < 3; i++) {
+                  newActions[slotIndex + i] = '';
                 }
+              }
+
+              if (actionName === '') {
+                // Just clearing - already handled above
                 // Clean up empty trailing slots
                 while (newActions.length > 0 && newActions[newActions.length - 1] === '') {
                   newActions.pop();

@@ -1,41 +1,51 @@
 /**
  * Action Costs for Heist City
  *
- * Defines how many action slots each action consumes.
- * Actions not listed here default to 1 slot.
+ * Derives action costs from CHARACTER_DATA to avoid duplication.
+ * Core actions (Move, Hack, Con, weapon attacks) default to 1 slot.
  */
+
+import { CHARACTER_DATA } from './characterStats';
 
 /**
- * Map of action names/patterns to their slot cost
- * Use exact action names or patterns that match the start of the action name
+ * Build a map of ability names to their slot costs from CHARACTER_DATA
  */
-export const ACTION_COSTS: Record<string, number> = {
-  // Role abilities that cost 2 slots
-  'All According to Plan': 2,
-  'Nothing Personnel': 2,
+function buildAbilityCostMap(): Map<string, number> {
+  const costMap = new Map<string, number>();
 
-  // Equipment/special actions that cost 2 slots (add more as needed)
-  // 'Heavy Attack': 2,
-};
+  // Extract all abilities from all character roles
+  for (const role of Object.values(CHARACTER_DATA)) {
+    for (const ability of role.abilities) {
+      costMap.set(ability.name, ability.actionCost);
+    }
+  }
+
+  return costMap;
+}
+
+// Cache the ability cost map
+const ABILITY_COSTS = buildAbilityCostMap();
 
 /**
  * Get the slot cost for an action
- * Checks exact match first, then pattern matching
+ * Checks ability names from CHARACTER_DATA first, defaults to 1 for core actions
  */
 export function getActionCost(actionName: string): number {
-  // Check exact match
-  if (ACTION_COSTS[actionName] !== undefined) {
-    return ACTION_COSTS[actionName];
+  // Check exact match in abilities
+  if (ABILITY_COSTS.has(actionName)) {
+    return ABILITY_COSTS.get(actionName)!;
   }
 
-  // Check if action starts with any known multi-slot action
-  for (const [pattern, cost] of Object.entries(ACTION_COSTS)) {
-    if (actionName.startsWith(pattern)) {
+  // Check if action starts with any known ability name (for cases like "Ability Name (details)")
+  const entries = Array.from(ABILITY_COSTS.entries());
+  for (let i = 0; i < entries.length; i++) {
+    const [abilityName, cost] = entries[i];
+    if (actionName.startsWith(abilityName)) {
       return cost;
     }
   }
 
-  // Default to 1 slot
+  // Default to 1 slot for core actions (Move, Hack, Con, weapon attacks, etc.)
   return 1;
 }
 
@@ -57,4 +67,11 @@ export function getActionCostDisplay(actionName: string): string | null {
     return `(${cost} slots)`;
   }
   return null;
+}
+
+/**
+ * Get all ability costs (useful for debugging/display)
+ */
+export function getAllAbilityCosts(): Map<string, number> {
+  return new Map(ABILITY_COSTS);
 }
