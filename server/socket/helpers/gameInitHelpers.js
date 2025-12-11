@@ -2,6 +2,7 @@
 // Helper functions for game initialization
 
 const WarGame = require('../../games/war');
+const { initializeVersioning } = require('./stateVersioning');
 const { DiceFactoryGame: DiceFactoryGameV015 } = require('../../games/dice-factory-v0.1.5');
 const { DiceFactoryGame: DiceFactoryGameV021 } = require('../../games/dice-factory-v0.2.1');
 const { KillTeamDraftGame } = require('../../games/kill-team-draft');
@@ -135,25 +136,40 @@ function initializeHeistCityGame(connectedPlayers, lobby) {
  * Create game based on lobby type
  */
 function createGame(lobby, connectedPlayers, clientVariantOrVersion, botSystem) {
+  let game;
+
   switch (lobby.gameType) {
     case 'war':
-      return initializeWarGame(connectedPlayers);
+      game = initializeWarGame(connectedPlayers);
+      break;
 
     case 'dice-factory':
-      return initializeDiceFactoryGame(connectedPlayers, clientVariantOrVersion, lobby, botSystem);
+      game = initializeDiceFactoryGame(connectedPlayers, clientVariantOrVersion, lobby, botSystem);
+      break;
 
     case 'henhur':
-      return initializeHenHurGame(connectedPlayers, clientVariantOrVersion, lobby);
+      game = initializeHenHurGame(connectedPlayers, clientVariantOrVersion, lobby);
+      break;
 
     case 'kill-team-draft':
-      return initializeKillTeamDraftGame(connectedPlayers, lobby);
+      game = initializeKillTeamDraftGame(connectedPlayers, lobby);
+      break;
 
     case 'heist-city':
-      return initializeHeistCityGame(connectedPlayers, lobby);
+      game = initializeHeistCityGame(connectedPlayers, lobby);
+      break;
 
     default:
       throw new Error('Invalid game type');
   }
+
+  // Initialize version tracking for all games
+  if (game && game.state) {
+    initializeVersioning(game.state);
+    console.log(`📊 Initialized version tracking for ${lobby.gameType} game (version: ${game.state.version})`);
+  }
+
+  return game;
 }
 
 /**

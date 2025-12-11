@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import io, { Socket } from 'socket.io-client';
+import { useSocket } from '../contexts/SocketContext';
 import CardSelectionModal from './games/henhur/components/CardSelectionModal';
 import { ALL_CARDS } from './games/henhur/data/cards';
 import AbilitySelectionModal from './AbilitySelectionModal';
@@ -27,9 +27,10 @@ interface LobbyState {
 const LobbyPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const { socket, isConnected, rejoinLobby } = useSocket();
   const [lobby, setLobby] = useState<LobbyState | null>(null);
   const [isJoined, setIsJoined] = useState(false);
+  const hasInitializedRef = useRef(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
   const [editingName, setEditingName] = useState(false);
@@ -48,49 +49,64 @@ const LobbyPage: React.FC = () => {
   const [ktdTotalPacks, setKtdTotalPacks] = useState(3);
   const [selectedHeistCityMap, setSelectedHeistCityMap] = useState('bank-job');
 
+  // Register socket event listeners
   useEffect(() => {
-    const newSocket = io(process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
-    setSocket(newSocket);
+    if (!socket) return;
 
-    newSocket.on('lobby-updated', (lobbyData: LobbyState) => {
+    const handleLobbyUpdated = (lobbyData: LobbyState) => {
       setLobby(lobbyData);
-    });
+    };
 
-    newSocket.on('game-started', (gameData) => {
+    const handleGameStarted = () => {
       navigate(`/game/${slug}`);
-    });
+    };
 
-    // Load bot styles for war game
-    newSocket.on('bot-styles', (data) => {
+    const handleBotStyles = (data: { styles: any[] }) => {
       setBotStyles(data.styles);
-    });
+    };
+
+    socket.on('lobby-updated', handleLobbyUpdated);
+    socket.on('game-started', handleGameStarted);
+    socket.on('bot-styles', handleBotStyles);
 
     return () => {
-      newSocket.close();
-      return;
+      socket.off('lobby-updated', handleLobbyUpdated);
+      socket.off('game-started', handleGameStarted);
+      socket.off('bot-styles', handleBotStyles);
     };
-  }, [slug, navigate]);
+  }, [socket, slug, navigate]);
 
+  // Initial join lobby
   useEffect(() => {
     // Auto-generate player name and join
-    if (socket && !isJoined && slug) {
+    if (socket && isConnected && !hasInitializedRef.current && slug) {
+      hasInitializedRef.current = true;
+
       // Try to get existing name for this lobby, or create new one
-      let playerName = sessionStorage.getItem(`player-name-${slug}`);
+      let playerName = localStorage.getItem(`player-name-${slug}`);
       if (!playerName) {
         playerName = `Player ${Math.floor(Math.random() * 1000)}`;
-        sessionStorage.setItem(`player-name-${slug}`, playerName);
+        localStorage.setItem(`player-name-${slug}`, playerName);
       }
-      
+
       setMyPlayerName(playerName);
       console.log('LobbyPage: Joining as', playerName);
       socket.emit('join-lobby', { slug, playerName });
-      
-      // UPDATED: Request bot styles for any game (not just war)
+
+      // Request bot styles for any game
       socket.emit('get-bot-styles');
-      
+
       setIsJoined(true);
     }
-  }, [socket, isJoined, slug]);
+  }, [socket, isConnected, slug]);
+
+  // Handle reconnection - rejoin lobby when connection is restored
+  useEffect(() => {
+    if (isConnected && isJoined && slug) {
+      // Tell context to rejoin this lobby if we reconnect
+      rejoinLobby(slug);
+    }
+  }, [isConnected, isJoined, slug, rejoinLobby]);
 
   
   useEffect(() => {
@@ -127,8 +143,8 @@ const LobbyPage: React.FC = () => {
 
   const handleNameSubmit = () => {
     if (socket && tempName.trim()) {
-      // Update sessionStorage with new name
-      sessionStorage.setItem(`player-name-${slug}`, tempName.trim());
+      // Update localStorage with new name
+      localStorage.setItem(`player-name-${slug}`, tempName.trim());
       setMyPlayerName(tempName.trim());
       
       socket.emit('update-player-name', { slug, newName: tempName.trim() });

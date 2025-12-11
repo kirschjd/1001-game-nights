@@ -5,12 +5,13 @@ import { inchesToPixels, ITEM_STYLES, GRID_CENTER_OFFSET } from '../data/mapCons
 interface MapItemProps {
   item: MapItemType;
   onClick?: (item: MapItemType) => void;
+  onDoubleClick?: (item: MapItemType) => void;
   onMouseDown?: (e: React.MouseEvent) => void;
   isSelected?: boolean;
   isDragging?: boolean;
 }
 
-const MapItem: React.FC<MapItemProps> = ({ item, onClick, onMouseDown, isSelected, isDragging }) => {
+const MapItem: React.FC<MapItemProps> = ({ item, onClick, onDoubleClick, onMouseDown, isSelected, isDragging }) => {
   const style = ITEM_STYLES[item.type];
   // Center items in grid squares by adding offset
   const x = inchesToPixels(item.position.x + GRID_CENTER_OFFSET);
@@ -21,6 +22,11 @@ const MapItem: React.FC<MapItemProps> = ({ item, onClick, onMouseDown, isSelecte
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onClick?.(item);
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDoubleClick?.(item);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -209,6 +215,7 @@ const MapItem: React.FC<MapItemProps> = ({ item, onClick, onMouseDown, isSelecte
     <g
       transform={`rotate(${rotation}, ${x}, ${y})`}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       onMouseDown={handleMouseDown}
       className={`cursor-pointer hover:opacity-80 ${isDragging ? 'no-transition' : 'transition-opacity'}`}
       opacity={isDragging ? 0.5 : 1}

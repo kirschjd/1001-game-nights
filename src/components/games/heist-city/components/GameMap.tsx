@@ -22,6 +22,7 @@ import MapSettings from './MapSettings';
 import MapLegend from './MapLegend';
 import DiceRoller from './DiceRoller';
 import GameLog, { LogEntry } from './GameLog';
+import AlertLevelIndicator from './AlertLevelIndicator';
 import { getRoleAbilities } from '../data/roleAbilities';
 import { getEquipmentByIds, getAllEquipment, getEquipmentById } from '../data/equipmentLoader';
 import { isMovableEnemy, getEnemyStats, isEnemyUnit } from '../data/enemyStats';
@@ -58,6 +59,8 @@ interface GameMapProps {
   onRulerUpdate?: (start: Position | null, end: Position | null) => void;
   gameInfo?: GameInfo; // Turn number and victory points for export
   onGameInfoChange?: (gameInfo: GameInfo) => void; // Callback when importing game info
+  alertModifier?: number; // Alert level modifier
+  onAlertModifierChange?: (value: number) => void; // Callback when alert modifier changes
 }
 
 /**
@@ -139,6 +142,8 @@ const GameMap: React.FC<GameMapProps> = ({
   onRulerUpdate,
   gameInfo,
   onGameInfoChange,
+  alertModifier = 0,
+  onAlertModifierChange,
 }) => {
   // Create grid utilities based on grid type (memoized to prevent recreation)
   const gridUtils = useMemo<GridUtils>(() => createGridUtils(gridType), [gridType]);
@@ -364,6 +369,9 @@ const GameMap: React.FC<GameMapProps> = ({
     return { x: svgP.x, y: svgP.y };
   }, []);
 
+  // Track if we just finished a drag (to prevent click from clearing selection)
+  const justFinishedDragRef = useRef(false);
+
   // Handle mouse down
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
@@ -389,6 +397,38 @@ const GameMap: React.FC<GameMapProps> = ({
       }
     },
     [activeTool, readOnly, screenToSVG, onRulerUpdate]
+  );
+
+  // Handle SVG click (clicking empty area to unfocus selections)
+  const handleSvgClick = useCallback(
+    () => {
+      // If we just finished dragging, don't clear selection
+      if (justFinishedDragRef.current) {
+        justFinishedDragRef.current = false;
+        return;
+      }
+
+      // Clear item and zone selections when clicking empty area
+      // (Item/zone clicks have stopPropagation, so this only fires for background clicks)
+      if (selectedItem) {
+        setSelectedItem(null);
+      }
+      if (selectedZone) {
+        setSelectedZone(null);
+      }
+    },
+    [selectedItem, selectedZone]
+  );
+
+  // Handle item double-click (to unfocus)
+  const handleItemDoubleClick = useCallback(
+    (item: MapItemType) => {
+      // Double-click clears selection
+      if (item.id === selectedItem) {
+        setSelectedItem(null);
+      }
+    },
+    [selectedItem]
   );
 
   // Handle token drag start and selection
@@ -819,6 +859,9 @@ const GameMap: React.FC<GameMapProps> = ({
 
     // End token dragging
     if (draggedToken) {
+      // Mark that we just finished a drag (prevents click from clearing selection)
+      justFinishedDragRef.current = true;
+
       // Only update position if dragging was confirmed (exceeded threshold)
       if (isDraggingConfirmed && tempDragPositionRef.current) {
         let finalPosition = tempDragPositionRef.current;
@@ -850,6 +893,9 @@ const GameMap: React.FC<GameMapProps> = ({
 
     // End item dragging (editor mode or movable enemies in select mode)
     if (draggedItem) {
+      // Mark that we just finished a drag (prevents click from clearing selection)
+      justFinishedDragRef.current = true;
+
       const item = mapState.items.find(i => i.id === draggedItem);
       const canDrag = activeTool === 'editor' || (activeTool === 'select' && item && isMovableEnemy(item.type));
 
@@ -884,6 +930,7 @@ const GameMap: React.FC<GameMapProps> = ({
 
     // End zone dragging (editor mode)
     if (draggedZone) {
+      justFinishedDragRef.current = true;
       setDraggedZone(null);
       setDragOffset(null);
     }
@@ -1124,8 +1171,13 @@ const GameMap: React.FC<GameMapProps> = ({
 
       {/* Map, Legend, and Dice Roller Container */}
       <div className="flex gap-4">
-        {/* Map Legend and Game Log (Left) */}
+        {/* Alert Level, Map Legend, and Game Log (Left) */}
         <div className="flex-shrink-0 w-64 space-y-4">
+          <AlertLevelIndicator
+            characters={mapState.characters}
+            alertModifier={alertModifier}
+            onAlertModifierChange={onAlertModifierChange || (() => {})}
+          />
           <MapLegend
             editorMode={activeTool === 'editor'}
             onAddItem={handleAddItem}
@@ -1144,7 +1196,7 @@ const GameMap: React.FC<GameMapProps> = ({
         <svg
           ref={svgRef}
           width="100%"
-          height={600}
+          height={840}
           viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
           className={`bg-gray-900 rounded-lg shadow-xl ${getCursorClass()}`}
           style={{ userSelect: 'none' }}
@@ -1152,6 +1204,7 @@ const GameMap: React.FC<GameMapProps> = ({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onClick={handleSvgClick}
           onContextMenu={(e) => e.preventDefault()}
         >
           {/* Grid background */}
@@ -1199,6 +1252,7 @@ const GameMap: React.FC<GameMapProps> = ({
                     item={displayItem}
                     onMouseDown={(e) => handleItemMouseDown(item, e)}
                     onClick={handleItemClick}
+                    onDoubleClick={handleItemDoubleClick}
                     isSelected={item.id === selectedItem}
                     isDragging={item.id === draggedItem}
                   />

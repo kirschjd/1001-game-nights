@@ -33,9 +33,12 @@ function handlePlayerReconnection(lobby, playerName, newSocketId, games) {
   console.log(`🔄 Player ${playerName} reconnecting. Old ID: ${oldSocketId}, New ID: ${newSocketId}`);
   console.log(`👑 Was leader? ${wasLeader} (lobby.leaderId: ${lobby.leaderId})`);
 
-  // Update player socket ID
+  // Update player socket ID and connection tracking
+  const now = Date.now();
   existingPlayer.id = newSocketId;
   existingPlayer.isConnected = true;
+  existingPlayer.lastPing = now;
+  existingPlayer.lastActivity = now;
 
   // Preserve leader status on reconnection
   if (wasLeader) {
@@ -87,11 +90,14 @@ function updateGamePlayerSocketId(game, oldSocketId, newSocketId, playerName) {
  * Add new player to lobby
  */
 function addNewPlayer(lobby, playerName, socketId) {
+  const now = Date.now();
   const newPlayer = {
     id: socketId,
     name: playerName,
     isConnected: true,
-    joinedAt: Date.now()
+    joinedAt: now,
+    lastPing: now,
+    lastActivity: now
   };
   lobby.players.push(newPlayer);
   console.log(`👥 Player ${playerName} joined lobby ${lobby.slug}`);

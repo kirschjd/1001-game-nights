@@ -27,6 +27,9 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
   const [playerSelections, setPlayerSelections] = useState<PlayerSelection[]>([]);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  // Version tracking for sync detection
+  const [lastKnownVersion, setLastKnownVersion] = useState<number>(0);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [lastDiceRoll, setLastDiceRoll] = useState<{
     dice1: number;
     dice2: number;
@@ -42,6 +45,7 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     end: Position | null;
     playerId: string | null;
   } | null>(null);
+  const [alertModifier, setAlertModifier] = useState<number>(0);
 
   // Determine current player's number
   const currentPlayerNumber = useMemo((): 1 | 2 | 'observer' => {
@@ -51,6 +55,24 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     if (playerIndex === 1) return 2;
     return 'observer';
   }, [gameState?.players, playerId]);
+
+  // Helper to check version and request sync if needed
+  const checkVersionAndSync = (receivedVersion: number | undefined) => {
+    if (receivedVersion === undefined) return;
+
+    // Check for version gap (more than 1 version behind)
+    if (lastKnownVersion > 0 && receivedVersion - lastKnownVersion > 1) {
+      console.log(`[HeistCity] Version gap detected: local v${lastKnownVersion} → server v${receivedVersion}`);
+      if (!isSyncing) {
+        setIsSyncing(true);
+        console.log('[HeistCity] Requesting full sync...');
+        socket.emit('request-full-sync', { lobbyId, clientVersion: lastKnownVersion });
+      }
+    } else {
+      // Update to new version
+      setLastKnownVersion(receivedVersion);
+    }
+  };
 
   useEffect(() => {
     // Listen for game state updates
@@ -64,6 +86,12 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     // Listen for initial game start with map ID
     socket.on('game-started', (state: any) => {
       console.log('Heist City game started:', state);
+
+      // Track version from server
+      if (state.version) {
+        console.log(`[HeistCity] Initial version: ${state.version}`);
+        setLastKnownVersion(state.version);
+      }
 
       // Check if server has existing map state (e.g., from a refresh)
       if (state.mapState) {
@@ -108,8 +136,15 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     socket.emit('request-game-state', { lobbyId });
 
     // Listen for map state updates from other players
-    socket.on('heist-city-map-state-update', (newMapState: MapState) => {
-      console.log('Received map state update from server:', newMapState);
+    socket.on('heist-city-map-state-update', (data: { mapState: MapState; version?: number } | MapState) => {
+      // Handle both new format (with version) and legacy format (just mapState)
+      const newMapState = 'mapState' in data ? data.mapState : data;
+      const version = 'version' in data ? data.version : undefined;
+
+      console.log(`Received map state update from server (v${version})`);
+
+      // Check version before applying
+      checkVersionAndSync(version);
       setMapState(newMapState);
     });
 
@@ -137,16 +172,23 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
       turnNumber: number;
       blueVictoryPoints: number;
       redVictoryPoints: number;
+      version?: number;
     }) => {
-      console.log('Received game info update:', data);
+      console.log(`Received game info update (v${data.version}):`, data);
+      checkVersionAndSync(data.version);
       setTurnNumber(data.turnNumber);
       setBlueVictoryPoints(data.blueVictoryPoints);
       setRedVictoryPoints(data.redVictoryPoints);
     });
 
     // Listen for player selection updates
-    socket.on('heist-city-selection-update', (selections: PlayerSelection[]) => {
-      console.log('Received selection update:', selections);
+    socket.on('heist-city-selection-update', (data: { selections: PlayerSelection[]; version?: number } | PlayerSelection[]) => {
+      // Handle both new format (with version) and legacy format (just selections array)
+      const selections = Array.isArray(data) ? data : data.selections;
+      const version = !Array.isArray(data) && 'version' in data ? data.version : undefined;
+
+      console.log(`Received selection update (v${version}):`, selections);
+      checkVersionAndSync(version);
       setPlayerSelections(selections);
     });
 
@@ -157,8 +199,10 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
       turnNumber: number;
       blueVictoryPoints: number;
       redVictoryPoints: number;
+      version?: number;
     }) => {
-      console.log('Received map load event:', data);
+      console.log(`Received map load event (v${data.version}):`, data);
+      checkVersionAndSync(data.version);
       setMapState(data.mapState);
       if (data.gridType) {
         setGridType(data.gridType);
@@ -196,6 +240,56 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
       });
     });
 
+    // Listen for full sync response
+    socket.on('full-sync-response', (data: {
+      success: boolean;
+      state?: any;
+      version?: number;
+      lastUpdated?: number;
+      inSync?: boolean;
+      reason?: string;
+    }) => {
+      console.log('[HeistCity] Full sync response:', data);
+      setIsSyncing(false);
+
+      if (!data.success) {
+        console.error('[HeistCity] Full sync failed:', data.reason);
+        return;
+      }
+
+      if (data.inSync) {
+        console.log('[HeistCity] Client is in sync');
+        if (data.version) {
+          setLastKnownVersion(data.version);
+        }
+        return;
+      }
+
+      // Apply full state
+      if (data.state) {
+        console.log(`[HeistCity] Applying full state sync (v${data.version})`);
+        setLastKnownVersion(data.version || 0);
+
+        if (data.state.mapState) {
+          setMapState(data.state.mapState);
+        }
+        if (data.state.gridType) {
+          setGridType(data.state.gridType);
+        }
+        if (data.state.gameInfo) {
+          setTurnNumber(data.state.gameInfo.turnNumber || 1);
+          setBlueVictoryPoints(data.state.gameInfo.blueVictoryPoints || 0);
+          setRedVictoryPoints(data.state.gameInfo.redVictoryPoints || 0);
+        }
+        if (data.state.playerSelections) {
+          setPlayerSelections(data.state.playerSelections);
+        }
+        if (data.state.players) {
+          setGameState(prev => prev ? { ...prev, players: data.state.players } : prev);
+        }
+      }
+    });
+
     return () => {
       socket.off('gameStateUpdate');
       socket.off('game-started');
@@ -206,8 +300,9 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
       socket.off('heist-city-map-loaded');
       socket.off('heist-city-ruler-update');
       socket.off('heist-city-name-update');
+      socket.off('full-sync-response');
     };
-  }, [socket, gameState, lobbyId]);
+  }, [socket, gameState, lobbyId, lastKnownVersion, isSyncing]);
 
   // Handle map state changes (e.g., token movement)
   const handleMapStateChange = (newMapState: MapState) => {
@@ -579,6 +674,8 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
             setBlueVictoryPoints(info.blueVictoryPoints);
             setRedVictoryPoints(info.redVictoryPoints);
           }}
+          alertModifier={alertModifier}
+          onAlertModifierChange={setAlertModifier}
         />
 
         {/* Game Info */}

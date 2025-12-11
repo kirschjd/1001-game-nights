@@ -1,10 +1,10 @@
 // 1001 Game Nights - Game Page Component
-// Version: 2.1.0 - Complete implementation with enhanced war game
+// Version: 2.2.0 - Centralized socket management with auto-reconnect
 // Updated: December 2024
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import io, { Socket } from 'socket.io-client';
+import { useSocket } from '../contexts/SocketContext';
 import { EnhancedWarGame } from './games/war';
 import { DiceFactoryGame as DiceFactoryGameV015 } from './games/dice-factory-v0.1.5';
 import { DiceFactoryGame as DiceFactoryGameV021 } from './games/dice-factory-v0.2.1';
@@ -60,62 +60,46 @@ type GameState = WarGameState | DiceFactoryGameState;
 const GamePage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const { socket, isConnected, rejoinLobby } = useSocket();
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLeader, setIsLeader] = useState(false);
   const [hasJoinedLobby, setHasJoinedLobby] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const hasInitializedRef = useRef(false);
 
-  // Enhanced back to lobby handler with proper cleanup
+  // Navigate to home (socket is now shared, so we don't disconnect)
   const handleHome = useCallback(() => {
-    // Clean up socket and navigate to home
-    if (socket) {
-      socket.disconnect();
-    }
     navigate('/');
-  }, [navigate, socket]);
+  }, [navigate]);
 
-  // Socket setup and connection management
+  // Connection error handling (socket is managed by context)
   useEffect(() => {
-    const newSocket = io(process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
-    setSocket(newSocket);
-
-    // Enhanced connection handling
-    newSocket.on('connect', () => {
-      console.log('Connected to server');
+    if (!isConnected && hasJoinedLobby) {
+      // Only show error if we were connected and lost connection
+      // The ConnectionStatus component handles the UI, but we track for game-specific display
+      setConnectionError('Connection lost. Attempting to reconnect...');
+    } else if (isConnected) {
       setConnectionError(null);
-    });
-
-    newSocket.on('disconnect', () => {
-      console.log('Disconnected from server');
-      setConnectionError('Connection lost. Please refresh the page.');
-    });
-
-    newSocket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
-      setConnectionError('Failed to connect to server. Please refresh the page.');
-    });
-
-    return () => {
-      newSocket.close();
-    };
-  }, []);
+    }
+  }, [isConnected, hasJoinedLobby]);
 
   // Auto-join lobby and retrieve game state
   useEffect(() => {
-    if (socket && !hasJoinedLobby && slug) {
-      const playerName = sessionStorage.getItem(`player-name-${slug}`) || `Player ${Math.floor(Math.random() * 1000)}`;
-      
+    if (socket && isConnected && !hasInitializedRef.current && slug) {
+      hasInitializedRef.current = true;
+
+      const playerName = localStorage.getItem(`player-name-${slug}`) || `Player ${Math.floor(Math.random() * 1000)}`;
+
       console.log('GamePage: Auto-joining lobby as', playerName);
-      
+
       socket.emit('join-lobby', { slug, playerName });
       socket.emit('request-game-state', { slug });
 
       // Check if this player should be the leader (first to join game page)
-      const currentLeader = sessionStorage.getItem(`lobby-leader-${slug}`);
+      const currentLeader = localStorage.getItem(`lobby-leader-${slug}`);
       if (!currentLeader && socket.id) {
-        sessionStorage.setItem(`lobby-leader-${slug}`, socket.id);
+        localStorage.setItem(`lobby-leader-${slug}`, socket.id);
         // Request to become leader
         setTimeout(() => {
           socket.emit('change-leader', { slug, newLeaderId: socket.id });
@@ -124,9 +108,16 @@ const GamePage: React.FC = () => {
 
       console.log('GamePage: My socket ID is', socket.id);
       setHasJoinedLobby(true);
-
     }
-  }, [socket, hasJoinedLobby, slug]);
+  }, [socket, isConnected, slug]);
+
+  // Handle reconnection - rejoin lobby when connection is restored
+  useEffect(() => {
+    if (isConnected && hasJoinedLobby && slug) {
+      // Tell context to rejoin this lobby if we reconnect
+      rejoinLobby(slug);
+    }
+  }, [isConnected, hasJoinedLobby, slug, rejoinLobby]);
 
   // GamePage.tsx - Updated game state management useEffect (CORRECTED VERSION)
   useEffect(() => {
@@ -224,7 +215,7 @@ useEffect(() => {
   // Get player name for display
   const getPlayerName = () => {
     if (!slug) return 'Unknown Player';
-    return sessionStorage.getItem(`player-name-${slug}`) || 'Unknown Player';
+    return localStorage.getItem(`player-name-${slug}`) || 'Unknown Player';
   };
 
   const playerName = getPlayerName();

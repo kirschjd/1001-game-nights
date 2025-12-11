@@ -91,7 +91,7 @@ export const STATE_DATA: Record<CharacterState, StateInfo> = {
     additionalActions: [
       {
         name: 'Charm Mob',
-        actionCost: 1,
+        actionCost: 2,
         description: 'Attempt to charm a mob unit',
       },
     ],

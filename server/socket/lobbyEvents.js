@@ -121,6 +121,14 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     if (!reconnectionResult.isReconnection) {
       // New player joining
       addNewPlayer(lobby, playerName, socket.id);
+    } else {
+      // Player reconnected - notify others
+      socket.to(slug).emit('player-reconnected', {
+        playerName: playerName,
+        playerId: socket.id,
+        timestamp: Date.now()
+      });
+      console.log(`📢 Broadcast player-reconnected for ${playerName}`);
     }
 
     // Store lobby info on socket
@@ -279,9 +287,19 @@ function registerLobbyEvents(io, socket, lobbies, games) {
       const lobby = lobbies.get(socket.lobbySlug);
       if (lobby) {
         const player = lobby.players.find(p => p.id === socket.id);
-        if (player) {
+        if (player && !player.isBot) {
           player.isConnected = false;
           console.log(`😴 Player ${player.name} marked as disconnected in ${socket.lobbySlug}`);
+
+          // Broadcast player disconnection to others in the lobby
+          socket.to(socket.lobbySlug).emit('player-disconnected', {
+            playerName: player.name,
+            playerId: socket.id,
+            timestamp: Date.now()
+          });
+
+          // Also send updated lobby state
+          io.to(socket.lobbySlug).emit('lobby-updated', createLobbyUpdate(lobby));
 
           // Schedule cleanup for inactive lobbies
           scheduleInactiveLobbyCleanup(lobbies, games, socket.lobbySlug);

@@ -1,6 +1,8 @@
 // Heist City Socket Event Handlers
 // Handles all multiplayer communication for Heist City game
 
+const { incrementVersion, getVersionInfo, needsFullSync } = require('./helpers/stateVersioning');
+
 /**
  * Register Heist City-specific socket events
  * @param {Object} io - Socket.io instance
@@ -31,6 +33,9 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     // Update the game's map state
     game.state.mapState = mapState;
 
+    // Increment version on state change
+    const newVersion = incrementVersion(game.state);
+
     // Broadcast the updated map state to all other players in the lobby
     const lobby = lobbies.get(lobbyId);
     if (!lobby) {
@@ -38,10 +43,13 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
       return;
     }
 
-    // Emit to all players in the lobby except the sender
-    socket.to(lobbyId).emit('heist-city-map-state-update', mapState);
+    // Emit to all players in the lobby except the sender (include version)
+    socket.to(lobbyId).emit('heist-city-map-state-update', {
+      mapState,
+      version: newVersion
+    });
 
-    console.log(`📡 Broadcasted Heist City map state update to lobby ${lobbyId}`);
+    console.log(`📡 Broadcasted Heist City map state update to lobby ${lobbyId} (v${newVersion})`);
   });
 
   /**
@@ -94,14 +102,18 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     game.state.gameInfo.blueVictoryPoints = blueVictoryPoints || 0;
     game.state.gameInfo.redVictoryPoints = redVictoryPoints || 0;
 
-    // Broadcast to all other players in the lobby
+    // Increment version on state change
+    const newVersion = incrementVersion(game.state);
+
+    // Broadcast to all other players in the lobby (include version)
     socket.to(lobbyId).emit('heist-city-game-info-update', {
       turnNumber,
       blueVictoryPoints,
-      redVictoryPoints
+      redVictoryPoints,
+      version: newVersion
     });
 
-    console.log(`📊 Broadcasted game info update to lobby ${lobbyId} (Turn: ${turnNumber})`);
+    console.log(`📊 Broadcasted game info update to lobby ${lobbyId} (Turn: ${turnNumber}, v${newVersion})`);
   });
 
   /**
@@ -125,10 +137,16 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     // Store selections in game state
     game.state.playerSelections = selections;
 
-    // Broadcast to all players in the lobby (including sender for consistency)
-    io.to(lobbyId).emit('heist-city-selection-update', selections);
+    // Increment version on state change
+    const newVersion = incrementVersion(game.state);
 
-    console.log(`🎯 Broadcasted selection update to lobby ${lobbyId}`);
+    // Broadcast to all players in the lobby (including sender for consistency)
+    io.to(lobbyId).emit('heist-city-selection-update', {
+      selections,
+      version: newVersion
+    });
+
+    console.log(`🎯 Broadcasted selection update to lobby ${lobbyId} (v${newVersion})`);
   });
 
   /**
@@ -165,6 +183,9 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     // Clear selections
     game.state.playerSelections = [];
 
+    // Increment version on state change (major change = map load)
+    const newVersion = incrementVersion(game.state);
+
     // Broadcast to all players in the lobby (including sender)
     io.to(lobbyId).emit('heist-city-map-loaded', {
       mapState,
@@ -172,9 +193,10 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
       turnNumber,
       blueVictoryPoints,
       redVictoryPoints,
+      version: newVersion
     });
 
-    console.log(`🗺️  Loaded map "${mapId}" (${gridType || 'square'} grid) in lobby ${lobbyId}`);
+    console.log(`🗺️  Loaded map "${mapId}" (${gridType || 'square'} grid) in lobby ${lobbyId} (v${newVersion})`);
   });
 
   /**
@@ -253,13 +275,67 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
 
     // Only send state for Heist City games
     if (game.state.type === 'heist-city') {
-      // Send the current game state to the requesting client
+      // Send the current game state to the requesting client (include version)
       socket.emit('game-started', {
         ...game.state,
         players: lobby.players,
       });
 
-      console.log(`🔄 Sent current game state to client in lobby ${lobbyId}`);
+      console.log(`🔄 Sent current game state to client in lobby ${lobbyId} (v${game.state.version})`);
+    }
+  });
+
+  /**
+   * Handle full sync request
+   * Client sends their last known version, server decides if full sync is needed
+   */
+  socket.on('request-full-sync', (data) => {
+    const { lobbyId, clientVersion } = data;
+
+    if (!lobbyId) {
+      socket.emit('error', { message: 'Missing lobbyId' });
+      return;
+    }
+
+    const game = games.get(lobbyId);
+    const lobby = lobbies.get(lobbyId);
+
+    if (!game || !lobby) {
+      socket.emit('full-sync-response', {
+        success: false,
+        reason: 'Game not found'
+      });
+      return;
+    }
+
+    // Only handle Heist City games
+    if (game.state.type !== 'heist-city') {
+      return;
+    }
+
+    const versionInfo = getVersionInfo(game.state);
+
+    // Check if client needs full sync
+    if (needsFullSync(game.state, clientVersion)) {
+      console.log(`🔄 Full sync requested for ${lobbyId}: client v${clientVersion} → server v${versionInfo.version}`);
+
+      // Send complete current state
+      socket.emit('full-sync-response', {
+        success: true,
+        state: {
+          ...game.state,
+          players: lobby.players
+        },
+        version: versionInfo.version,
+        lastUpdated: versionInfo.lastUpdated
+      });
+    } else {
+      // Client is in sync or only slightly behind
+      socket.emit('full-sync-response', {
+        success: true,
+        inSync: true,
+        version: versionInfo.version
+      });
     }
   });
 
