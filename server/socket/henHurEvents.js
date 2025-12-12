@@ -1,6 +1,8 @@
 // HenHur Socket Event Handlers
 // Handles all multiplayer communication for HenHur game
 
+const persistence = require('../utils/persistence');
+
 /**
  * Register HenHur-specific socket events
  * @param {Object} io - Socket.io instance
@@ -225,6 +227,9 @@ function broadcastGameState(io, slug, game) {
       }
     }
   }
+
+  // Persist game state (throttled)
+  persistence.saveGame(slug, game);
 
   console.log(`📡 Broadcasted HenHur state to ${lobby.size} player(s) in ${slug}`);
 }

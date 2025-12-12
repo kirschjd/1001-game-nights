@@ -2,6 +2,7 @@
 // Handles all multiplayer communication for Heist City game
 
 const { incrementVersion, getVersionInfo, needsFullSync } = require('./helpers/stateVersioning');
+const persistence = require('../utils/persistence');
 
 /**
  * Register Heist City-specific socket events
@@ -48,6 +49,9 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
       mapState,
       version: newVersion
     });
+
+    // Persist game state (throttled)
+    persistence.saveGame(lobbyId, game);
 
     console.log(`📡 Broadcasted Heist City map state update to lobby ${lobbyId} (v${newVersion})`);
   });
@@ -113,6 +117,9 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
       version: newVersion
     });
 
+    // Persist game state (throttled)
+    persistence.saveGame(lobbyId, game);
+
     console.log(`📊 Broadcasted game info update to lobby ${lobbyId} (Turn: ${turnNumber}, v${newVersion})`);
   });
 
@@ -145,6 +152,9 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
       selections,
       version: newVersion
     });
+
+    // Persist game state (throttled)
+    persistence.saveGame(lobbyId, game);
 
     console.log(`🎯 Broadcasted selection update to lobby ${lobbyId} (v${newVersion})`);
   });
@@ -195,6 +205,9 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
       redVictoryPoints,
       version: newVersion
     });
+
+    // Persist game state (force save for map load)
+    persistence.saveGame(lobbyId, game, true);
 
     console.log(`🗺️  Loaded map "${mapId}" (${gridType || 'square'} grid) in lobby ${lobbyId} (v${newVersion})`);
   });
@@ -280,8 +293,6 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
         ...game.state,
         players: lobby.players,
       });
-
-      console.log(`🔄 Sent current game state to client in lobby ${lobbyId} (v${game.state.version})`);
     }
   });
 

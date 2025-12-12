@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapItem as MapItemType } from '../types';
+import { MapItem as MapItemType, Position, GridType } from '../types';
 import { inchesToPixels, ITEM_STYLES, GRID_CENTER_OFFSET } from '../data/mapConstants';
 
 interface MapItemProps {
@@ -9,13 +9,37 @@ interface MapItemProps {
   onMouseDown?: (e: React.MouseEvent) => void;
   isSelected?: boolean;
   isDragging?: boolean;
+  /** Function to convert grid position to pixel coordinates */
+  positionToPixels?: (position: Position) => { x: number; y: number };
+  /** Grid type - affects positioning calculations */
+  gridType?: GridType;
 }
 
-const MapItem: React.FC<MapItemProps> = ({ item, onClick, onDoubleClick, onMouseDown, isSelected, isDragging }) => {
+const MapItem: React.FC<MapItemProps> = ({
+  item,
+  onClick,
+  onDoubleClick,
+  onMouseDown,
+  isSelected,
+  isDragging,
+  positionToPixels,
+  gridType = 'square'
+}) => {
   const style = ITEM_STYLES[item.type];
-  // Center items in grid squares by adding offset
-  const x = inchesToPixels(item.position.x + GRID_CENTER_OFFSET);
-  const y = inchesToPixels(item.position.y + GRID_CENTER_OFFSET);
+
+  // Calculate pixel position based on grid type
+  let x: number, y: number;
+  if (positionToPixels && gridType === 'hex') {
+    // Hex grid: use provided converter (axial coords -> pixels, centered on hex)
+    const pixels = positionToPixels(item.position);
+    x = pixels.x;
+    y = pixels.y;
+  } else {
+    // Square grid: position is in inches, add offset to center in cell
+    x = inchesToPixels(item.position.x + GRID_CENTER_OFFSET);
+    y = inchesToPixels(item.position.y + GRID_CENTER_OFFSET);
+  }
+
   const size = inchesToPixels(style.size);
   const rotation = item.rotation || 0;
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CharacterToken as CharacterTokenType } from '../types';
+import { CharacterToken as CharacterTokenType, Position, GridType } from '../types';
 import { inchesToPixels, TOKEN_RADIUS, GRID_CENTER_OFFSET } from '../data/mapConstants';
 
 interface CharacterTokenProps {
@@ -7,6 +7,10 @@ interface CharacterTokenProps {
   onMouseDown?: (token: CharacterTokenType, e: React.MouseEvent) => void;
   isDragging?: boolean;
   selectingPlayers?: Array<1 | 2 | 'observer'>; // Player numbers who have selected this character
+  /** Function to convert grid position to pixel coordinates */
+  positionToPixels?: (position: Position) => { x: number; y: number };
+  /** Grid type - affects positioning calculations */
+  gridType?: GridType;
 }
 
 const CharacterToken: React.FC<CharacterTokenProps> = ({
@@ -14,10 +18,21 @@ const CharacterToken: React.FC<CharacterTokenProps> = ({
   onMouseDown,
   isDragging,
   selectingPlayers = [],
+  positionToPixels,
+  gridType = 'square'
 }) => {
-  // Center tokens in grid squares by adding offset
-  const x = inchesToPixels(token.position.x + GRID_CENTER_OFFSET);
-  const y = inchesToPixels(token.position.y + GRID_CENTER_OFFSET);
+  // Calculate pixel position based on grid type
+  let x: number, y: number;
+  if (positionToPixels && gridType === 'hex') {
+    // Hex grid: use provided converter (axial coords -> pixels, centered on hex)
+    const pixels = positionToPixels(token.position);
+    x = pixels.x;
+    y = pixels.y;
+  } else {
+    // Square grid: position is in inches, add offset to center in cell
+    x = inchesToPixels(token.position.x + GRID_CENTER_OFFSET);
+    y = inchesToPixels(token.position.y + GRID_CENTER_OFFSET);
+  }
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();

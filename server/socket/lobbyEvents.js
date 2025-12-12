@@ -1,5 +1,5 @@
 // 1001 Game Nights - Lobby Socket Events
-// Version: 2.0.2 - Refactored to use helper functions
+// Version: 2.0.4 - Added auto-transfer leadership on 5-sec disconnect
 // Updated: December 2024
 
 const { botSystem } = require('../games/bots');
@@ -16,6 +16,13 @@ const {
   broadcastGameStart,
   scheduleDiceFactoryBotsIfNeeded
 } = require('./helpers/gameInitHelpers');
+const persistence = require('../utils/persistence');
+
+// Track pending leader transfer timeouts by lobby slug
+const leaderTransferTimeouts = new Map();
+
+// Leader auto-transfer timeout duration (5 seconds)
+const LEADER_TRANSFER_TIMEOUT = 5000;
 
 /**
  * Register lobby-related socket events
@@ -36,6 +43,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
 
     lobby.gameOptions.variant = variant;
     io.to(slug).emit('lobby-updated', lobby);
+    persistence.saveLobby(slug, lobby);
   });
 
   // Update Dice Factory ability tiers (leader only)
@@ -52,6 +60,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     }
     lobby.gameOptions.abilityTiers = tiers;
     io.to(slug).emit('lobby-updated', lobby);
+    persistence.saveLobby(slug, lobby);
   });
 
   // Update Dice Factory selected abilities (leader only)
@@ -68,6 +77,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     }
     lobby.gameOptions.selectedAbilities = abilityIds;
     io.to(slug).emit('lobby-updated', lobby);
+    persistence.saveLobby(slug, lobby);
   });
 
   // Update HenHur variant (leader only)
@@ -81,6 +91,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
 
     lobby.gameOptions.henhurVariant = variant;
     io.to(slug).emit('lobby-updated', lobby);
+    persistence.saveLobby(slug, lobby);
   });
 
   // Update Heist City map (leader only)
@@ -94,6 +105,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
 
     lobby.gameOptions.mapId = mapId;
     io.to(slug).emit('lobby-updated', lobby);
+    persistence.saveLobby(slug, lobby);
   });
 
   // Player joins or rejoins a lobby
@@ -129,6 +141,13 @@ function registerLobbyEvents(io, socket, lobbies, games) {
         timestamp: Date.now()
       });
       console.log(`📢 Broadcast player-reconnected for ${playerName}`);
+
+      // Cancel any pending leader transfer timeout if the leader reconnected
+      if (reconnectionResult.wasLeader && leaderTransferTimeouts.has(slug)) {
+        clearTimeout(leaderTransferTimeouts.get(slug));
+        leaderTransferTimeouts.delete(slug);
+        console.log(`✅ Cancelled leader auto-transfer for ${slug} - leader ${playerName} reconnected`);
+      }
     }
 
     // Store lobby info on socket
@@ -145,6 +164,9 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     const lobbyUpdate = createLobbyUpdate(lobby);
     console.log(`📡 Broadcasting lobby-updated with leaderId: ${lobbyUpdate.leaderId}`);
     io.to(slug).emit('lobby-updated', lobbyUpdate);
+
+    // Persist lobby state
+    persistence.saveLobby(slug, lobby);
 
     // If there's an active game, send the game state
     const game = games.get(slug);
@@ -165,6 +187,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
 
     lobby.title = newTitle;
     io.to(slug).emit('lobby-updated', lobby);
+    persistence.saveLobby(slug, lobby);
   });
 
   // Update player name
@@ -179,6 +202,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
       player.name = newName;
       socket.playerName = newName;
       io.to(slug).emit('lobby-updated', lobby);
+      persistence.saveLobby(slug, lobby);
     }
   });
 
@@ -204,6 +228,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
 
     lobby.gameType = gameType;
     io.to(slug).emit('lobby-updated', lobby);
+    persistence.saveLobby(slug, lobby);
   });
 
   // Change lobby leader
@@ -221,6 +246,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
       lobby.leaderId = newLeaderId;
       console.log(`👑 Leadership transferred in ${slug}: ${oldLeaderId} → ${newLeaderId}`);
       io.to(slug).emit('lobby-updated', lobby);
+      persistence.saveLobby(slug, lobby);
     }
   });
 
@@ -234,8 +260,9 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     }
 
     const connectedPlayers = lobby.players.filter(p => p.isConnected);
-    // Allow solo play for: HenHur and Dice Factory v0.2.1
+    // Allow solo play for: HenHur, Heist City, and Dice Factory v0.2.1
     const allowSolo = lobby.gameType === 'henhur' ||
+                      lobby.gameType === 'heist-city' ||
                       (lobby.gameType === 'dice-factory' && clientVersion === 'v0.2.1');
     if (!allowSolo && connectedPlayers.length < 2) {
       socket.emit('error', { message: 'Need at least 2 players to start' });
@@ -277,6 +304,10 @@ function registerLobbyEvents(io, socket, lobbies, games) {
         scheduleBotActions(io, lobbies, games, slug);
       }, 500);
     }
+
+    // Persist lobby and game state (force save for game start)
+    persistence.saveLobby(slug, lobby, true);
+    persistence.saveGame(slug, game, true);
   });
 
   // Handle player disconnection
@@ -289,7 +320,8 @@ function registerLobbyEvents(io, socket, lobbies, games) {
         const player = lobby.players.find(p => p.id === socket.id);
         if (player && !player.isBot) {
           player.isConnected = false;
-          console.log(`😴 Player ${player.name} marked as disconnected in ${socket.lobbySlug}`);
+          const wasLeader = lobby.leaderId === socket.id;
+          console.log(`😴 Player ${player.name} marked as disconnected in ${socket.lobbySlug}${wasLeader ? ' (was leader)' : ''}`);
 
           // Broadcast player disconnection to others in the lobby
           socket.to(socket.lobbySlug).emit('player-disconnected', {
@@ -300,6 +332,60 @@ function registerLobbyEvents(io, socket, lobbies, games) {
 
           // Also send updated lobby state
           io.to(socket.lobbySlug).emit('lobby-updated', createLobbyUpdate(lobby));
+
+          // Persist lobby state with disconnection
+          persistence.saveLobby(socket.lobbySlug, lobby);
+
+          // If the leader disconnected, schedule auto-transfer after 5 seconds
+          if (wasLeader) {
+            const lobbySlug = socket.lobbySlug;
+            console.log(`⏰ Scheduling leader auto-transfer for ${lobbySlug} in ${LEADER_TRANSFER_TIMEOUT}ms`);
+
+            // Clear any existing timeout for this lobby
+            if (leaderTransferTimeouts.has(lobbySlug)) {
+              clearTimeout(leaderTransferTimeouts.get(lobbySlug));
+            }
+
+            const timeoutId = setTimeout(() => {
+              const currentLobby = lobbies.get(lobbySlug);
+              if (!currentLobby) {
+                leaderTransferTimeouts.delete(lobbySlug);
+                return;
+              }
+
+              // Check if the original leader is still disconnected
+              const originalLeader = currentLobby.players.find(p => p.id === currentLobby.leaderId);
+              if (originalLeader && originalLeader.isConnected) {
+                console.log(`✅ Leader ${originalLeader.name} reconnected, cancelling auto-transfer`);
+                leaderTransferTimeouts.delete(lobbySlug);
+                return;
+              }
+
+              // Find the next connected human player to transfer leadership to
+              const nextLeader = currentLobby.players.find(p => p.isConnected && !p.isBot);
+              if (nextLeader) {
+                const oldLeaderId = currentLobby.leaderId;
+                currentLobby.leaderId = nextLeader.id;
+                console.log(`👑 Auto-transferred leadership in ${lobbySlug}: ${oldLeaderId} → ${nextLeader.id} (${nextLeader.name})`);
+
+                // Broadcast the leadership change
+                io.to(lobbySlug).emit('lobby-updated', createLobbyUpdate(currentLobby));
+                io.to(lobbySlug).emit('leader-auto-transferred', {
+                  newLeaderId: nextLeader.id,
+                  newLeaderName: nextLeader.name,
+                  reason: 'Previous leader disconnected'
+                });
+
+                persistence.saveLobby(lobbySlug, currentLobby);
+              } else {
+                console.log(`⚠️ No connected human players to transfer leadership to in ${lobbySlug}`);
+              }
+
+              leaderTransferTimeouts.delete(lobbySlug);
+            }, LEADER_TRANSFER_TIMEOUT);
+
+            leaderTransferTimeouts.set(lobbySlug, timeoutId);
+          }
 
           // Schedule cleanup for inactive lobbies
           scheduleInactiveLobbyCleanup(lobbies, games, socket.lobbySlug);
@@ -354,6 +440,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     });
 
     io.to(slug).emit('lobby-updated', lobby);
+    persistence.saveLobby(slug, lobby);
     console.log('📡 LOBBY-UPDATED EMITTED');
   });
 
@@ -370,6 +457,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     botSystem.removeBot(botId);
 
     io.to(slug).emit('lobby-updated', lobby);
+    persistence.saveLobby(slug, lobby);
   });
 
   // Handle explicit game state requests
@@ -410,6 +498,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     if (bot) {
       bot.botStyle = newStyle;
       io.to(slug).emit('lobby-updated', lobby);
+      persistence.saveLobby(slug, lobby);
     }
   });
 

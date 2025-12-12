@@ -1,6 +1,7 @@
 // Kill Team Draft Socket Events
 
 const { botSystem } = require('../games/bots');
+const persistence = require('../utils/persistence');
 
 /**
  * Register Kill Team Draft socket events
@@ -97,6 +98,9 @@ function broadcastGameState(io, lobbies, games, slug) {
       io.to(player.id).emit('game-state-updated', playerView);
     }
   });
+
+  // Persist game state (throttled)
+  persistence.saveGame(slug, game);
 }
 
 /**

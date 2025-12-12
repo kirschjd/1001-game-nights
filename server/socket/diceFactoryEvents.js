@@ -1,8 +1,9 @@
 // 1001 Game Nights - Dice Factory Socket Events
-// Version: 2.1.0 - Added modification bidding/auction events
+// Version: 2.1.1 - Added persistence for state recovery
 // Updated: December 2024
 
 const { botSystem } = require('../games/bots');
+const persistence = require('../utils/persistence');
 
 /**
  * Helper function to broadcast dice factory game updates
@@ -22,6 +23,9 @@ function broadcastDiceFactoryUpdate(io, lobbySlug, game, lobbies) {
       io.to(player.id).emit('game-state-updated', playerView);
     }
   });
+
+  // Persist game state (throttled)
+  persistence.saveGame(lobbySlug, game);
 }
 
 /**

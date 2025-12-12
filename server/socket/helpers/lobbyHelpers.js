@@ -1,6 +1,8 @@
 // server/socket/helpers/lobbyHelpers.js
 // Helper functions for lobby event handlers
 
+const persistence = require('../../utils/persistence');
+
 /**
  * Create a new lobby
  */
@@ -21,9 +23,13 @@ function createLobby(slug, playerName, socketId) {
  * Handle player reconnection logic
  */
 function handlePlayerReconnection(lobby, playerName, newSocketId, games) {
+  console.log(`🔍 Checking reconnection for "${playerName}" in lobby ${lobby.slug}`);
+  console.log(`   Current players: ${lobby.players.map(p => `${p.name} (${p.id}, connected: ${p.isConnected})`).join(', ')}`);
+
   const existingPlayer = lobby.players.find(p => p.name === playerName);
 
   if (!existingPlayer) {
+    console.log(`   ❌ No existing player found with name "${playerName}" - treating as new player`);
     return { isReconnection: false };
   }
 
@@ -156,9 +162,13 @@ function scheduleInactiveLobbyCleanup(lobbies, games, lobbySlug) {
   setTimeout(() => {
     const currentLobby = lobbies.get(lobbySlug);
     if (currentLobby && currentLobby.players.every(p => !p.isConnected)) {
+      // Delete from memory
       lobbies.delete(lobbySlug);
       games.delete(lobbySlug);
-      console.log(`🧹 Cleaned up empty lobby: ${lobbySlug}`);
+      // Delete persisted files
+      persistence.deleteLobby(lobbySlug);
+      persistence.deleteGame(lobbySlug);
+      console.log(`🧹 Cleaned up empty lobby: ${lobbySlug} (memory + disk)`);
     }
   }, 5 * 60 * 1000); // 5 minutes
 }

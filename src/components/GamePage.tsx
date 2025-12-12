@@ -11,6 +11,15 @@ import { DiceFactoryGame as DiceFactoryGameV021 } from './games/dice-factory-v0.
 import HenHurGame from './games/henhur';
 import KillTeamDraftGame from './games/kill-team-draft/KillTeamDraftGame';
 import HeistCityGame from './games/heist-city';
+import { GameHeader } from './shared';
+
+interface Player {
+  id: string;
+  name: string;
+  isConnected: boolean;
+  isBot?: boolean;
+  botStyle?: string;
+}
 
 interface WarGameState {
   type: string;
@@ -66,12 +75,29 @@ const GamePage: React.FC = () => {
   const [isLeader, setIsLeader] = useState(false);
   const [hasJoinedLobby, setHasJoinedLobby] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [lobbyPlayers, setLobbyPlayers] = useState<Player[]>([]);
+  const [leaderId, setLeaderId] = useState<string>('');
   const hasInitializedRef = useRef(false);
 
   // Navigate to home (socket is now shared, so we don't disconnect)
   const handleHome = useCallback(() => {
     navigate('/');
   }, [navigate]);
+
+  // Handle player name change
+  const handleNameChange = useCallback((newName: string) => {
+    if (socket && slug) {
+      socket.emit('update-player-name', { slug, newName });
+      localStorage.setItem(`player-name-${slug}`, newName);
+    }
+  }, [socket, slug]);
+
+  // Handle leader transfer
+  const handleTransferLeadership = useCallback((newLeaderId: string) => {
+    if (socket && slug) {
+      socket.emit('change-leader', { slug, newLeaderId });
+    }
+  }, [socket, slug]);
 
   // Connection error handling (socket is managed by context)
   useEffect(() => {
@@ -89,9 +115,18 @@ const GamePage: React.FC = () => {
     if (socket && isConnected && !hasInitializedRef.current && slug) {
       hasInitializedRef.current = true;
 
-      const playerName = localStorage.getItem(`player-name-${slug}`) || `Player ${Math.floor(Math.random() * 1000)}`;
+      // Try to get existing name for this lobby, or create new one
+      let playerName = localStorage.getItem(`player-name-${slug}`);
+      const hadStoredName = !!playerName;
 
-      console.log('GamePage: Auto-joining lobby as', playerName);
+      if (!playerName) {
+        playerName = `Player ${Math.floor(Math.random() * 1000)}`;
+        // Store the name for future reconnections
+        localStorage.setItem(`player-name-${slug}`, playerName);
+      }
+
+      console.log('GamePage: Auto-joining lobby as', playerName, hadStoredName ? '(from localStorage)' : '(newly generated)');
+      console.log('GamePage: localStorage key:', `player-name-${slug}`);
 
       socket.emit('join-lobby', { slug, playerName });
       socket.emit('request-game-state', { slug });
@@ -142,9 +177,8 @@ const GamePage: React.FC = () => {
     console.log('Lobby leader ID:', lobbyData.leaderId);
     console.log('Am I leader?', socket.id === lobbyData.leaderId);
     setIsLeader(socket.id === lobbyData.leaderId);
-    
-    // Simple check - if we have lobby but no game after reasonable time, it means no game is running
-    // We'll handle this with a separate useEffect to avoid multiple timeouts
+    setLobbyPlayers(lobbyData.players || []);
+    setLeaderId(lobbyData.leaderId || '');
   };
 
   // NEW: Handle explicit "no game running" response
@@ -235,14 +269,6 @@ useEffect(() => {
     );
   }
 
-  // Get game-specific colors
-  const gameColor = gameState.type === 'war' ? 'tea-rose' : gameState.type === 'heist-city' ? 'purple-500' : 'uranian-blue';
-  const gameColorClasses = gameState.type === 'war'
-    ? 'border-tea-rose/30 bg-tea-rose/10'
-    : gameState.type === 'heist-city'
-    ? 'border-purple-500/30 bg-purple-500/10'
-    : 'border-uranian-blue/30 bg-uranian-blue/10';
-
   return (
     <div className="min-h-screen bg-payne-grey-dark text-white relative">
       {/* Subtle texture overlay */}
@@ -251,40 +277,30 @@ useEffect(() => {
         backgroundSize: '20px 20px'
       }}></div>
 
-      {/* Header with game info and navigation */}
-      <header className={`p-4 border-b ${gameColorClasses} flex items-center justify-between relative z-10`}>
-        <div className="flex items-center gap-4">
-          <img 
-            src={`/assets/icon-${gameState.type}.jpg`} 
-            alt={gameState.type}
-            className={`w-10 h-10 rounded border-2 border-${gameColor}`}
-            onError={(e) => {
-              // Fallback if image doesn't exist
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-          <div>
-            <h1 className="text-2xl font-bold text-lion-light">
-              Playing: {gameState.type === 'war' ?
-                (gameState as WarGameState).variantDisplayName || 'War' :
-                gameState.type === 'dice-factory' ? 'Dice Factory' :
-                gameState.type === 'heist-city' ? 'Heist City' :
-                gameState.type}
-            </h1>
-            <p className="text-gray-400">Player: {playerName}</p>
-          </div>
-        </div>
-        
-        {/* Navigation controls */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleHome}
-            className="bg-payne-grey hover:bg-payne-grey-light text-white px-4 py-2 rounded-lg transition-colors border border-payne-grey-light"
-          >
-            ← Home
-          </button>
-        </div>
-      </header>
+      {/* Header with player list and navigation */}
+      <GameHeader
+        gameType={gameState.type}
+        gameTitle={
+          gameState.type === 'war'
+            ? (gameState as WarGameState).variantDisplayName || 'War'
+            : gameState.type === 'dice-factory'
+            ? 'Dice Factory'
+            : gameState.type === 'heist-city'
+            ? 'Heist City'
+            : gameState.type === 'henhur'
+            ? 'HenHur'
+            : gameState.type === 'kill-team-draft'
+            ? 'Kill Team Draft'
+            : gameState.type
+        }
+        players={lobbyPlayers}
+        currentPlayerId={socket?.id || ''}
+        leaderId={leaderId}
+        isLeader={isLeader}
+        onNameChange={handleNameChange}
+        onTransferLeadership={handleTransferLeadership}
+        onHome={handleHome}
+      />
 
       {/* Game content */}
       <main className="relative z-10">

@@ -1,6 +1,8 @@
 // 1001 Game Nights - War Game Socket Events
-// Version: 2.0.0 - Extracted from main server file
+// Version: 2.0.1 - Added persistence for state recovery
 // Updated: December 2024
+
+const persistence = require('../utils/persistence');
 
 /**
  * Register War game-related socket events
@@ -30,6 +32,8 @@ function registerWarEvents(io, socket, lobbies, games) {
             io.to(player.id).emit('game-state-updated', playerView);
           }
         });
+        // Persist game state (throttled)
+        persistence.saveGame(socket.lobbySlug, game);
       }
     }
   });
@@ -51,6 +55,8 @@ function registerWarEvents(io, socket, lobbies, games) {
           io.to(player.id).emit('game-state-updated', playerView);
         }
       });
+      // Persist game state (throttled)
+      persistence.saveGame(socket.lobbySlug, game);
     }
   });
 }

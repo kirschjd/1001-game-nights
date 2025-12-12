@@ -18,6 +18,9 @@ const { initializeSocketHandlers } = require('./socket/socketHandler');
 const { initializeBotSystem } = require('./games/bots');
 const setupWarEvents = require('./games/war/events');
 
+// Import persistence module for state recovery
+const persistence = require('./utils/persistence');
+
 const app = express();
 const server = http.createServer(app);
 
@@ -53,13 +56,18 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../build')));
 }
 
-// In-memory storage (replace with database in production)
-const lobbies = new Map();
-const games = new Map();
+// In-memory storage - load persisted state if available
+console.log('[Server] Loading persisted state...');
+const lobbies = persistence.loadAllLobbies();
+const games = persistence.loadAllGames();
+console.log(`[Server] Loaded ${lobbies.size} lobbies and ${games.size} games from disk`);
 
 // Make storage available to routes
 app.locals.lobbies = lobbies;
 app.locals.games = games;
+
+// Start cleanup job to remove old persisted files
+persistence.startCleanupJob(1); // Run every hour
 
 // API Routes
 app.use('/api', apiRoutes);

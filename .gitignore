@@ -10,3 +10,6 @@ npm-debug.log*
 **/old/**
 *.bak
 *.old
+
+# Server data persistence (generated at runtime)
+server/data/

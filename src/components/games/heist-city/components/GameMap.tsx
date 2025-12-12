@@ -3,14 +3,9 @@ import { MapState, CharacterToken as CharacterTokenType, MapItem as MapItemType,
 import {
   SVG_WIDTH,
   SVG_HEIGHT,
-  GRID_COLUMNS,
-  GRID_ROWS,
   inchesToPixels,
   pixelsToInches,
-  snapToGrid as snapToGridUtil,
   isWithinBounds,
-  GRID_SIZE_INCHES,
-  GRID_CENTER_OFFSET,
   MAP_SIZE_INCHES,
 } from '../data/mapConstants';
 import CharacterToken from './CharacterToken';
@@ -293,7 +288,7 @@ const GameMap: React.FC<GameMapProps> = ({
 
       // Apply snap to grid if enabled
       if (settings.snapToGrid) {
-        newPosition = snapToGridUtil(newPosition);
+        newPosition = gridUtils.snapToGrid(newPosition);
       }
 
       // Update the selected token's position
@@ -693,7 +688,7 @@ const GameMap: React.FC<GameMapProps> = ({
           x: posInches.x + dragOffset.x,
           y: posInches.y + dragOffset.y
         };
-        const snapPos = settings.snapToGrid ? snapToGridUtil(adjustedPos) : adjustedPos;
+        const snapPos = settings.snapToGrid ? gridUtils.snapToGrid(adjustedPos) : adjustedPos;
         setHoveredGrid(snapPos);
         setCursorPosition(adjustedPos); // Track actual cursor position for shadow
 
@@ -732,7 +727,7 @@ const GameMap: React.FC<GameMapProps> = ({
             x: posInches.x + dragOffset.x,
             y: posInches.y + dragOffset.y
           };
-          const snapPos = settings.snapToGrid ? snapToGridUtil(adjustedPos) : adjustedPos;
+          const snapPos = settings.snapToGrid ? gridUtils.snapToGrid(adjustedPos) : adjustedPos;
           setHoveredGrid(snapPos);
           setCursorPosition(adjustedPos);
 
@@ -752,7 +747,7 @@ const GameMap: React.FC<GameMapProps> = ({
           x: posInches.x + dragOffset.x,
           y: posInches.y + dragOffset.y
         };
-        const snapPos = settings.snapToGrid ? snapToGridUtil(adjustedPos) : adjustedPos;
+        const snapPos = settings.snapToGrid ? gridUtils.snapToGrid(adjustedPos) : adjustedPos;
 
         const updatedZones = mapState.zones.map((z) =>
           z.id === draggedZone ? { ...z, position: snapPos } : z
@@ -866,7 +861,7 @@ const GameMap: React.FC<GameMapProps> = ({
       if (isDraggingConfirmed && tempDragPositionRef.current) {
         let finalPosition = tempDragPositionRef.current;
         if (settings.snapToGrid) {
-          finalPosition = snapToGridUtil(tempDragPositionRef.current);
+          finalPosition = gridUtils.snapToGrid(tempDragPositionRef.current);
         }
 
         if (!isWithinBounds(finalPosition)) {
@@ -903,7 +898,7 @@ const GameMap: React.FC<GameMapProps> = ({
       if (canDrag && isDraggingConfirmed && tempDragPositionRef.current) {
         let finalPosition = tempDragPositionRef.current;
         if (settings.snapToGrid) {
-          finalPosition = snapToGridUtil(tempDragPositionRef.current);
+          finalPosition = gridUtils.snapToGrid(tempDragPositionRef.current);
         }
 
         if (!isWithinBounds(finalPosition)) {
@@ -1255,6 +1250,8 @@ const GameMap: React.FC<GameMapProps> = ({
                     onDoubleClick={handleItemDoubleClick}
                     isSelected={item.id === selectedItem}
                     isDragging={item.id === draggedItem}
+                    gridType={gridType}
+                    positionToPixels={gridUtils.positionToPixels}
                   />
                 );
               })}
@@ -1276,6 +1273,8 @@ const GameMap: React.FC<GameMapProps> = ({
                   onMouseDown={handleTokenMouseDown}
                   isDragging={token.id === draggedToken}
                   selectingPlayers={getSelectingPlayers(token.id)}
+                  gridType={gridType}
+                  positionToPixels={gridUtils.positionToPixels}
                 />
               );
             })}
