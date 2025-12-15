@@ -31,7 +31,7 @@ export const CHARACTER_DATA: Record<CharacterRole, CharacterInfo> = {
       {
         name: 'Not the mook you are looking for',
         actionCost: 1,
-        description: '1 character becomes immune to mobs',
+        description: '1 character becomes immune to mobs (Limit: 1 per game)',
       },
       {
         name: 'Face Off',
@@ -56,12 +56,12 @@ export const CHARACTER_DATA: Record<CharacterRole, CharacterInfo> = {
       {
         name: 'Push',
         actionCost: 1,
-        description: 'Make an attack roll, if successful, move an enemy 2 in a push motion',
+        description: 'Make an attack roll, if successful, move an enemy 2 in a push motion in addition to attack damage',
       },
       {
         name: 'All Eyes On Me',
         actionCost: 2,
-        description: 'Draw aggro from all mobs. Get damage reduction 1 until next turn',
+        description: 'Draw aggro from all mobs. Get damage reduction 1 until next turn (Limit: 1 per game)',
       },
     ],
   },
@@ -79,14 +79,14 @@ export const CHARACTER_DATA: Record<CharacterRole, CharacterInfo> = {
     description: 'This guy was born in Wisconsin, but got way too into Japan, and trained himself in the art of Ninjutsu. Turns out it worked for him, as he has turned it into a successful career as a ninja, just don\'t get him started on anime.',
     abilities: [
       {
-        name: 'Ninja Vanish',
+        name: 'Ghost Hand',
         actionCost: 2,
-        description: 'Set state to hidden, move up to 3',
+        description: 'Make a melee attack with reach 5 (ignore walls and cover)',
       },
       {
-        name: 'Replacement Jutsu',
-        actionCost: 3,
-        description: 'Swap with a unit within 7',
+        name: 'Ninja Vanish',
+        actionCost: 2,
+        description: 'Set state to hidden, move up to 3  (Limit: 1 per game)',
       },
     ],
   },
@@ -111,7 +111,7 @@ export const CHARACTER_DATA: Record<CharacterRole, CharacterInfo> = {
       {
         name: 'All According to Plan',
         actionCost: 3,
-        description: 'Move every allied unit other than the Brain 1 free move',
+        description: 'Move every allied unit 1 free move (Limit: 1 per game)',
       },
     ],
   },
@@ -134,9 +134,9 @@ export const CHARACTER_DATA: Record<CharacterRole, CharacterInfo> = {
         description: 'Move 3 then do a melee attack',
       },
       {
-        name: 'Nothing Personnel',
-        actionCost: 3,
-        description: 'Do a ballistic attack then get damage reduction 1 until next turn',
+        name: 'Under Cover',
+        actionCost: 1,
+        description: 'Can deploy anywhere on the map at least 8" away from enemy deployment zone',
       },
     ],
   },

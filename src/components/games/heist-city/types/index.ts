@@ -50,11 +50,12 @@ export interface MapItem {
 
 export interface MapZone {
   id: string;
-  position: Position; // Top-left corner position in inches
-  width: number; // Width in grid squares
-  height: number; // Height in grid squares
+  position: Position; // Top-left corner position in inches (square), center position in axial coords (hex)
+  width: number; // Width in grid squares (square grid only)
+  height: number; // Height in grid squares (square grid only)
   color: string; // RGBA color string
   label: string; // Zone label/name
+  hexCells?: Position[]; // Array of hex cell positions (axial coords) for hex grids
 }
 
 export type CharacterRole = 'Face' | 'Muscle' | 'Ninja' | 'Brain' | 'Spook';

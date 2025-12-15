@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { MapZone } from '../types';
+import { MapZone, GridType } from '../types';
 
 interface ZonePropertiesPanelProps {
   zone: MapZone;
   onUpdate: (zone: MapZone) => void;
   onClose: () => void;
+  gridType?: GridType;
 }
 
-const ZonePropertiesPanel: React.FC<ZonePropertiesPanelProps> = ({ zone, onUpdate, onClose }) => {
+const ZonePropertiesPanel: React.FC<ZonePropertiesPanelProps> = ({ zone, onUpdate, onClose, gridType = 'square' }) => {
   const [label, setLabel] = useState(zone.label);
   const [color, setColor] = useState(zone.color);
   const [opacity, setOpacity] = useState(0.3);
@@ -118,17 +119,47 @@ const ZonePropertiesPanel: React.FC<ZonePropertiesPanelProps> = ({ zone, onUpdat
         />
       </div>
 
-      {/* Size Display */}
+      {/* Size Display / Radius Control */}
       <div className="mb-3">
-        <label className="text-gray-300 text-xs font-medium mb-1 block">Size</label>
-        <div className="text-gray-400 text-xs">
-          {zone.width} × {zone.height} squares
-        </div>
+        <label className="text-gray-300 text-xs font-medium mb-1 block">
+          {gridType === 'hex' ? 'Radius (hex cells)' : 'Size'}
+        </label>
+        {gridType === 'hex' ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const newWidth = Math.max(0, zone.width - 2);
+                onUpdate({ ...zone, width: newWidth, height: newWidth });
+              }}
+              className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 text-sm"
+            >
+              −
+            </button>
+            <span className="text-white text-sm min-w-[40px] text-center">
+              {Math.floor(zone.width / 2)}
+            </span>
+            <button
+              onClick={() => {
+                const newWidth = Math.min(20, zone.width + 2);
+                onUpdate({ ...zone, width: newWidth, height: newWidth });
+              }}
+              className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 text-sm"
+            >
+              +
+            </button>
+          </div>
+        ) : (
+          <div className="text-gray-400 text-xs">
+            {zone.width} × {zone.height} squares
+          </div>
+        )}
       </div>
 
       {/* Position Display */}
       <div>
-        <label className="text-gray-300 text-xs font-medium mb-1 block">Position</label>
+        <label className="text-gray-300 text-xs font-medium mb-1 block">
+          {gridType === 'hex' ? 'Center (q, r)' : 'Position'}
+        </label>
         <div className="text-gray-400 text-xs">
           ({zone.position.x.toFixed(0)}, {zone.position.y.toFixed(0)})
         </div>

@@ -97,6 +97,13 @@ export interface GridUtils {
    */
   isWithinBounds(position: Position): boolean;
 
+  /**
+   * Clamp a position to the nearest valid position within bounds
+   * @param position - Position to clamp
+   * @returns Position within bounds (snapped to grid)
+   */
+  clampToBounds(position: Position): Position;
+
   // ============== Rendering Helpers ==============
 
   /**

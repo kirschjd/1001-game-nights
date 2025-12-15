@@ -98,6 +98,11 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
         console.log('Using existing map state from server');
         setMapState(state.mapState);
 
+        // Also restore grid type if available
+        if (state.gridType) {
+          setGridType(state.gridType);
+        }
+
         // Also restore game info if available
         if (state.gameInfo) {
           setTurnNumber(state.gameInfo.turnNumber || 1);

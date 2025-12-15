@@ -43,6 +43,19 @@ const MapItem: React.FC<MapItemProps> = ({
   const size = inchesToPixels(style.size);
   const rotation = item.rotation || 0;
 
+  // Generate SVG points for a flat-top hexagon (for hex grid items)
+  const getHexPoints = (cx: number, cy: number, hexSize: number): string => {
+    const points: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      // Flat-top hex: corners at 30°, 90°, 150°, 210°, 270°, 330°
+      const angle = (Math.PI / 3) * i + (Math.PI / 6);
+      const px = cx + hexSize * Math.cos(angle);
+      const py = cy + hexSize * Math.sin(angle);
+      points.push(`${px},${py}`);
+    }
+    return points.join(' ');
+  };
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onClick?.(item);
@@ -60,9 +73,19 @@ const MapItem: React.FC<MapItemProps> = ({
 
   // Render different shapes based on item type
   const renderItem = () => {
+    // Use hex shapes for certain items on hex grids
+    const useHexShape = gridType === 'hex';
+
     switch (item.type) {
       case 'wall':
-        return (
+        return useHexShape ? (
+          <polygon
+            points={getHexPoints(x, y, size / 2)}
+            fill={style.color}
+            stroke={isSelected ? '#fff' : 'none'}
+            strokeWidth={isSelected ? 2 : 0}
+          />
+        ) : (
           <rect
             x={x - size / 2}
             y={y - size / 2}
@@ -75,7 +98,14 @@ const MapItem: React.FC<MapItemProps> = ({
         );
 
       case 'table':
-        return (
+        return useHexShape ? (
+          <polygon
+            points={getHexPoints(x, y, size / 2)}
+            fill={style.color}
+            stroke={isSelected ? '#fff' : 'none'}
+            strokeWidth={isSelected ? 2 : 0}
+          />
+        ) : (
           <rect
             x={x - size / 2}
             y={y - size / 2}
@@ -88,7 +118,22 @@ const MapItem: React.FC<MapItemProps> = ({
         );
 
       case 'computer':
-        return (
+        return useHexShape ? (
+          <g>
+            <polygon
+              points={getHexPoints(x, y, size / 2)}
+              fill="none"
+              stroke={style.color}
+              strokeWidth={3}
+            />
+            <polygon
+              points={getHexPoints(x, y, size / 4)}
+              fill={style.color}
+              stroke={isSelected ? '#fff' : 'none'}
+              strokeWidth={isSelected ? 2 : 0}
+            />
+          </g>
+        ) : (
           <g>
             <rect
               x={x - size / 2}
@@ -124,7 +169,22 @@ const MapItem: React.FC<MapItemProps> = ({
         );
 
       case 'teleporter':
-        return (
+        return useHexShape ? (
+          <g>
+            <polygon
+              points={getHexPoints(x, y, size / 2)}
+              fill="none"
+              stroke={style.color}
+              strokeWidth={3}
+            />
+            <polygon
+              points={getHexPoints(x, y, size / 4)}
+              fill={style.color}
+              stroke={isSelected ? '#fff' : 'none'}
+              strokeWidth={isSelected ? 2 : 0}
+            />
+          </g>
+        ) : (
           <g>
             <rect
               x={x - size / 2}

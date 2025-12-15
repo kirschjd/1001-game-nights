@@ -213,17 +213,17 @@
       "Size": 3,
       "Damage": 0,
       "Notice": { "Disguised": true },
-      "Description": "Block Line of Sight"
+      "Description": "Block Line of Sight for 1 turn"
     },      
     {
       "id": "Shock",
       "type": "Thrown",
       "Cost": 7,
       "Range": 6,
-      "Size": 3,
+      "Size": 4,
       "Damage": 1,
       "Notice": {},
-      "Description": "Tech Stunned for 1 turn"
+      "Description": "Tech Nonfunctional for 1 turn (turrets, computers, info drops)"
     },        
     {
       "id": "Freeze",
@@ -240,8 +240,8 @@
       "type": "Thrown",
       "Cost": 7,
       "Range": 5,
-      "Size": 3,
-      "Damage": 2,
+      "Size": 5,
+      "Damage": 3,
       "Notice": {},
       "Description": ""
     },       
@@ -250,8 +250,8 @@
       "type": "Thrown",
       "Cost": 11,
       "Range": 4,
-      "Size": 2,
-      "Damage": 3,
+      "Size": 3,
+      "Damage": 5,
       "Notice": {},
       "Description": "Destroy Walls"
     },    
@@ -260,7 +260,7 @@
       "type": "Thrown",
       "Cost": 8,
       "Range": 3,
-      "Size": 2,
+      "Size": 3,
       "Damage": 4,
       "Notice": { "Hidden": true, 
                   "Disguised": true},
@@ -325,6 +325,30 @@
       "type": "Tool",
       "Cost": 20,
       "Description": "Any character can burn this item to reroll once per mission"
+    },
+    {
+      "id": "Scope",
+      "type": "Tool",
+      "Cost": 17,
+      "Description": "Increase BS by 1"
+    },
+    {
+      "id": "Steroids",
+      "type": "Tool",
+      "Cost": 20,
+      "Description": "Increase MS by 1"
+    },
+    {
+      "id": "Teleporter Beacon",
+      "type": "Tool",
+      "Cost": 10,
+      "Description": "If not stunned or unconscious, extract from anywhere"
+    },
+    {
+      "id": "Jetpack",
+      "type": "Tool",
+      "Cost": 15,
+      "Description": "If not stunned or unconscious, extract from anywhere with up to 1 adjacent ally"
     }
     ]
  }

@@ -5,7 +5,6 @@ import {
   SVG_HEIGHT,
   inchesToPixels,
   pixelsToInches,
-  isWithinBounds,
   MAP_SIZE_INCHES,
 } from '../data/mapConstants';
 import CharacterToken from './CharacterToken';
@@ -387,11 +386,12 @@ const GameMap: React.FC<GameMapProps> = ({
         setIsPanning(true);
         setPanStart({ x: e.clientX, y: e.clientY });
       } else if (activeTool === 'ruler') {
-        const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
-        onRulerUpdate?.(posInches, posInches);
+        // Use grid-native coordinates for ruler (axial for hex, inches for square)
+        const rulerPos = gridUtils.pixelsToPosition(svgCoords);
+        onRulerUpdate?.(rulerPos, rulerPos);
       }
     },
-    [activeTool, readOnly, screenToSVG, onRulerUpdate]
+    [activeTool, readOnly, screenToSVG, onRulerUpdate, gridUtils]
   );
 
   // Handle SVG click (clicking empty area to unfocus selections)
@@ -447,17 +447,18 @@ const GameMap: React.FC<GameMapProps> = ({
       setIsDraggingConfirmed(false);
 
       // Calculate offset from cursor to token center for dragging
+      // Use grid-native coordinates (inches for square, axial for hex)
       const svgCoords = screenToSVG(e.clientX, e.clientY);
-      const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
+      const cursorPos = gridUtils.pixelsToPosition(svgCoords);
       const offset = {
-        x: token.position.x - posInches.x,
-        y: token.position.y - posInches.y
+        x: token.position.x - cursorPos.x,
+        y: token.position.y - cursorPos.y
       };
 
       setDraggedToken(token.id);
       setDragOffset(offset);
     },
-    [readOnly, activeTool, screenToSVG, playerSelections, currentPlayerId, onSelectionChange]
+    [readOnly, activeTool, screenToSVG, playerSelections, currentPlayerId, onSelectionChange, gridUtils]
   );
 
   // Handle item drag start (editor mode or movable enemies in select mode)
@@ -477,17 +478,18 @@ const GameMap: React.FC<GameMapProps> = ({
       setIsDraggingConfirmed(false);
 
       // Calculate offset from cursor to item center
+      // Use grid-native coordinates (inches for square, axial for hex)
       const svgCoords = screenToSVG(e.clientX, e.clientY);
-      const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
+      const cursorPos = gridUtils.pixelsToPosition(svgCoords);
       const offset = {
-        x: item.position.x - posInches.x,
-        y: item.position.y - posInches.y
+        x: item.position.x - cursorPos.x,
+        y: item.position.y - cursorPos.y
       };
 
       setDraggedItem(item.id);
       setDragOffset(offset);
     },
-    [readOnly, activeTool, screenToSVG]
+    [readOnly, activeTool, screenToSVG, gridUtils]
   );
 
   // Add new item to map (editor mode)
@@ -495,11 +497,12 @@ const GameMap: React.FC<GameMapProps> = ({
     (itemType: ItemType) => {
       if (readOnly) return;
 
-      // Find a default position (center of map)
+      // Default position: center of map (0,0 for hex, 18,18 for square)
+      const defaultPosition = gridType === 'hex' ? { x: 0, y: 0 } : { x: 18, y: 18 };
       const newItem: MapItemType = {
         id: `item-${Date.now()}`,
         type: itemType,
-        position: { x: 18, y: 18 }, // Center of 36x36 map
+        position: defaultPosition,
         size: 1,
       };
 
@@ -508,16 +511,18 @@ const GameMap: React.FC<GameMapProps> = ({
         items: [...mapState.items, newItem]
       });
     },
-    [readOnly, mapState, onMapStateChange]
+    [readOnly, mapState, onMapStateChange, gridType]
   );
 
   // Add new zone to map (editor mode)
   const handleAddZone = useCallback(() => {
     if (readOnly) return;
 
+    // Default position: near center (0,0 for hex, 15,15 for square)
+    const defaultPosition = gridType === 'hex' ? { x: 0, y: 0 } : { x: 15, y: 15 };
     const newZone: MapZoneType = {
       id: `zone-${Date.now()}`,
-      position: { x: 15, y: 15 }, // Near center
+      position: defaultPosition,
       width: 3,
       height: 3,
       color: 'rgba(147, 51, 234, 0.3)', // Semi-transparent purple
@@ -529,7 +534,7 @@ const GameMap: React.FC<GameMapProps> = ({
       ...mapState,
       zones: [...mapState.zones, newZone]
     });
-  }, [readOnly, mapState, onMapStateChange, zoneCounter]);
+  }, [readOnly, mapState, onMapStateChange, zoneCounter, gridType]);
 
   // Handle importing a map
   const handleImportMap = useCallback((mapData: {
@@ -598,17 +603,18 @@ const GameMap: React.FC<GameMapProps> = ({
       if (readOnly || activeTool !== 'editor') return;
 
       // Calculate offset from cursor to zone top-left
+      // Use grid-native coordinates (inches for square, axial for hex)
       const svgCoords = screenToSVG(e.clientX, e.clientY);
-      const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
+      const cursorPos = gridUtils.pixelsToPosition(svgCoords);
       const offset = {
-        x: zone.position.x - posInches.x,
-        y: zone.position.y - posInches.y
+        x: zone.position.x - cursorPos.x,
+        y: zone.position.y - cursorPos.y
       };
 
       setDraggedZone(zone.id);
       setDragOffset(offset);
     },
-    [readOnly, activeTool, screenToSVG]
+    [readOnly, activeTool, screenToSVG, gridUtils]
   );
 
   // Handle zone resize start
@@ -617,15 +623,16 @@ const GameMap: React.FC<GameMapProps> = ({
       if (readOnly || activeTool !== 'editor') return;
       e.stopPropagation();
 
+      // Use grid-native coordinates (inches for square, axial for hex)
       const svgCoords = screenToSVG(e.clientX, e.clientY);
-      const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
+      const cursorPos = gridUtils.pixelsToPosition(svgCoords);
 
       setResizingZone(zone.id);
       setResizeHandle(handle);
       setResizeStartSize({ width: zone.width, height: zone.height, position: zone.position });
-      setResizeStartCursor(posInches);
+      setResizeStartCursor(cursorPos);
     },
-    [readOnly, activeTool, screenToSVG]
+    [readOnly, activeTool, screenToSVG, gridUtils]
   );
 
   // Handle zone property update
@@ -646,6 +653,11 @@ const GameMap: React.FC<GameMapProps> = ({
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
       const svgCoords = screenToSVG(e.clientX, e.clientY);
+      // Convert pixel coordinates to grid-native position:
+      // - Square grid: position in inches
+      // - Hex grid: position in axial coordinates (q, r)
+      const cursorPos = gridUtils.pixelsToPosition(svgCoords);
+      // Also keep inch position for square-grid specific operations (ruler, zones)
       const posInches = { x: pixelsToInches(svgCoords.x), y: pixelsToInches(svgCoords.y) };
 
       // Handle panning
@@ -660,9 +672,9 @@ const GameMap: React.FC<GameMapProps> = ({
         return;
       }
 
-      // Handle ruler
+      // Handle ruler (use grid-native coordinates)
       if (sharedRulerState?.start && activeTool === 'ruler') {
-        onRulerUpdate?.(sharedRulerState.start, posInches);
+        onRulerUpdate?.(sharedRulerState.start, cursorPos);
         return;
       }
 
@@ -684,9 +696,10 @@ const GameMap: React.FC<GameMapProps> = ({
         }
 
         // Apply drag offset to keep item under cursor
+        // Use cursorPos (grid-native: inches for square, axial for hex)
         const adjustedPos = {
-          x: posInches.x + dragOffset.x,
-          y: posInches.y + dragOffset.y
+          x: cursorPos.x + dragOffset.x,
+          y: cursorPos.y + dragOffset.y
         };
         const snapPos = settings.snapToGrid ? gridUtils.snapToGrid(adjustedPos) : adjustedPos;
         setHoveredGrid(snapPos);
@@ -723,9 +736,10 @@ const GameMap: React.FC<GameMapProps> = ({
           }
 
           // Apply drag offset to keep item under cursor
+          // Use cursorPos (grid-native: inches for square, axial for hex)
           const adjustedPos = {
-            x: posInches.x + dragOffset.x,
-            y: posInches.y + dragOffset.y
+            x: cursorPos.x + dragOffset.x,
+            y: cursorPos.y + dragOffset.y
           };
           const snapPos = settings.snapToGrid ? gridUtils.snapToGrid(adjustedPos) : adjustedPos;
           setHoveredGrid(snapPos);
@@ -742,10 +756,11 @@ const GameMap: React.FC<GameMapProps> = ({
       }
 
       // Handle zone dragging (editor mode)
+      // Note: Zones always use inch positions (not supported in hex mode)
       if (draggedZone && activeTool === 'editor' && dragOffset) {
         const adjustedPos = {
-          x: posInches.x + dragOffset.x,
-          y: posInches.y + dragOffset.y
+          x: cursorPos.x + dragOffset.x,
+          y: cursorPos.y + dragOffset.y
         };
         const snapPos = settings.snapToGrid ? gridUtils.snapToGrid(adjustedPos) : adjustedPos;
 
@@ -864,9 +879,9 @@ const GameMap: React.FC<GameMapProps> = ({
           finalPosition = gridUtils.snapToGrid(tempDragPositionRef.current);
         }
 
-        if (!isWithinBounds(finalPosition)) {
-          finalPosition.x = Math.max(0, Math.min(35, finalPosition.x));
-          finalPosition.y = Math.max(0, Math.min(35, finalPosition.y));
+        // Clamp to grid bounds (works for both square and hex grids)
+        if (!gridUtils.isWithinBounds(finalPosition)) {
+          finalPosition = gridUtils.clampToBounds(finalPosition);
         }
 
         const updatedCharacters = mapState.characters.map((t) =>
@@ -901,9 +916,9 @@ const GameMap: React.FC<GameMapProps> = ({
           finalPosition = gridUtils.snapToGrid(tempDragPositionRef.current);
         }
 
-        if (!isWithinBounds(finalPosition)) {
-          finalPosition.x = Math.max(0, Math.min(35, finalPosition.x));
-          finalPosition.y = Math.max(0, Math.min(35, finalPosition.y));
+        // Clamp to grid bounds (works for both square and hex grids)
+        if (!gridUtils.isWithinBounds(finalPosition)) {
+          finalPosition = gridUtils.clampToBounds(finalPosition);
         }
 
         const updatedItems = mapState.items.map((i) =>
@@ -1227,6 +1242,8 @@ const GameMap: React.FC<GameMapProps> = ({
                   onMouseDown={(e) => handleZoneMouseDown(zone, e)}
                   onResizeHandleMouseDown={(e, handle) => handleResizeHandleMouseDown(zone, e, handle)}
                   isDragging={zone.id === draggedZone}
+                  gridType={gridType}
+                  positionToPixels={gridUtils.positionToPixels}
                 />
               );
             })}
@@ -1235,48 +1252,52 @@ const GameMap: React.FC<GameMapProps> = ({
           {/* Map items */}
           {settings.showItems && (
             <g>
-              {mapState.items.map((item) => {
-                // Use temporary position if this item is being dragged
-                const displayItem = item.id === draggedItem && tempDragPosition
-                  ? { ...item, position: tempDragPosition }
-                  : item;
+              {mapState.items
+                .filter((item) => gridUtils.isWithinBounds(item.position))
+                .map((item) => {
+                  // Use temporary position if this item is being dragged
+                  const displayItem = item.id === draggedItem && tempDragPosition
+                    ? { ...item, position: tempDragPosition }
+                    : item;
 
-                return (
-                  <MapItem
-                    key={item.id}
-                    item={displayItem}
-                    onMouseDown={(e) => handleItemMouseDown(item, e)}
-                    onClick={handleItemClick}
-                    onDoubleClick={handleItemDoubleClick}
-                    isSelected={item.id === selectedItem}
-                    isDragging={item.id === draggedItem}
-                    gridType={gridType}
-                    positionToPixels={gridUtils.positionToPixels}
-                  />
-                );
-              })}
+                  return (
+                    <MapItem
+                      key={item.id}
+                      item={displayItem}
+                      onMouseDown={(e) => handleItemMouseDown(item, e)}
+                      onClick={handleItemClick}
+                      onDoubleClick={handleItemDoubleClick}
+                      isSelected={item.id === selectedItem}
+                      isDragging={item.id === draggedItem}
+                      gridType={gridType}
+                      positionToPixels={gridUtils.positionToPixels}
+                    />
+                  );
+                })}
             </g>
           )}
 
           {/* Character tokens */}
           <g>
-            {mapState.characters.map((token) => {
-              // Use temporary position if this token is being dragged
-              const displayToken = token.id === draggedToken && tempDragPosition
-                ? { ...token, position: tempDragPosition }
-                : token;
+            {mapState.characters
+              .filter((token) => gridUtils.isWithinBounds(token.position))
+              .map((token) => {
+                // Use temporary position if this token is being dragged
+                const displayToken = token.id === draggedToken && tempDragPosition
+                  ? { ...token, position: tempDragPosition }
+                  : token;
 
-              return (
-                <CharacterToken
-                  key={token.id}
-                  token={displayToken}
-                  onMouseDown={handleTokenMouseDown}
-                  isDragging={token.id === draggedToken}
-                  selectingPlayers={getSelectingPlayers(token.id)}
-                  gridType={gridType}
-                  positionToPixels={gridUtils.positionToPixels}
-                />
-              );
+                return (
+                  <CharacterToken
+                    key={token.id}
+                    token={displayToken}
+                    onMouseDown={handleTokenMouseDown}
+                    isDragging={token.id === draggedToken}
+                    selectingPlayers={getSelectingPlayers(token.id)}
+                    gridType={gridType}
+                    positionToPixels={gridUtils.positionToPixels}
+                  />
+                );
             })}
           </g>
 
@@ -1651,6 +1672,7 @@ const GameMap: React.FC<GameMapProps> = ({
           zone={mapState.zones.find((z) => z.id === selectedZone)!}
           onUpdate={handleZoneUpdate}
           onClose={() => setSelectedZone(null)}
+          gridType={gridType}
         />
       )}
     </div>

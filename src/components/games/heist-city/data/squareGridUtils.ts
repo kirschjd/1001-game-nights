@@ -106,6 +106,13 @@ export function createSquareGridUtils(config: GridConfig = DEFAULT_SQUARE_CONFIG
       );
     },
 
+    clampToBounds(position: Position): Position {
+      return {
+        x: Math.max(0, Math.min(mapSizeInches - 1, Math.round(position.x))),
+        y: Math.max(0, Math.min(mapSizeInches - 1, Math.round(position.y))),
+      };
+    },
+
     // ============== Rendering Helpers ==============
 
     renderGridElements(showMajorLines = true): React.ReactNode[] {
