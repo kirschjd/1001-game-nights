@@ -25,8 +25,6 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
   const [mapState, setMapState] = useState<MapState | null>(null);
   const [gridType, setGridType] = useState<GridType>('square');
   const [playerSelections, setPlayerSelections] = useState<PlayerSelection[]>([]);
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editedName, setEditedName] = useState('');
   // Version tracking for sync detection
   const [lastKnownVersion, setLastKnownVersion] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -445,31 +443,6 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     socket.emit('heist-city-ruler-update', { lobbyId, ...rulerData });
   };
 
-  // Handle player name change
-  const handleNameChange = () => {
-    if (!editedName.trim()) return;
-
-    // Update local state
-    setGameState(prev => {
-      if (!prev || !prev.players) return prev;
-      return {
-        ...prev,
-        players: prev.players.map(p =>
-          p.id === playerId ? { ...p, name: editedName.trim() } : p
-        ),
-      };
-    });
-
-    // Emit to server
-    socket.emit('heist-city-name-change', {
-      lobbyId,
-      playerId,
-      newName: editedName.trim(),
-    });
-
-    setIsEditingName(false);
-  };
-
   // Get current player's name
   const currentPlayerName = useMemo(() => {
     return gameState?.players?.find(p => p.id === playerId)?.name || 'Unknown';
@@ -592,68 +565,6 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     <div className="heist-city-game p-6 bg-gray-950 min-h-screen">
       <div className="max-w-[1550px] mx-auto">
         <h1 className="text-3xl font-bold text-white mb-4">Heist City</h1>
-
-        {/* Player List */}
-        <div className="mb-6 bg-gray-800 p-3 rounded-lg">
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="text-sm text-gray-400">Players:</span>
-            {gameState?.players?.map((player, index) => {
-              const isCurrentPlayer = player.id === playerId;
-              const playerColor = index === 0 ? 'text-blue-400' : 'text-red-400';
-
-              return (
-                <div key={player.id} className="flex items-center gap-2">
-                  {isCurrentPlayer && isEditingName ? (
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="text"
-                        value={editedName}
-                        onChange={(e) => setEditedName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleNameChange();
-                          if (e.key === 'Escape') setIsEditingName(false);
-                        }}
-                        autoFocus
-                        className="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm w-32 focus:outline-none focus:border-purple-500"
-                      />
-                      <button
-                        onClick={handleNameChange}
-                        className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setIsEditingName(false)}
-                        className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <span className={`font-semibold ${playerColor}`}>
-                        {player.name}
-                        {isCurrentPlayer && ' (You)'}
-                      </span>
-                      {isCurrentPlayer && (
-                        <button
-                          onClick={() => {
-                            setEditedName(player.name);
-                            setIsEditingName(true);
-                          }}
-                          className="text-gray-400 hover:text-white text-xs"
-                          title="Edit name"
-                        >
-                          ✏️
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
         {/* Game Map */}
         <GameMap

@@ -4,28 +4,33 @@ import { INITIAL_CHARACTER_STATS, CHARACTER_ROLES } from './characterStats';
 
 // Import all map definitions
 import bankJobMap from './maps/bank-job.json';
+import bankJobHexMap from './maps/bank-job-hex.json';
 import treasureHuntMap from './maps/treasure-hunt.json';
 import trainRobberyMap from './maps/train-robbery.json';
 import serverHackMap from './maps/server-hack.json';
 import jailBreakMap from './maps/jail-break.json';
 import hexDemoMap from './maps/hex-demo.json';
+import ballroomMap from './maps/ballroom.json';
 
-// Map registry
+// Map registry - keys are used for lookup, values contain map data
 const MAP_REGISTRY: Record<string, MapDefinition> = {
   'bank-job': bankJobMap as MapDefinition,
+  'bank-job-hex': bankJobHexMap as MapDefinition,
   'treasure-hunt': treasureHuntMap as MapDefinition,
   'train-robbery': trainRobberyMap as MapDefinition,
   'server-hack': serverHackMap as MapDefinition,
   'jail-break': jailBreakMap as MapDefinition,
   'hex-demo': hexDemoMap as MapDefinition,
+  'ballroom': ballroomMap as MapDefinition,
 };
 
 /**
  * Get all available maps
+ * Returns the registry key as id (used for loading) along with display name and description
  */
 export function getAvailableMaps(): Array<{ id: string; name: string; description: string }> {
-  return Object.values(MAP_REGISTRY).map((map) => ({
-    id: map.id,
+  return Object.entries(MAP_REGISTRY).map(([key, map]) => ({
+    id: key,
     name: map.name,
     description: map.description,
   }));

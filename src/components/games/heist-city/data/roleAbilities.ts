@@ -6,9 +6,9 @@ import { CharacterRole } from '../types';
 export const ROLE_ABILITIES: Record<CharacterRole, string[]> = {
   Face: ['Fast Talk', 'Face Off'],
   Muscle: ['Push', 'All Eyes on Me'],
-  Ninja: ['Ninja Vanish', 'Replacement Jutsu'],
+  Ninja: ['Ninja Vanish', 'Ghost Hand'],
   Brain: ['Experimental Gadget', 'All According to Plan'],
-  Spook: ['CQC Technique', 'Nothing Personnel'],
+  Spook: ['CQC Technique'],
 };
 
 /**

@@ -1,6 +1,6 @@
 {
-  "id": "bank-job",
-  "name": "Bank Job",
+  "id": "bank-job-square",
+  "name": "Bank Job-square",
   "description": "Break into the vault and escape with the loot",
   "items": [
     {

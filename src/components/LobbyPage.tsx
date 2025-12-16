@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
 import CardSelectionModal from './games/henhur/components/CardSelectionModal';
 import { ALL_CARDS } from './games/henhur/data/cards';
 import AbilitySelectionModal from './AbilitySelectionModal';
 import ABILITY_DECKS from './games/dice-factory-v0.2.1/data/abilityDecks.json';
+import { getAvailableMaps } from './games/heist-city/data/mapLoader';
 
 interface Player {
   id: string;
@@ -48,6 +49,9 @@ const LobbyPage: React.FC = () => {
   const [ktdPackSize, setKtdPackSize] = useState(15);
   const [ktdTotalPacks, setKtdTotalPacks] = useState(3);
   const [selectedHeistCityMap, setSelectedHeistCityMap] = useState('bank-job');
+
+  // Get available Heist City maps from the map loader
+  const heistCityMaps = useMemo(() => getAvailableMaps(), []);
 
   // Register socket event listeners
   useEffect(() => {
@@ -692,18 +696,12 @@ const LobbyPage: React.FC = () => {
                   }}
                   className="w-full px-3 py-2 bg-payne-grey border border-payne-grey-light rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-lion"
                 >
-                  <option value="bank-job">Bank Job</option>
-                  <option value="treasure-hunt">Treasure Hunt</option>
-                  <option value="train-robbery">Train Robbery</option>
-                  <option value="server-hack">Server Hack</option>
-                  <option value="jail-break">Jail Break</option>
+                  {heistCityMaps.map((map) => (
+                    <option key={map.id} value={map.id}>{map.name}</option>
+                  ))}
                 </select>
                 <div className="text-xs text-gray-400 mt-2">
-                  {selectedHeistCityMap === 'bank-job' && '🏦 Break into the vault and escape with the loot'}
-                  {selectedHeistCityMap === 'treasure-hunt' && '🗺️ Navigate through teleporters to find the hidden treasure'}
-                  {selectedHeistCityMap === 'train-robbery' && '🚂 Rob the moving train before it reaches the station'}
-                  {selectedHeistCityMap === 'server-hack' && '💻 Infiltrate the data center and hack the mainframe'}
-                  {selectedHeistCityMap === 'jail-break' && '🚔 Break out of maximum security prison'}
+                  {heistCityMaps.find(m => m.id === selectedHeistCityMap)?.description}
                 </div>
               </div>
             )}

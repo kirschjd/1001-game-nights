@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { getAvailableMaps } from '../data/mapLoader';
 
 export type MapTool = 'select' | 'pan' | 'ruler' | 'editor';
 
@@ -41,15 +42,8 @@ const MapToolbar: React.FC<MapToolbarProps> = ({
     { id: 'editor', icon: '✏️', label: 'Editor (Move/Add map elements)' },
   ];
 
-  const availableMaps = [
-    { id: 'bank-job', name: 'Bank Job' },
-    { id: 'jail-break', name: 'Jail Break' },
-    { id: 'server-hack', name: 'Server Hack' },
-    { id: 'train-robbery', name: 'Train Robbery' },
-    { id: 'treasure-hunt', name: 'Treasure Hunt' },
-    { id: 'hex-demo', name: 'Hex Demo (Experimental)' },
-    { id: 'Ballroom Hex', name: 'Ballroom Hex' },
-  ];
+  // Get available maps from the map loader
+  const availableMaps = useMemo(() => getAvailableMaps(), []);
 
   // Close map menu when clicking outside
   useEffect(() => {
