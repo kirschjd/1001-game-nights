@@ -6,7 +6,13 @@
       "Bash(git push)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(dir h:1001-game-nights /s /ad)",
+      "Bash(findstr:*)",
+      "Bash(cat:*)",
+      "Bash(xargs -I {} bash -c 'echo \"\"\"\"=== {} ===\"\"\"\" && cat {}')",
+      "Bash(grep:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

@@ -9,6 +9,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import io, { Socket } from 'socket.io-client';
+import { SOCKET_EVENTS } from '../constants';
 
 // Server URL based on environment
 const SERVER_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001';
@@ -58,7 +59,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     socketRef.current = socket;
 
     // Connection established
-    socket.on('connect', () => {
+    socket.on(SOCKET_EVENTS.CONNECT, () => {
       console.log('[SocketContext] Connected! Socket ID:', socket.id);
       setIsConnected(true);
       setIsReconnecting(false);
@@ -71,15 +72,15 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         const playerName = localStorage.getItem(`player-name-${slug}`);
         if (playerName) {
           console.log('[SocketContext] Rejoining lobby after reconnect:', slug, 'as', playerName);
-          socket.emit('join-lobby', { slug, playerName });
-          socket.emit('request-game-state', { slug });
+          socket.emit(SOCKET_EVENTS.JOIN_LOBBY, { slug, playerName });
+          socket.emit(SOCKET_EVENTS.REQUEST_GAME_STATE, { slug });
         }
         pendingRejoinRef.current = null;
       }
     });
 
     // Connection lost
-    socket.on('disconnect', (reason) => {
+    socket.on(SOCKET_EVENTS.DISCONNECT, (reason) => {
       console.log('[SocketContext] Disconnected:', reason);
       setIsConnected(false);
 
@@ -92,14 +93,14 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
 
     // Reconnection attempt starting
-    socket.on('reconnect_attempt', (attemptNumber) => {
+    socket.on(SOCKET_EVENTS.RECONNECT_ATTEMPT, (attemptNumber) => {
       console.log('[SocketContext] Reconnection attempt:', attemptNumber);
       setIsReconnecting(true);
       setReconnectAttempts(attemptNumber);
     });
 
     // Reconnection successful
-    socket.on('reconnect', (attemptNumber) => {
+    socket.on(SOCKET_EVENTS.RECONNECT, (attemptNumber) => {
       console.log('[SocketContext] Reconnected after', attemptNumber, 'attempts');
       setIsReconnecting(false);
       setReconnectAttempts(0);
@@ -107,21 +108,21 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
 
     // Reconnection failed permanently
-    socket.on('reconnect_failed', () => {
+    socket.on(SOCKET_EVENTS.RECONNECT_FAILED, () => {
       console.log('[SocketContext] Reconnection failed permanently');
       setIsReconnecting(false);
       setLastError('Unable to reconnect to server. Please refresh the page.');
     });
 
     // Connection error
-    socket.on('connect_error', (error) => {
+    socket.on(SOCKET_EVENTS.CONNECT_ERROR, (error) => {
       console.error('[SocketContext] Connection error:', error.message);
       setLastError(`Connection error: ${error.message}`);
     });
 
     // Respond to server heartbeat pings
-    socket.on('heartbeat-ping', () => {
-      socket.emit('heartbeat-pong');
+    socket.on(SOCKET_EVENTS.HEARTBEAT_PING, () => {
+      socket.emit(SOCKET_EVENTS.HEARTBEAT_PONG);
     });
 
     // Cleanup on unmount
@@ -141,8 +142,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       const playerName = localStorage.getItem(`player-name-${slug}`);
       if (playerName) {
         console.log('[SocketContext] Rejoining lobby:', slug, 'as', playerName);
-        socket.emit('join-lobby', { slug, playerName });
-        socket.emit('request-game-state', { slug });
+        socket.emit(SOCKET_EVENTS.JOIN_LOBBY, { slug, playerName });
+        socket.emit(SOCKET_EVENTS.REQUEST_GAME_STATE, { slug });
       }
     } else {
       // Store for later when we reconnect

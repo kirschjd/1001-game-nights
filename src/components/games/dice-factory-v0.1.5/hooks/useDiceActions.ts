@@ -82,7 +82,7 @@ export const useDiceActions = ({
       default:
         return true; // Allow selection for all other modes
     }
-  }, [canTakeActions, isExhausted]);
+  }, [canTakeActions, isExhausted, currentPlayer?.modifications]);
 
   // Socket action handlers
   const handlePromoteDice = useCallback(() => {

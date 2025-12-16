@@ -11,6 +11,7 @@ import serverHackMap from './maps/server-hack.json';
 import jailBreakMap from './maps/jail-break.json';
 import hexDemoMap from './maps/hex-demo.json';
 import ballroomMap from './maps/ballroom.json';
+import skyscrapperMap from './maps/skyscrapper.json';
 
 // Map registry - keys are used for lookup, values contain map data
 const MAP_REGISTRY: Record<string, MapDefinition> = {
@@ -22,6 +23,7 @@ const MAP_REGISTRY: Record<string, MapDefinition> = {
   'jail-break': jailBreakMap as MapDefinition,
   'hex-demo': hexDemoMap as MapDefinition,
   'ballroom': ballroomMap as MapDefinition,
+  'skyscrapper': skyscrapperMap as MapDefinition,
 };
 
 /**

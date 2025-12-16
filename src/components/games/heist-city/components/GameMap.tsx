@@ -300,7 +300,7 @@ const GameMap: React.FC<GameMapProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [readOnly, activeTool, mapState, onMapStateChange, settings.snapToGrid, getCurrentPlayerSelection]);
+  }, [readOnly, activeTool, mapState, onMapStateChange, settings.snapToGrid, getCurrentPlayerSelection, gridUtils]);
 
   // Add native wheel event listener to prevent browser zoom
   useEffect(() => {
@@ -853,6 +853,7 @@ const GameMap: React.FC<GameMapProps> = ({
       onMapStateChange,
       isDraggingConfirmed,
       dragStartPosition,
+      gridUtils,
     ]
   );
 
@@ -952,7 +953,7 @@ const GameMap: React.FC<GameMapProps> = ({
       setResizeStartSize(null);
       setResizeStartCursor(null);
     }
-  }, [isPanning, activeTool, draggedToken, draggedItem, draggedZone, resizingZone, mapState, onMapStateChange, settings.snapToGrid, isDraggingConfirmed]);
+  }, [isPanning, activeTool, draggedToken, draggedItem, draggedZone, resizingZone, mapState, onMapStateChange, settings.snapToGrid, isDraggingConfirmed, gridUtils]);
 
 
   // Handle item click
@@ -1015,13 +1016,6 @@ const GameMap: React.FC<GameMapProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleDeleteItem]);
-
-  // Calculate distance for ruler
-  const calculateDistance = useCallback((start: Position, end: Position) => {
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }, []);
 
   // Render grid lines (supports both square and hex grids)
   const renderGrid = () => {

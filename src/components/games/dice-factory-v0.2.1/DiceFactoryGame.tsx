@@ -365,18 +365,8 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
     setCostCards(costCards.filter(id => id !== cardId));
   };
 
-  const handleAddTargetDie = (dieId: string) => {
-    if (!targetDieIds.includes(dieId)) {
-      setTargetDieIds([...targetDieIds, dieId]);
-    }
-  };
-
   const handleRemoveTargetDie = (dieId: string) => {
     setTargetDieIds(targetDieIds.filter(id => id !== dieId));
-  };
-
-  const handleClearTargets = () => {
-    setTargetDieIds([]);
   };
 
   const handleExecuteAbility = () => {
@@ -388,8 +378,6 @@ const DiceFactoryGame: React.FC<DiceFactoryGameProps> = ({
 
     const ability = getAbilityById(activeAbilityId);
     if (!ability) return;
-
-    const displayInfo = getAbilityDisplayInfo(activeAbilityId);
 
     // Use dynamic recruit cost if applicable
     let costCount = ability.costCount || 1;

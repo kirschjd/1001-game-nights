@@ -12,6 +12,11 @@ import HenHurGame from './games/henhur';
 import KillTeamDraftGame from './games/kill-team-draft/KillTeamDraftGame';
 import HeistCityGame from './games/heist-city';
 import { GameHeader } from './shared';
+import {
+  SOCKET_EVENTS,
+  WAR_EVENTS,
+  DICE_FACTORY_EVENTS,
+} from '../constants';
 
 interface Player {
   id: string;
@@ -87,7 +92,7 @@ const GamePage: React.FC = () => {
   // Handle player name change
   const handleNameChange = useCallback((newName: string) => {
     if (socket && slug) {
-      socket.emit('update-player-name', { slug, newName });
+      socket.emit(SOCKET_EVENTS.UPDATE_PLAYER_NAME, { slug, newName });
       localStorage.setItem(`player-name-${slug}`, newName);
     }
   }, [socket, slug]);
@@ -95,7 +100,7 @@ const GamePage: React.FC = () => {
   // Handle leader transfer
   const handleTransferLeadership = useCallback((newLeaderId: string) => {
     if (socket && slug) {
-      socket.emit('change-leader', { slug, newLeaderId });
+      socket.emit(SOCKET_EVENTS.CHANGE_LEADER, { slug, newLeaderId });
     }
   }, [socket, slug]);
 
@@ -128,8 +133,8 @@ const GamePage: React.FC = () => {
       console.log('GamePage: Auto-joining lobby as', playerName, hadStoredName ? '(from localStorage)' : '(newly generated)');
       console.log('GamePage: localStorage key:', `player-name-${slug}`);
 
-      socket.emit('join-lobby', { slug, playerName });
-      socket.emit('request-game-state', { slug });
+      socket.emit(SOCKET_EVENTS.JOIN_LOBBY, { slug, playerName });
+      socket.emit(SOCKET_EVENTS.REQUEST_GAME_STATE, { slug });
 
       // Check if this player should be the leader (first to join game page)
       const currentLeader = localStorage.getItem(`lobby-leader-${slug}`);
@@ -137,7 +142,7 @@ const GamePage: React.FC = () => {
         localStorage.setItem(`lobby-leader-${slug}`, socket.id);
         // Request to become leader
         setTimeout(() => {
-          socket.emit('change-leader', { slug, newLeaderId: socket.id });
+          socket.emit(SOCKET_EVENTS.CHANGE_LEADER, { slug, newLeaderId: socket.id });
         }, 500);
       }
 
@@ -206,22 +211,22 @@ const GamePage: React.FC = () => {
   };
 
   // Register event listeners
-  socket.on('game-started', handleGameStarted);
-  socket.on('game-state-updated', handleGameStateUpdated);
-  socket.on('lobby-updated', handleLobbyUpdated);
-  socket.on('no-game-running', handleNoGameRunning);
-  socket.on('error', handleError);
-  socket.on('war-error', handleWarError);
-  socket.on('dice-factory-error', handleDiceFactoryError);
+  socket.on(SOCKET_EVENTS.GAME_STARTED, handleGameStarted);
+  socket.on(SOCKET_EVENTS.GAME_STATE_UPDATED, handleGameStateUpdated);
+  socket.on(SOCKET_EVENTS.LOBBY_UPDATED, handleLobbyUpdated);
+  socket.on(SOCKET_EVENTS.NO_GAME_RUNNING, handleNoGameRunning);
+  socket.on(SOCKET_EVENTS.ERROR, handleError);
+  socket.on(WAR_EVENTS.WAR_ERROR, handleWarError);
+  socket.on(DICE_FACTORY_EVENTS.ERROR, handleDiceFactoryError);
 
   return () => {
-    socket.off('game-started', handleGameStarted);
-    socket.off('game-state-updated', handleGameStateUpdated);
-    socket.off('lobby-updated', handleLobbyUpdated);
-    socket.off('no-game-running', handleNoGameRunning);
-    socket.off('error', handleError);
-    socket.off('war-error', handleWarError);
-    socket.off('dice-factory-error', handleDiceFactoryError);
+    socket.off(SOCKET_EVENTS.GAME_STARTED, handleGameStarted);
+    socket.off(SOCKET_EVENTS.GAME_STATE_UPDATED, handleGameStateUpdated);
+    socket.off(SOCKET_EVENTS.LOBBY_UPDATED, handleLobbyUpdated);
+    socket.off(SOCKET_EVENTS.NO_GAME_RUNNING, handleNoGameRunning);
+    socket.off(SOCKET_EVENTS.ERROR, handleError);
+    socket.off(WAR_EVENTS.WAR_ERROR, handleWarError);
+    socket.off(DICE_FACTORY_EVENTS.ERROR, handleDiceFactoryError);
   };
   }, [socket, navigate, slug]);
 

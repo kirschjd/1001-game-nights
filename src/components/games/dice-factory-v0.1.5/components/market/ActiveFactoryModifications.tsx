@@ -41,7 +41,6 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
   const [pendingBid, setPendingBid] = useState<number>(0);
   const [currentTurnModifications, setCurrentTurnModifications] = useState<ModificationCard[]>([]);
   const [deckStatus, setDeckStatus] = useState<DeckStatus>({ cardsRemaining: 44, totalCards: 44 });
-  const [bidAmounts, setBidAmounts] = useState<Record<string, number>>({});
   const [showBidModal, setShowBidModal] = useState<string | null>(null);
 
   // Helpers
@@ -97,7 +96,6 @@ const ActiveFactoryModifications: React.FC<ActiveFactoryModificationsProps> = ({
       modificationId: showBidModal,
       bidAmount: pendingBid
     });
-    setBidAmounts(prev => ({ ...prev, [showBidModal]: pendingBid }));
     setShowBidModal(null);
     setPendingBid(0);
   };

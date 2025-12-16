@@ -1,7 +1,6 @@
 // src/components/games/war/index.ts
 // War game frontend module export barrel
 
-export { default as WarGame } from './WarGame';
 export { default as EnhancedWarSetup } from './EnhancedWarSetup';
 export { default as EnhancedWarGame } from './EnhancedWarGame';
 

@@ -3,7 +3,7 @@ import { Socket } from 'socket.io-client';
 import { GameMap } from './components';
 import CharacterCard from './components/CharacterCard';
 import { MapState, CharacterToken, CharacterState, PlayerSelection, Position, GridType } from './types';
-import { loadMap, getMapDefinition } from './data/mapLoader';
+import { loadMap } from './data/mapLoader';
 import { LogEntry } from './components/GameLog';
 import { getEquipmentByIds } from './data/equipmentLoader';
 
@@ -305,6 +305,7 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
       socket.off('heist-city-name-update');
       socket.off('full-sync-response');
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, gameState, lobbyId, lastKnownVersion, isSyncing]);
 
   // Handle map state changes (e.g., token movement)
@@ -442,11 +443,6 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     setRulerState(rulerData);
     socket.emit('heist-city-ruler-update', { lobbyId, ...rulerData });
   };
-
-  // Get current player's name
-  const currentPlayerName = useMemo(() => {
-    return gameState?.players?.find(p => p.id === playerId)?.name || 'Unknown';
-  }, [gameState?.players, playerId]);
 
   // Handle map loading
   const handleLoadMap = (mapId: string) => {
