@@ -29,7 +29,6 @@ A modern web platform for hosting and playing multiplayer games with friends—f
    ```
 
 ---
-# 1001 Game Nights - Complete Project Structure
 
 ## Root Structure
 ```
@@ -346,6 +345,8 @@ server/
         └── KillTeamDraftGame.js
 ```
 
+---
+
 ## Socket Event Constants (src/constants/socketEvents.ts)
 ```typescript
 SOCKET_EVENTS     // Core: connect, lobby, game lifecycle
@@ -374,6 +375,8 @@ KTD_EVENTS        // Kill Team Draft specific
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
+---
+
 ## Games Overview
 
 | Game | Status | Description |
@@ -387,7 +390,7 @@ KTD_EVENTS        // Kill Team Draft specific
 
 ---
 
-## 🎮 Features
+## Site Features
 
 - **Real-time multiplayer** with Socket.io
 - **Dynamic lobby creation** 
@@ -398,44 +401,6 @@ KTD_EVENTS        // Kill Team Draft specific
 - **Responsive UI** 
 - **Comment/feedback system**
 - **Bug tracking checklist**
-
----
-
-## 🕹️ Games Available
-
-### War (Card Game)
-- 2–8 players (or bots)
-- Play/Fold mechanics, multiple variants (e.g., Aces High)
-- First to 5 points wins
-- AI bots with different strategies
-- Fast-paced, casual gameplay
-
-### Dice Factory
-- 2–6 players (or bots)
-- Complex dice management, resource and risk balancing
-- Modular systems: Dice, Scoring, Factory Modifications
-- d4 → d12 dice progression, factory upgrades, and collapse events
-- Strategic, longer-form gameplay
-
----
-
-## 🧩 Architecture Overview
-
-## 🔌 API & Socket Events
-
-## REST API
-
-## Socket.io Events (examples)
-
-## 🛠️ Technical Stack
-
-## 📝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
 
 ---
 
