@@ -1,0 +1,15 @@
+node_modules/
+build/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+.DS_Store
+**/old/**
+*.bak
+*.old
+
+# Server data persistence (generated at runtime)
+server/data/
