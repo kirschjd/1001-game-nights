@@ -4,9 +4,12 @@
 #
 
 app = '1001-game-nights'
-primary_region = 'iad'
+primary_region = 'ord'
 
 [build]
+
+[env]
+  PORT = "3000"
 
 [http_service]
   internal_port = 3000
