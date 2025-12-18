@@ -1,26 +1,16 @@
 import { MapDefinition, MapItem, MapState, CharacterToken, Position, GridType } from '../types';
 import { GRID_SIZE_INCHES } from './mapConstants';
-import { INITIAL_CHARACTER_STATS, CHARACTER_ROLES } from './characterStats';
+import { INITIAL_CHARACTER_STATS, CHARACTER_ROLES } from './characters';
 
 // Import all map definitions
-import bankJobMap from './maps/bank-job.json';
 import bankJobHexMap from './maps/bank-job-hex.json';
-import treasureHuntMap from './maps/treasure-hunt.json';
-import trainRobberyMap from './maps/train-robbery.json';
-import serverHackMap from './maps/server-hack.json';
-import jailBreakMap from './maps/jail-break.json';
 import hexDemoMap from './maps/hex-demo.json';
 import ballroomMap from './maps/ballroom.json';
 import skyscrapperMap from './maps/skyscrapper.json';
 
 // Map registry - keys are used for lookup, values contain map data
 const MAP_REGISTRY: Record<string, MapDefinition> = {
-  'bank-job': bankJobMap as MapDefinition,
   'bank-job-hex': bankJobHexMap as MapDefinition,
-  'treasure-hunt': treasureHuntMap as MapDefinition,
-  'train-robbery': trainRobberyMap as MapDefinition,
-  'server-hack': serverHackMap as MapDefinition,
-  'jail-break': jailBreakMap as MapDefinition,
   'hex-demo': hexDemoMap as MapDefinition,
   'ballroom': ballroomMap as MapDefinition,
   'skyscrapper': skyscrapperMap as MapDefinition,

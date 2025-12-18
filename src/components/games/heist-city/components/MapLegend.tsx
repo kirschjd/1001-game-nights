@@ -34,7 +34,7 @@ const ITEM_NAMES: Record<ItemType, string> = {
   teleporter: 'Teleporter',
   'info-drop': 'Info Drop',
   'enemy-camera': 'Turret',
-  'enemy-rapid-response': 'Rapid Response',
+  'enemy-elite': 'Elite',
   'enemy-security-guard': 'Security Guard',
 };
 
@@ -179,7 +179,7 @@ const renderItemIcon = (itemType: ItemType) => {
         </g>
       );
 
-    case 'enemy-rapid-response':
+    case 'enemy-elite':
       return (
         <polygon
           points={`${center},2 ${size - 2},${center} ${center},${size - 2} 2,${center}`}
@@ -251,6 +251,7 @@ const MapLegend: React.FC<MapLegendProps> = ({ editorMode, onAddItem, onAddZone,
         equipment: c.equipment || [],
         exhausted: c.exhausted || false,
         actions: c.actions || [],
+        victoryPoints: c.victoryPoints || 0,
       })),
       // Include game info if available
       gameInfo: gameInfo || {

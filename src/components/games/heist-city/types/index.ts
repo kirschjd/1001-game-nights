@@ -21,7 +21,7 @@ export type ItemType =
   | 'teleporter'
   | 'info-drop'
   | 'enemy-camera'
-  | 'enemy-rapid-response'
+  | 'enemy-elite'
   | 'enemy-security-guard';
 
 export interface MapItem {
@@ -104,6 +104,27 @@ export interface CharacterToken {
   exhausted?: boolean;
   equipment?: string[]; // Array of equipment item IDs (max 3)
   actions?: string[]; // Array of action names (max 3)
+  victoryPoints?: number; // VP earned by this character
+}
+
+// Equipment loadout for saving/loading
+export interface EquipmentLoadout {
+  name: string;
+  timestamp: number;
+  characters: {
+    role: CharacterRole;
+    equipment: string[];
+  }[];
+}
+
+// Full game state for saving/loading
+export interface SavedGameState {
+  name: string;
+  timestamp: number;
+  mapState: MapState;
+  gridType: GridType;
+  turnNumber: number;
+  alertModifier: number;
 }
 
 export interface Player {

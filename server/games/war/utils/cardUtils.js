@@ -1,5 +1,5 @@
-// shared/war/cardUtils.js
-// Shared card utilities for War game (client & server)
+// server/games/war/utils/cardUtils.js
+// Card utilities for War game
 
 /**
  * Card name constants
@@ -84,26 +84,12 @@ function getCardStrength(cardValue, variant) {
   return cardValue;
 }
 
-// CommonJS export for Node.js (server)
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    CARD_NAMES,
-    CARD_EMOJIS,
-    getCardName,
-    getCardEmoji,
-    isValidCard,
-    generateRandomCard,
-    getCardStrength
-  };
-}
-
-// ES Module export for modern bundlers (client)
-if (typeof exports !== 'undefined') {
-  exports.CARD_NAMES = CARD_NAMES;
-  exports.CARD_EMOJIS = CARD_EMOJIS;
-  exports.getCardName = getCardName;
-  exports.getCardEmoji = getCardEmoji;
-  exports.isValidCard = isValidCard;
-  exports.generateRandomCard = generateRandomCard;
-  exports.getCardStrength = getCardStrength;
-}
+module.exports = {
+  CARD_NAMES,
+  CARD_EMOJIS,
+  getCardName,
+  getCardEmoji,
+  isValidCard,
+  generateRandomCard,
+  getCardStrength
+};

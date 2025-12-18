@@ -1,6 +1,6 @@
 // Initial character stats for Heist City
 
-import { CharacterRole, CharacterStats } from '../types';
+import { CharacterRole, CharacterStats } from '../../types';
 
 export interface CharacterAbility {
   name: string;
@@ -20,16 +20,16 @@ export const CHARACTER_DATA: Record<CharacterRole, CharacterInfo> = {
       movement: 4,
       meleeSkill: 8,
       ballisticSkill: 9,
-      wounds: 6,
-      maxWounds: 6,
-      defense: 8,
+      wounds: 7,
+      maxWounds: 7,
+      defense: 9,
       hack: 8,
       con: 6,
     },
     description: 'A master of disguise, no one has seen this person\'s true face. Regardless of race or gender, the crew suspects this person is old, because their favorite TV show is "All Creatures Great and Small".',
     abilities: [
       {
-        name: 'Not the mook you are looking for',
+        name: 'In Plain Sight',
         actionCost: 1,
         description: '1 character becomes immune to mobs (Limit: 1 per game)',
       },
@@ -72,9 +72,9 @@ export const CHARACTER_DATA: Record<CharacterRole, CharacterInfo> = {
       ballisticSkill: 9,
       wounds: 7,
       maxWounds: 7,
-      defense: 7,
+      defense: 9,
       hack: 8,
-      con: 7,
+      con: 8,
     },
     description: 'This guy was born in Wisconsin, but got way too into Japan, and trained himself in the art of Ninjutsu. Turns out it worked for him, as he has turned it into a successful career as a ninja, just don\'t get him started on anime.',
     abilities: [
@@ -97,16 +97,16 @@ export const CHARACTER_DATA: Record<CharacterRole, CharacterInfo> = {
       ballisticSkill: 8,
       wounds: 6,
       maxWounds: 6,
-      defense: 9,
+      defense: 8,
       hack: 6,
       con: 8,
     },
     description: 'The only thing more elaborate than her heist plans are her gadgets. Regardless of the complexity, she is sure the next one will succeed like nothing has before. First the city, then the world.',
     abilities: [
       {
-        name: 'Experimental Gadget',
-        actionCost: 1,
-        description: 'Roll a D6: (1) 1 unblockable damage on enemy, (2) Disable enemy gear for 1 turn, (3) Disable enemy abilities for 1 turn, (4) Attack for 3 damage if hits and not defended, (5) Attack to stun if hits and not defended, (6) Does nothing',
+        name: 'Move It Along',
+        actionCost: 2,
+        description: 'Move an allied unit or mob 1 move',
       },
       {
         name: 'All According to Plan',
@@ -118,13 +118,13 @@ export const CHARACTER_DATA: Record<CharacterRole, CharacterInfo> = {
   Spook: {
     stats: {
       movement: 5,
-      meleeSkill: 8,
+      meleeSkill: 9,
       ballisticSkill: 7,
       wounds: 8,
       maxWounds: 8,
       defense: 8,
-      hack: 8,
-      con: 8,
+      hack: 9,
+      con: 9,
     },
     description: 'Supposedly he did something in Afghanistan for the Reagan Administration, but he refuses to confirm or deny it one way or another. Still, he definitely knows way too many languages for someone on the up and up.',
     abilities: [
@@ -135,8 +135,8 @@ export const CHARACTER_DATA: Record<CharacterRole, CharacterInfo> = {
       },
       {
         name: 'Under Cover',
-        actionCost: 1,
-        description: 'Can deploy anywhere on the map at least 8" away from enemy deployment zone',
+        actionCost: 0,
+        description: 'Can move 2 times before the game',
       },
     ],
   },

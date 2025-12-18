@@ -62,7 +62,7 @@ export const ITEM_STYLES = {
     color: '#dc2626', // Red
     size: 1, // inches (cross fits in 1 square)
   },
-  'enemy-rapid-response': {
+  'enemy-elite': {
     color: '#dc2626', // Red
     size: 1, // inches (diamond fills square)
   },

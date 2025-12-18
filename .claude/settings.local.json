@@ -12,7 +12,11 @@
       "Bash(cat:*)",
       "Bash(xargs -I {} bash -c 'echo \"\"\"\"=== {} ===\"\"\"\" && cat {}')",
       "Bash(grep:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(dir:*)",
+      "Bash(mkdir:*)",
+      "Bash(move:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

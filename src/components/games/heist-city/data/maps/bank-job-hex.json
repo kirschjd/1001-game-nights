@@ -645,7 +645,7 @@
     },
     {
       "id": "item-1765831865578",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": -5,
         "y": -9
@@ -654,7 +654,7 @@
     },
     {
       "id": "item-1765831865829",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": -4,
         "y": -9
@@ -663,7 +663,7 @@
     },
     {
       "id": "item-1765831867774",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": -14,
         "y": 9
@@ -672,7 +672,7 @@
     },
     {
       "id": "item-1765831867946",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": -13,
         "y": 9
@@ -861,7 +861,7 @@
     },
     {
       "id": "item-1765832057749",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": -5,
         "y": 5
@@ -870,7 +870,7 @@
     },
     {
       "id": "item-1765832057925",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": 0,
         "y": -5

@@ -1,6 +1,6 @@
 import { MapState, CharacterToken } from '../types';
 import { PLAYER_COLORS, TOKENS_PER_PLAYER } from './mapConstants';
-import { INITIAL_CHARACTER_STATS, CHARACTER_ROLES } from './characterStats';
+import { INITIAL_CHARACTER_STATS, CHARACTER_ROLES } from './characters';
 
 // Initial character tokens for both players
 export const createInitialTokens = (player1Id: string, player2Id: string): CharacterToken[] => {

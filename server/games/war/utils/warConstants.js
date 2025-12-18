@@ -8,7 +8,7 @@ const {
   getCardEmoji: sharedGetCardEmoji,
   isValidCard: sharedIsValidCard,
   generateRandomCard: sharedGenerateRandomCard
-} = require('../../../../shared/war/cardUtils');
+} = require('./cardUtils');
 
 const WAR_CONSTANTS = {
   // Game Rules

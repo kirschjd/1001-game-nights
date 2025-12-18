@@ -1,5 +1,5 @@
-// shared/war/cardUtils.ts
-// Shared card utilities for War game (client & server)
+// src/components/games/war/utils/cardUtils.ts
+// Card utilities for War game
 
 /**
  * Card name constants

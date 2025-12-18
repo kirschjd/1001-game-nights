@@ -1078,7 +1078,7 @@
     },
     {
       "id": "rapid-response-1",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": 28,
         "y": 15
@@ -1087,7 +1087,7 @@
     },
     {
       "id": "rapid-response-2",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": 28,
         "y": 20

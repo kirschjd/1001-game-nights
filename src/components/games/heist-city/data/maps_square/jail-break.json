@@ -2152,7 +2152,7 @@
     },
     {
       "id": "item-1764780786250",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": 19,
         "y": 19
@@ -2161,7 +2161,7 @@
     },
     {
       "id": "item-1764780787164",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": 19,
         "y": 15
@@ -2170,7 +2170,7 @@
     },
     {
       "id": "item-1764780788035",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": 14,
         "y": 20
@@ -2179,7 +2179,7 @@
     },
     {
       "id": "item-1764780788800",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": 14,
         "y": 16

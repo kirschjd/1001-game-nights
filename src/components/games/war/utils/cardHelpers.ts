@@ -1,7 +1,7 @@
 // src/components/games/war/utils/cardHelper.ts
 // War game card utility functions
 
-// Import shared card utilities
+// Import card utilities
 import {
   CARD_NAMES,
   CARD_EMOJIS,
@@ -9,7 +9,7 @@ import {
   getCardEmoji as sharedGetCardEmoji,
   isValidCard as sharedIsValidCard,
   getCardStrength as sharedGetCardStrength
-} from '../../../../shared/war/cardUtils';
+} from './cardUtils';
 
 export const WAR_UI_CONSTANTS = {
   CARD_NAMES, // Using shared constants

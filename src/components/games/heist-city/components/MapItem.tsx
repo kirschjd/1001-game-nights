@@ -259,7 +259,7 @@ const MapItem: React.FC<MapItemProps> = ({
           </g>
         );
 
-      case 'enemy-rapid-response':
+      case 'enemy-elite':
         return (
           <polygon
             points={`${x},${y - size / 2} ${x + size / 2},${y} ${x},${y + size / 2} ${x - size / 2},${y}`}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CharacterToken, CharacterState, EquipmentItem } from '../types';
-import { CHARACTER_DATA } from '../data/characterStats';
+import { CHARACTER_DATA } from '../data/characters';
 import { getAllEquipment, getEquipmentByIds } from '../data/equipmentLoader';
 
 interface CharacterCardProps {

@@ -16,6 +16,8 @@ interface MapToolbarProps {
   selectedItemId?: string | null;
   onDeleteItem?: () => void;
   onLoadMap?: (mapId: string) => void;
+  onSaveGame?: () => void;
+  onLoadGame?: () => void;
 }
 
 const MapToolbar: React.FC<MapToolbarProps> = ({
@@ -31,6 +33,8 @@ const MapToolbar: React.FC<MapToolbarProps> = ({
   selectedItemId,
   onDeleteItem,
   onLoadMap,
+  onSaveGame,
+  onLoadGame,
 }) => {
   const [showMapMenu, setShowMapMenu] = useState(false);
   const mapMenuRef = useRef<HTMLDivElement>(null);
@@ -162,6 +166,26 @@ const MapToolbar: React.FC<MapToolbarProps> = ({
               </div>
             )}
           </div>
+        )}
+
+        {/* Save/Load Game */}
+        {onSaveGame && (
+          <button
+            onClick={onSaveGame}
+            className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+            title="Save Game"
+          >
+            <span className="text-lg">💾</span>
+          </button>
+        )}
+        {onLoadGame && (
+          <button
+            onClick={onLoadGame}
+            className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+            title="Load Game"
+          >
+            <span className="text-lg">📂</span>
+          </button>
         )}
 
         {/* Delete Button (Editor Mode Only) */}

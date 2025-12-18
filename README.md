@@ -69,10 +69,6 @@ src/
 ├── contexts/                       # React contexts
 │   └── SocketContext.tsx           # Socket.io connection management
 │
-├── shared/                         # Shared utilities
-│   └── war/
-│       └── cardUtils.ts            # War card utilities
-│
 ├── utils/                          # Utility functions
 │   └── lobbyUtils.ts               # Lobby utilities
 │
@@ -125,7 +121,8 @@ src/
         │   ├── types/
         │   │   └── WarTypes.ts
         │   └── utils/
-        │       └── cardHelpers.ts
+        │       ├── cardHelpers.ts
+        │       └── cardUtils.ts
         │
         ├── dice-factory/           # DICE FACTORY (legacy)
         │   ├── index.ts
@@ -298,6 +295,7 @@ server/
     │   │   ├── basicWarEvents.js
     │   │   └── enhancedWarEvents.js
     │   ├── utils/
+    │   │   ├── cardUtils.js
     │   │   └── warConstants.js
     │   └── variants/
     │       └── VariantRegistry.js

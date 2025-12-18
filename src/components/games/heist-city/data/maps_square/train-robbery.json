@@ -1201,7 +1201,7 @@
     },
     {
       "id": "rapid-response-1",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": 16,
         "y": 18
@@ -1237,7 +1237,7 @@
     },
     {
       "id": "item-1764778035964",
-      "type": "enemy-rapid-response",
+      "type": "enemy-elite",
       "position": {
         "x": 19,
         "y": 17

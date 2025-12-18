@@ -39,6 +39,11 @@ const CharacterToken: React.FC<CharacterTokenProps> = ({
     onMouseDown?.(token, e);
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevent click from bubbling to SVG (which would clear selection)
+    e.stopPropagation();
+  };
+
   // Determine opacity and filter based on status
   const getTokenOpacity = () => {
     if (token.state === 'Unconscious') return 0.3;
@@ -63,6 +68,7 @@ const CharacterToken: React.FC<CharacterTokenProps> = ({
     <g
       className={`cursor-move ${isDragging ? 'opacity-70 no-transition' : ''}`}
       onMouseDown={handleMouseDown}
+      onClick={handleClick}
       opacity={getTokenOpacity()}
       style={{
         filter: getTokenFilter(),

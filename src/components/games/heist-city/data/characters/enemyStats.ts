@@ -1,4 +1,4 @@
-import { ItemType } from '../types';
+import { ItemType } from '../../types';
 
 /**
  * Enemy unit stats for Heist City
@@ -18,16 +18,16 @@ export const ENEMY_STATS: Record<string, EnemyStats> = {
   'enemy-security-guard': {
     name: 'Security Guard',
     movement: 4,
-    meleeSkill: 8,
+    meleeSkill: 7,
     ballisticSkill: null,
     wounds: 1,
     defense: 10,
     range: null,
-    damage: 1,
+    damage: 2,
   },
-  'enemy-rapid-response': {
-    name: 'Rapid Response',
-    movement: 5,
+  'enemy-elite': {
+    name: 'Elite',
+    movement: 4,
     meleeSkill: 7,
     ballisticSkill: 9,
     wounds: 1,
@@ -39,7 +39,7 @@ export const ENEMY_STATS: Record<string, EnemyStats> = {
     name: 'Turret',
     movement: null, // Turrets don't move
     meleeSkill: null, // Not applicable
-    ballisticSkill: 8,
+    ballisticSkill: 7,
     wounds: 1,
     defense: 7,
     range: 12,
@@ -61,7 +61,7 @@ export function getEnemyStats(itemType: ItemType): EnemyStats | null {
  * Check if an item type is a movable enemy unit
  */
 export function isMovableEnemy(itemType: ItemType): boolean {
-  return itemType === 'enemy-security-guard' || itemType === 'enemy-rapid-response';
+  return itemType === 'enemy-security-guard' || itemType === 'enemy-elite';
 }
 
 /**
@@ -69,6 +69,6 @@ export function isMovableEnemy(itemType: ItemType): boolean {
  */
 export function isEnemyUnit(itemType: ItemType): boolean {
   return itemType === 'enemy-security-guard' ||
-         itemType === 'enemy-rapid-response' ||
+         itemType === 'enemy-elite' ||
          itemType === 'enemy-camera';
 }

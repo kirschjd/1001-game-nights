@@ -17,12 +17,21 @@ import MapLegend from './MapLegend';
 import DiceRoller from './DiceRoller';
 import GameLog, { LogEntry } from './GameLog';
 import AlertLevelIndicator from './AlertLevelIndicator';
-import { getRoleAbilities } from '../data/roleAbilities';
+import {
+  getRoleAbilities,
+  isMovableEnemy,
+  getEnemyStats,
+  isEnemyUnit,
+  getStateInfo,
+  getActionCost,
+  canSelectAction,
+  getActionCostDisplay,
+  getCoreActions,
+  getDefaultMeleeAction,
+  formatWeaponAction,
+} from '../data/characters';
 import { getEquipmentByIds, getAllEquipment, getEquipmentById } from '../data/equipmentLoader';
-import { isMovableEnemy, getEnemyStats, isEnemyUnit } from '../data/enemyStats';
 import { createGridUtils, GridUtils } from '../data/gridUtils';
-import { getStateInfo } from '../data/stateAbilities';
-import { getActionCost, canSelectAction, getActionCostDisplay } from '../data/actionCosts';
 
 interface GameInfo {
   turnNumber: number;
@@ -55,6 +64,8 @@ interface GameMapProps {
   onGameInfoChange?: (gameInfo: GameInfo) => void; // Callback when importing game info
   alertModifier?: number; // Alert level modifier
   onAlertModifierChange?: (value: number) => void; // Callback when alert modifier changes
+  onSaveGame?: () => void; // Callback to open save game modal
+  onLoadGame?: () => void; // Callback to open load game modal
 }
 
 /**
@@ -76,35 +87,29 @@ const getAvailableActions = (character: CharacterTokenType): string[] => {
 
   const actions: string[] = [];
 
-  // Core actions with stats
-  actions.push(`Move (${character.stats.movement}")`);
-  actions.push(`Hack (${character.stats.hack}+)`);
-  actions.push(`Con (${character.stats.con}+)`);
+  // Core actions (Move, Hack, Con)
+  actions.push(...getCoreActions(character.stats));
 
   // Role-specific abilities
   const roleAbilities = getRoleAbilities(character.role);
-  roleAbilities.forEach(ability => {
-    actions.push(ability);
-  });
+  actions.push(...roleAbilities);
 
   // Equipment-based actions
   const equipment = getEquipmentByIds(character.equipment || []);
   let hasMeleeWeapon = false;
 
   equipment.forEach(item => {
-    if (item.type === 'Ranged') {
-      actions.push(`${item.id} (BS ${character.stats.ballisticSkill}+)`);
-    } else if (item.type === 'Thrown') {
-      actions.push(`${item.id} (BS ${character.stats.ballisticSkill}+)`);
-    } else if (item.type === 'Melee') {
-      hasMeleeWeapon = true;
-      actions.push(`${item.id} (MS ${character.stats.meleeSkill}+)`);
+    if (item.type === 'Ranged' || item.type === 'Thrown' || item.type === 'Melee') {
+      if (item.type === 'Melee') {
+        hasMeleeWeapon = true;
+      }
+      actions.push(formatWeaponAction(item.id, item.type, character.stats));
     }
   });
 
   // Add Fist as default melee weapon if no melee weapon equipped
   if (!hasMeleeWeapon) {
-    actions.push(`Fist (MS ${character.stats.meleeSkill}+)`);
+    actions.push(getDefaultMeleeAction(character.stats));
   }
 
   // Add state-based additional actions (non-exclusive states like Hidden, Disguised)
@@ -138,6 +143,8 @@ const GameMap: React.FC<GameMapProps> = ({
   onGameInfoChange,
   alertModifier = 0,
   onAlertModifierChange,
+  onSaveGame,
+  onLoadGame,
 }) => {
   // Create grid utilities based on grid type (memoized to prevent recreation)
   const gridUtils = useMemo<GridUtils>(() => createGridUtils(gridType), [gridType]);
@@ -204,6 +211,49 @@ const GameMap: React.FC<GameMapProps> = ({
   // Gear equipment assignments (gear item ID -> equipment ID)
   const [gearEquipment, setGearEquipment] = useState<Record<string, string>>({});
 
+  // Initialize gearEquipment from mapState items on mount/mapState change
+  useEffect(() => {
+    const initialGearEquipment: Record<string, string> = {};
+    mapState.items.forEach(item => {
+      if (item.type === 'gear' && item.properties?.selectedEquipment) {
+        initialGearEquipment[item.id] = item.properties.selectedEquipment;
+      }
+    });
+    setGearEquipment(initialGearEquipment);
+  }, [mapState.items]);
+
+  // Helper to update gear equipment and persist to mapState
+  const updateGearEquipment = useCallback((itemId: string, equipmentId: string) => {
+    setGearEquipment(prev => ({
+      ...prev,
+      [itemId]: equipmentId
+    }));
+
+    // Update the mapState to persist the selection
+    if (onMapStateChange) {
+      const updatedItems = mapState.items.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            properties: {
+              ...item.properties,
+              selectedEquipment: equipmentId || undefined
+            }
+          };
+        }
+        return item;
+      });
+      onMapStateChange({
+        ...mapState,
+        items: updatedItems
+      });
+    }
+  }, [mapState, onMapStateChange]);
+
+  // Clipboard state for copy/paste
+  const [copiedItem, setCopiedItem] = useState<MapItemType | null>(null);
+  const [copiedZone, setCopiedZone] = useState<MapZoneType | null>(null);
+
   // Zoom functions
   const handleZoomIn = useCallback(() => {
     setZoom((prev) => Math.min(prev + 0.25, 4));
@@ -256,6 +306,11 @@ const GameMap: React.FC<GameMapProps> = ({
     if (readOnly || activeTool !== 'select') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
       // Check if current player has a selected token
       const selectedToken = getCurrentPlayerSelection();
       if (!selectedToken) return;
@@ -403,16 +458,18 @@ const GameMap: React.FC<GameMapProps> = ({
         return;
       }
 
-      // Clear item and zone selections when clicking empty area
-      // (Item/zone clicks have stopPropagation, so this only fires for background clicks)
+      // Clear all selections when clicking empty area
+      // (Item/zone/token clicks have stopPropagation, so this only fires for background clicks)
       if (selectedItem) {
         setSelectedItem(null);
       }
       if (selectedZone) {
         setSelectedZone(null);
       }
+      // Clear token selection via parent callback
+      onSelectionChange?.(null);
     },
-    [selectedItem, selectedZone]
+    [selectedItem, selectedZone, onSelectionChange]
   );
 
   // Handle item double-click (to unfocus)
@@ -431,16 +488,8 @@ const GameMap: React.FC<GameMapProps> = ({
     (token: CharacterTokenType, e: React.MouseEvent) => {
       if (readOnly || activeTool !== 'select') return;
 
-      // Check if current player already has this character selected
-      const currentSelection = playerSelections.find(sel => sel.playerId === currentPlayerId);
-      const isCurrentlySelected = currentSelection?.characterId === token.id;
-
-      // Notify parent of selection change (toggle selection)
-      if (isCurrentlySelected) {
-        onSelectionChange?.(null); // Deselect
-      } else {
-        onSelectionChange?.(token.id); // Select this character
-      }
+      // Always select the clicked token (deselection happens when clicking background)
+      onSelectionChange?.(token.id);
 
       // Store initial mouse position for drag threshold
       setDragStartPosition({ x: e.clientX, y: e.clientY });
@@ -458,7 +507,7 @@ const GameMap: React.FC<GameMapProps> = ({
       setDraggedToken(token.id);
       setDragOffset(offset);
     },
-    [readOnly, activeTool, screenToSVG, playerSelections, currentPlayerId, onSelectionChange, gridUtils]
+    [readOnly, activeTool, screenToSVG, onSelectionChange, gridUtils]
   );
 
   // Handle item drag start (editor mode or movable enemies in select mode)
@@ -870,8 +919,11 @@ const GameMap: React.FC<GameMapProps> = ({
 
     // End token dragging
     if (draggedToken) {
-      // Mark that we just finished a drag (prevents click from clearing selection)
-      justFinishedDragRef.current = true;
+      // Only mark as just finished drag if we actually moved (prevents click from clearing selection)
+      // If we didn't confirm drag, allow normal click behavior for deselection
+      if (isDraggingConfirmed) {
+        justFinishedDragRef.current = true;
+      }
 
       // Only update position if dragging was confirmed (exceeded threshold)
       if (isDraggingConfirmed && tempDragPositionRef.current) {
@@ -904,8 +956,11 @@ const GameMap: React.FC<GameMapProps> = ({
 
     // End item dragging (editor mode or movable enemies in select mode)
     if (draggedItem) {
-      // Mark that we just finished a drag (prevents click from clearing selection)
-      justFinishedDragRef.current = true;
+      // Only mark as just finished drag if we actually moved (prevents click from clearing selection)
+      // If we didn't confirm drag, allow normal click behavior for deselection
+      if (isDraggingConfirmed) {
+        justFinishedDragRef.current = true;
+      }
 
       const item = mapState.items.find(i => i.id === draggedItem);
       const canDrag = activeTool === 'editor' || (activeTool === 'select' && item && isMovableEnemy(item.type));
@@ -1000,22 +1055,88 @@ const GameMap: React.FC<GameMapProps> = ({
     }
   }, [selectedItem, selectedZone, readOnly, activeTool, mapState, onMapStateChange]);
 
-  // Handle keyboard events for delete
+  // Handle keyboard events for delete, copy, paste
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Delete
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        // Don't trigger if user is typing in an input
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-          return;
-        }
         e.preventDefault();
         handleDeleteItem();
+        return;
+      }
+
+      // Only handle copy/paste in editor mode
+      if (activeTool !== 'editor') return;
+
+      // Copy (Ctrl+C)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        if (selectedItem) {
+          const itemToCopy = mapState.items.find(item => item.id === selectedItem);
+          if (itemToCopy) {
+            setCopiedItem({ ...itemToCopy });
+            setCopiedZone(null);
+          }
+        } else if (selectedZone) {
+          const zoneToCopy = mapState.zones.find(zone => zone.id === selectedZone);
+          if (zoneToCopy) {
+            setCopiedZone({ ...zoneToCopy });
+            setCopiedItem(null);
+          }
+        }
+        return;
+      }
+
+      // Paste (Ctrl+V)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+
+        if (copiedItem) {
+          // Create new item with unique ID and offset position
+          const newItem: MapItemType = {
+            ...copiedItem,
+            id: `${copiedItem.type}-${Date.now()}`,
+            position: {
+              x: Math.min(copiedItem.position.x + 1, 35),
+              y: Math.min(copiedItem.position.y + 1, 35),
+            },
+            // Also offset endPosition for walls
+            ...(copiedItem.endPosition && {
+              endPosition: {
+                x: Math.min(copiedItem.endPosition.x + 1, 35),
+                y: Math.min(copiedItem.endPosition.y + 1, 35),
+              },
+            }),
+          };
+          const updatedItems = [...mapState.items, newItem];
+          onMapStateChange?.({ ...mapState, items: updatedItems });
+          setSelectedItem(newItem.id);
+        } else if (copiedZone) {
+          // Create new zone with unique ID and offset position
+          const newZone: MapZoneType = {
+            ...copiedZone,
+            id: `zone-${Date.now()}`,
+            position: {
+              x: Math.min(copiedZone.position.x + 1, 35),
+              y: Math.min(copiedZone.position.y + 1, 35),
+            },
+            label: `${copiedZone.label} (copy)`,
+          };
+          const updatedZones = [...mapState.zones, newZone];
+          onMapStateChange?.({ ...mapState, zones: updatedZones });
+          setSelectedZone(newZone.id);
+        }
+        return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleDeleteItem]);
+  }, [handleDeleteItem, activeTool, selectedItem, selectedZone, mapState, onMapStateChange, copiedItem, copiedZone]);
 
   // Render grid lines (supports both square and hex grids)
   const renderGrid = () => {
@@ -1157,6 +1278,8 @@ const GameMap: React.FC<GameMapProps> = ({
         selectedItemId={selectedItem}
         onDeleteItem={handleDeleteItem}
         onLoadMap={onLoadMap}
+        onSaveGame={onSaveGame}
+        onLoadGame={onLoadGame}
       />
 
       {/* Settings Panel */}
@@ -1567,10 +1690,7 @@ const GameMap: React.FC<GameMapProps> = ({
                     <select
                       value={selectedEquipmentId}
                       onChange={(e) => {
-                        setGearEquipment(prev => ({
-                          ...prev,
-                          [item.id]: e.target.value
-                        }));
+                        updateGearEquipment(item.id, e.target.value);
                       }}
                       className="flex-1 px-2 py-1.5 bg-gray-800 border border-yellow-500/30 rounded text-white text-xs hover:border-yellow-500/50 focus:outline-none focus:border-yellow-500"
                     >
@@ -1583,10 +1703,7 @@ const GameMap: React.FC<GameMapProps> = ({
                       onClick={() => {
                         const randomIndex = Math.floor(Math.random() * allEquipment.length);
                         const randomEquip = allEquipment[randomIndex];
-                        setGearEquipment(prev => ({
-                          ...prev,
-                          [item.id]: randomEquip.id
-                        }));
+                        updateGearEquipment(item.id, randomEquip.id);
                       }}
                       className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded transition-colors font-semibold"
                       title="Select random equipment"

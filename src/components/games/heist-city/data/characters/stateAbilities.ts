@@ -5,7 +5,7 @@
  * Edit this file to modify state descriptions and abilities.
  */
 
-import { CharacterState } from '../types';
+import { CharacterState } from '../../types';
 
 export interface StateAbility {
   description: string;
@@ -40,7 +40,19 @@ export const STATE_DATA: Record<CharacterState, StateInfo> = {
     color: 'text-green-400',
     abilities: [
       {
-        description: '+1 to Defense rolls',
+        description: 'No special abilities',
+      },
+    ],
+    additionalActions: [
+      {
+        name: 'Hustle',
+        actionCost: 2,
+        description: 'Move 2X movement +2 spaces',
+      },
+      {
+        name: 'Sprint',
+        actionCost: 3,
+        description: 'Move 3X movement +4 spaces',
       },
     ],
   },
@@ -50,23 +62,27 @@ export const STATE_DATA: Record<CharacterState, StateInfo> = {
     color: 'text-blue-400',
     abilities: [
       {
-        description: '+1 to Hack rolls',
-      },
-      {
         description: 'Don\'t draw mob aggro',
       },
       {
         description: 'Can hack disguised enemies',
-      },
-      {
-        description: 'Bonus against undamaged enemies',
       },
     ],
     additionalActions: [
       {
         name: 'Remove Disguise',
         actionCost: 1,
+        description: 'Hack Check - Any success: Return target to Overt state',
+      },
+      {
+        name: 'Go Loud',
+        actionCost: 1,
         description: 'Return to Overt state',
+      },
+      {
+        name: 'Hustle',
+        actionCost: 2,
+        description: 'Move 2X movement +2 spaces',
       },
     ],
   },
@@ -90,9 +106,14 @@ export const STATE_DATA: Record<CharacterState, StateInfo> = {
     ],
     additionalActions: [
       {
-        name: 'Charm Mob',
+        name: 'Get Mob Intel',
         actionCost: 2,
-        description: 'Attempt to charm a mob unit',
+        description: 'Charm Check - +2: Get 1 VP (Once per turn)',
+      },
+      {
+        name: 'Go Loud',
+        actionCost: 1,
+        description: 'Return to Overt state',
       },
     ],
   },
