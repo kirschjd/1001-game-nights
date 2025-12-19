@@ -72,6 +72,18 @@ export interface CharacterStats {
   con: number; // C
 }
 
+// Stat bonuses from equipment (negative = improvement for skill checks, positive = improvement for wounds/movement)
+export interface StatBonus {
+  movement?: number;       // M: positive is better
+  meleeSkill?: number;     // MS: negative is better (lower target number)
+  ballisticSkill?: number; // BS: negative is better
+  maxWounds?: number;      // W: positive is better
+  defense?: number;        // D: negative is better
+  hack?: number;           // H: negative is better
+  con?: number;            // C: negative is better
+  inventorySlots?: number; // Extra inventory slots (positive = more slots)
+}
+
 export interface EquipmentItem {
   id: string;
   type: 'Ranged' | 'Melee' | 'Thrown' | 'Tool';
@@ -88,6 +100,7 @@ export interface EquipmentItem {
     [key: string]: boolean;
   };
   Description?: string;
+  StatBonus?: StatBonus; // Equipment stat modifiers
 }
 
 export interface CharacterToken {
@@ -105,6 +118,7 @@ export interface CharacterToken {
   equipment?: string[]; // Array of equipment item IDs (max 3)
   actions?: string[]; // Array of action names (max 3)
   victoryPoints?: number; // VP earned by this character
+  experience?: number; // Experience points (XP)
 }
 
 // Equipment loadout for saving/loading
@@ -114,6 +128,8 @@ export interface EquipmentLoadout {
   characters: {
     role: CharacterRole;
     equipment: string[];
+    experience?: number; // XP for progression tracking
+    stats?: CharacterStats; // Base stat modifications (permanent changes)
   }[];
 }
 

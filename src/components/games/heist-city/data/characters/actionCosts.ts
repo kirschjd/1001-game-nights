@@ -7,6 +7,7 @@
 
 import { CHARACTER_DATA } from './characterStats';
 import { getAllStateActions } from './stateAbilities';
+import { CORE_ACTIONS, DEFAULT_MELEE } from './coreActions';
 
 /**
  * Build a map of ability names to their slot costs from CHARACTER_DATA and STATE_DATA
@@ -81,4 +82,67 @@ export function getActionCostDisplay(actionName: string): string | null {
  */
 export function getAllAbilityCosts(): Map<string, number> {
   return new Map(ABILITY_COSTS);
+}
+
+/**
+ * Build a map of action names to their descriptions
+ */
+function buildActionDescriptionMap(): Map<string, string> {
+  const descMap = new Map<string, string>();
+
+  // Extract all abilities from all character roles
+  for (const role of Object.values(CHARACTER_DATA)) {
+    for (const ability of role.abilities) {
+      descMap.set(ability.name, ability.description);
+    }
+  }
+
+  // Extract all state-based actions
+  const stateActions = getAllStateActions();
+  for (const action of stateActions) {
+    descMap.set(action.name, action.description);
+  }
+
+  // Extract core actions
+  for (const action of CORE_ACTIONS) {
+    descMap.set(action.id, action.description);
+  }
+
+  // Add default melee
+  descMap.set(DEFAULT_MELEE.id, DEFAULT_MELEE.description);
+
+  // Add equipment-based actions
+  descMap.set('Reload', 'Reload a weapon with the Reload special. Required before the weapon can be used again.');
+
+  return descMap;
+}
+
+// Cache the action description map
+const ACTION_DESCRIPTIONS = buildActionDescriptionMap();
+
+/**
+ * Get the description for an action
+ * Returns null if no description is found
+ */
+export function getActionDescription(actionName: string): string | null {
+  // Check exact match first
+  if (ACTION_DESCRIPTIONS.has(actionName)) {
+    return ACTION_DESCRIPTIONS.get(actionName)!;
+  }
+
+  // Check if action starts with any known action name (for formatted actions like "Move (4")")
+  const entries = Array.from(ACTION_DESCRIPTIONS.entries());
+  for (let i = 0; i < entries.length; i++) {
+    const [name, description] = entries[i];
+    if (actionName.startsWith(name)) {
+      return description;
+    }
+  }
+
+  // For weapon actions, return a generic description
+  if (actionName.includes('(MS ') || actionName.includes('(BS ')) {
+    return 'Attack with this weapon';
+  }
+
+  return null;
 }

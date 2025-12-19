@@ -248,7 +248,7 @@ export function loadMap(
     items: expandedItems,
     characters,
     zones: mapDefinition.zones || [],
-    gridType: mapDefinition.gridType || 'square', // Default to square for backward compatibility
+    gridType: mapDefinition.gridType || 'hex', // Default to hex
   };
 }
 

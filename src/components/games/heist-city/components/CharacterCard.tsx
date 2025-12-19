@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { CharacterToken, CharacterState, EquipmentItem } from '../types';
+import React, { useState, useMemo } from 'react';
+import { CharacterToken, CharacterState, EquipmentItem, CharacterStats } from '../types';
 import { CHARACTER_DATA } from '../data/characters';
-import { getAllEquipment, getEquipmentByIds } from '../data/equipmentLoader';
+import { getAllEquipment, getEquipmentByIds, getEquipmentStatBonuses } from '../data/equipmentLoader';
 
 interface CharacterCardProps {
   character: CharacterToken;
@@ -9,9 +9,38 @@ interface CharacterCardProps {
   onStatsUpdate: (characterId: string, updatedStats: CharacterToken['stats']) => void;
   onStateUpdate: (characterId: string, newState: CharacterState) => void;
   onEquipmentUpdate: (characterId: string, equipment: string[]) => void;
+  onExperienceUpdate?: (characterId: string, experience: number) => void;
 }
 
-const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlayer, onStatsUpdate, onStateUpdate, onEquipmentUpdate }) => {
+/**
+ * Calculate level from experience points
+ * Level 1: 0-5 XP
+ * Level 2: 6-14 XP
+ * Level 3: 15-25 XP
+ * Level 4+: Every 15 XP thereafter
+ */
+function calculateLevel(experience: number): number {
+  if (experience <= 5) return 1;
+  if (experience <= 14) return 2;
+  if (experience <= 25) return 3;
+  // After level 3, new levels every 15 XP (26-40 = L4, 41-55 = L5, etc.)
+  return 4 + Math.floor((experience - 26) / 15);
+}
+
+/**
+ * Get XP thresholds for a level
+ */
+function getLevelThresholds(level: number): { min: number; max: number } {
+  if (level === 1) return { min: 0, max: 5 };
+  if (level === 2) return { min: 6, max: 14 };
+  if (level === 3) return { min: 15, max: 25 };
+  // Level 4+: starts at 26, each level is 15 XP
+  const min = 26 + (level - 4) * 15;
+  const max = min + 14;
+  return { min, max };
+}
+
+const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlayer, onStatsUpdate, onStateUpdate, onEquipmentUpdate, onExperienceUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedStats, setEditedStats] = useState(character.stats);
   const [showEquipmentSelector, setShowEquipmentSelector] = useState(false);
@@ -19,8 +48,49 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
   const [equipmentSearch, setEquipmentSearch] = useState('');
 
   const characterInfo = CHARACTER_DATA[character.role];
+  const baseStats = characterInfo.stats;
   const allEquipment = getAllEquipment();
   const equippedItems = getEquipmentByIds(character.equipment || []);
+
+  // Calculate equipment bonuses and effective stats
+  const equipmentBonuses = useMemo(
+    () => getEquipmentStatBonuses(character.equipment || []),
+    [character.equipment]
+  );
+
+  // Effective stats = current stats + equipment bonuses
+  const effectiveStats: CharacterStats = useMemo(() => ({
+    movement: character.stats.movement + (equipmentBonuses.movement || 0),
+    meleeSkill: character.stats.meleeSkill + (equipmentBonuses.meleeSkill || 0),
+    ballisticSkill: character.stats.ballisticSkill + (equipmentBonuses.ballisticSkill || 0),
+    wounds: character.stats.wounds, // Current wounds not affected by equipment
+    maxWounds: character.stats.maxWounds + (equipmentBonuses.maxWounds || 0),
+    defense: character.stats.defense + (equipmentBonuses.defense || 0),
+    hack: character.stats.hack + (equipmentBonuses.hack || 0),
+    con: character.stats.con + (equipmentBonuses.con || 0),
+  }), [character.stats, equipmentBonuses]);
+
+  // Helper to get stat modification info
+  // For "lower is better" stats (MS, BS, D, H, C): green if improved (lower), red if worse (higher)
+  // For "higher is better" stats (W, M): green if improved (higher), red if worse (lower)
+  const getStatModification = (
+    currentValue: number,
+    baseValue: number,
+    lowerIsBetter: boolean
+  ): { color: string; indicator: string } | null => {
+    if (currentValue === baseValue) {
+      return null; // No modification
+    }
+
+    const isImproved = lowerIsBetter
+      ? currentValue < baseValue
+      : currentValue > baseValue;
+
+    return {
+      color: isImproved ? 'text-green-400' : 'text-red-400',
+      indicator: isImproved ? '(+)' : '(-)',
+    };
+  };
 
   const handleSave = () => {
     onStatsUpdate(character.id, editedStats);
@@ -42,26 +112,34 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
     }
   };
 
-  const StatCell = ({ label, value, editValue, statKey }: {
+  const StatCell = ({ label, value, editValue, statKey, baseValue, lowerIsBetter = true }: {
     label: string;
     value: number;
     editValue: number;
     statKey: keyof CharacterToken['stats'];
-  }) => (
-    <div className="text-center">
-      <div className="text-gray-400 text-xs font-medium mb-1">{label}</div>
-      {isEditing ? (
-        <input
-          type="number"
-          value={editValue}
-          onChange={(e) => handleStatChange(statKey, e.target.value)}
-          className="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-sm text-center"
-        />
-      ) : (
-        <div className="text-white text-sm font-bold">{value}</div>
-      )}
-    </div>
-  );
+    baseValue: number;
+    lowerIsBetter?: boolean;
+  }) => {
+    const modification = getStatModification(value, baseValue, lowerIsBetter);
+
+    return (
+      <div className="text-center">
+        <div className="text-gray-400 text-xs font-medium mb-1">{label}</div>
+        {isEditing ? (
+          <input
+            type="number"
+            value={editValue}
+            onChange={(e) => handleStatChange(statKey, e.target.value)}
+            className="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-sm text-center"
+          />
+        ) : (
+          <div className={`text-sm font-bold ${modification ? modification.color : 'text-white'}`}>
+            {value}{modification ? ` ${modification.indicator}` : ''}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handleWoundChange = (value: string) => {
     const numValue = parseInt(value, 10);
@@ -124,11 +202,49 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
     >
       {/* Header */}
       <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
-        <div>
-          <h3 className="text-lg font-bold" style={{ color: character.color }}>
-            {character.role}
-          </h3>
-          <p className="text-xs text-gray-500">{character.name}</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h3 className="text-lg font-bold" style={{ color: character.color }}>
+              {character.role}
+            </h3>
+            <p className="text-xs text-gray-500">{character.name}</p>
+          </div>
+          {/* Level Badge */}
+          <div className="flex items-center gap-2">
+            <div
+              className="px-2 py-1 bg-purple-700 rounded text-white text-xs font-bold"
+              title={`Level ${calculateLevel(character.experience || 0)}`}
+            >
+              L{calculateLevel(character.experience || 0)}
+            </div>
+            {/* XP Counter */}
+            <div className="flex items-center gap-1">
+              {onExperienceUpdate && (
+                <button
+                  onClick={() => onExperienceUpdate(character.id, Math.max(0, (character.experience || 0) - 1))}
+                  className="w-5 h-5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded flex items-center justify-center"
+                  title="Decrease XP"
+                >
+                  −
+                </button>
+              )}
+              <div
+                className="px-2 py-1 bg-gray-800 rounded text-amber-400 text-xs font-medium min-w-[40px] text-center"
+                title={`${character.experience || 0} XP - Next level at ${getLevelThresholds(calculateLevel(character.experience || 0) + 1).min} XP`}
+              >
+                {character.experience || 0} XP
+              </div>
+              {onExperienceUpdate && (
+                <button
+                  onClick={() => onExperienceUpdate(character.id, (character.experience || 0) + 1)}
+                  className="w-5 h-5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded flex items-center justify-center"
+                  title="Increase XP"
+                >
+                  +
+                </button>
+              )}
+            </div>
+          </div>
         </div>
         <div>
           {!isEditing ? (
@@ -161,7 +277,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
       <div className="space-y-2">
         {/* Row 1: Wounds, Movement, and State */}
         <div className="flex items-center gap-2">
-          {/* Wounds - always editable */}
+          {/* Wounds - always editable (higher maxWounds is better) */}
           <div className="flex items-center gap-1">
             <span className="text-gray-400 text-xs font-medium">W:</span>
             <div className="flex items-center gap-0.5">
@@ -171,7 +287,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
                 onChange={(e) => handleWoundChange(e.target.value)}
                 className="w-8 px-1 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs text-center"
                 min="0"
-                max={character.stats.maxWounds}
+                max={effectiveStats.maxWounds}
               />
               <span className="text-gray-500 text-xs">/</span>
               {isEditing ? (
@@ -182,12 +298,19 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
                   className="w-8 px-1 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs text-center"
                 />
               ) : (
-                <span className="text-white text-xs font-bold">{character.stats.maxWounds}</span>
+                (() => {
+                  const maxWoundsMod = getStatModification(effectiveStats.maxWounds, baseStats.maxWounds, false);
+                  return (
+                    <span className={`text-xs font-bold ${maxWoundsMod ? maxWoundsMod.color : 'text-white'}`}>
+                      {effectiveStats.maxWounds}{maxWoundsMod ? ` ${maxWoundsMod.indicator}` : ''}
+                    </span>
+                  );
+                })()
               )}
             </div>
           </div>
 
-          {/* Movement */}
+          {/* Movement (higher is better) */}
           <div className="flex items-center gap-1">
             <span className="text-gray-400 text-xs font-medium">M:</span>
             {isEditing ? (
@@ -198,7 +321,14 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
                 className="w-12 px-1 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs text-center"
               />
             ) : (
-              <span className="text-white text-xs font-bold">{character.stats.movement}</span>
+              (() => {
+                const movementMod = getStatModification(effectiveStats.movement, baseStats.movement, false);
+                return (
+                  <span className={`text-xs font-bold ${movementMod ? movementMod.color : 'text-white'}`}>
+                    {effectiveStats.movement}{movementMod ? ` ${movementMod.indicator}` : ''}
+                  </span>
+                );
+              })()
             )}
           </div>
 
@@ -219,21 +349,28 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlaye
           </div>
         </div>
 
-        {/* Row 2: MS, BS, D, H, C */}
+        {/* Row 2: MS, BS, D, H, C (lower is better for all) - displays effective stats with equipment bonuses */}
         <div className="grid grid-cols-5 gap-2">
-          <StatCell label="MS" value={character.stats.meleeSkill} editValue={editedStats.meleeSkill} statKey="meleeSkill" />
-          <StatCell label="BS" value={character.stats.ballisticSkill} editValue={editedStats.ballisticSkill} statKey="ballisticSkill" />
-          <StatCell label="D" value={character.stats.defense} editValue={editedStats.defense} statKey="defense" />
-          <StatCell label="H" value={character.stats.hack} editValue={editedStats.hack} statKey="hack" />
-          <StatCell label="C" value={character.stats.con} editValue={editedStats.con} statKey="con" />
+          <StatCell label="MS" value={effectiveStats.meleeSkill} editValue={editedStats.meleeSkill} statKey="meleeSkill" baseValue={baseStats.meleeSkill} lowerIsBetter={true} />
+          <StatCell label="BS" value={effectiveStats.ballisticSkill} editValue={editedStats.ballisticSkill} statKey="ballisticSkill" baseValue={baseStats.ballisticSkill} lowerIsBetter={true} />
+          <StatCell label="D" value={effectiveStats.defense} editValue={editedStats.defense} statKey="defense" baseValue={baseStats.defense} lowerIsBetter={true} />
+          <StatCell label="H" value={effectiveStats.hack} editValue={editedStats.hack} statKey="hack" baseValue={baseStats.hack} lowerIsBetter={true} />
+          <StatCell label="C" value={effectiveStats.con} editValue={editedStats.con} statKey="con" baseValue={baseStats.con} lowerIsBetter={true} />
         </div>
       </div>
 
       {/* Equipment Slots */}
       <div className="mt-3 pt-3 border-t border-gray-700">
-        <h4 className="text-xs font-semibold text-gray-400 mb-2">Equipment</h4>
+        <h4 className="text-xs font-semibold text-gray-400 mb-2">
+          Equipment
+          {(equipmentBonuses.inventorySlots || 0) > 0 && (
+            <span className="text-green-400 ml-1">
+              ({3 + (equipmentBonuses.inventorySlots || 0)} slots)
+            </span>
+          )}
+        </h4>
         <div className="space-y-1">
-          {[0, 1, 2].map((slot) => {
+          {Array.from({ length: 3 + (equipmentBonuses.inventorySlots || 0) }, (_, i) => i).map((slot) => {
             const equippedItem = equippedItems[slot];
 
             // Determine background color based on item type

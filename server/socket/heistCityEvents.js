@@ -18,7 +18,7 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
    * This syncs token positions, item states, etc. across all players
    */
   socket.on('heist-city-map-state-change', (data) => {
-    const { lobbyId, mapState } = data;
+    const { lobbyId, mapState, gridType } = data;
 
     if (!lobbyId || !mapState) {
       socket.emit('error', { message: 'Missing required data' });
@@ -33,6 +33,11 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
 
     // Update the game's map state
     game.state.mapState = mapState;
+
+    // Also update gridType if provided (ensures it stays in sync)
+    if (gridType) {
+      game.state.gridType = gridType;
+    }
 
     // Increment version on state change
     const newVersion = incrementVersion(game.state);
@@ -180,7 +185,7 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     // Update game state with new map
     game.state.mapState = mapState;
     game.state.mapId = mapId;
-    game.state.gridType = gridType || 'square'; // Store grid type
+    game.state.gridType = gridType || 'hex'; // Store grid type
 
     // Reset game info
     if (!game.state.gameInfo) {
@@ -199,7 +204,7 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     // Broadcast to all players in the lobby (including sender)
     io.to(lobbyId).emit('heist-city-map-loaded', {
       mapState,
-      gridType: gridType || 'square',
+      gridType: gridType || 'hex',
       turnNumber,
       blueVictoryPoints,
       redVictoryPoints,
@@ -209,7 +214,7 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
     // Persist game state (force save for map load)
     persistence.saveGame(lobbyId, game, true);
 
-    console.log(`🗺️  Loaded map "${mapId}" (${gridType || 'square'} grid) in lobby ${lobbyId} (v${newVersion})`);
+    console.log(`🗺️  Loaded map "${mapId}" (${gridType || 'hex'} grid) in lobby ${lobbyId} (v${newVersion})`);
   });
 
   /**

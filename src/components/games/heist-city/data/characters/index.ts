@@ -38,6 +38,7 @@ export {
   canSelectAction,
   getActionCostDisplay,
   getAllAbilityCosts,
+  getActionDescription,
 } from './actionCosts';
 
 // Enemy stats

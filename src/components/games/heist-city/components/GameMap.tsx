@@ -26,6 +26,7 @@ import {
   getActionCost,
   canSelectAction,
   getActionCostDisplay,
+  getActionDescription,
   getCoreActions,
   getDefaultMeleeAction,
   formatWeaponAction,
@@ -97,6 +98,7 @@ const getAvailableActions = (character: CharacterTokenType): string[] => {
   // Equipment-based actions
   const equipment = getEquipmentByIds(character.equipment || []);
   let hasMeleeWeapon = false;
+  let hasReloadWeapon = false;
 
   equipment.forEach(item => {
     if (item.type === 'Ranged' || item.type === 'Thrown' || item.type === 'Melee') {
@@ -105,11 +107,20 @@ const getAvailableActions = (character: CharacterTokenType): string[] => {
       }
       actions.push(formatWeaponAction(item.id, item.type, character.stats));
     }
+    // Check if any equipped item has the Reload special
+    if (item.Special?.Reload) {
+      hasReloadWeapon = true;
+    }
   });
 
   // Add Fist as default melee weapon if no melee weapon equipped
   if (!hasMeleeWeapon) {
     actions.push(getDefaultMeleeAction(character.stats));
+  }
+
+  // Add Reload action if character has a weapon with Reload special
+  if (hasReloadWeapon) {
+    actions.push('Reload');
   }
 
   // Add state-based additional actions (non-exclusive states like Hidden, Disguised)
@@ -127,7 +138,7 @@ const GameMap: React.FC<GameMapProps> = ({
   onMapStateChange,
   onSelectionChange,
   readOnly = false,
-  gridType = 'square',
+  gridType = 'hex',
   onDiceRoll,
   lastDiceRoll,
   logEntries = [],
@@ -210,6 +221,9 @@ const GameMap: React.FC<GameMapProps> = ({
 
   // Gear equipment assignments (gear item ID -> equipment ID)
   const [gearEquipment, setGearEquipment] = useState<Record<string, string>>({});
+
+  // Track which action slots have expanded descriptions (by slot index)
+  const [expandedActionSlots, setExpandedActionSlots] = useState<Set<number>>(new Set());
 
   // Initialize gearEquipment from mapState items on mount/mapState change
   useEffect(() => {
@@ -1547,6 +1561,20 @@ const GameMap: React.FC<GameMapProps> = ({
                     const currentAction = character.actions?.[slotIndex] || '';
                     const availableActions = getAvailableActions(character);
                     const isContinuation = isContinuationSlot(slotIndex);
+                    const isExpanded = expandedActionSlots.has(slotIndex);
+                    const actionDescription = currentAction ? getActionDescription(currentAction) : null;
+
+                    const toggleExpanded = () => {
+                      setExpandedActionSlots(prev => {
+                        const newSet = new Set(prev);
+                        if (newSet.has(slotIndex)) {
+                          newSet.delete(slotIndex);
+                        } else {
+                          newSet.add(slotIndex);
+                        }
+                        return newSet;
+                      });
+                    };
 
                     // If this is a continuation slot, show a disabled indicator
                     if (isContinuation) {
@@ -1562,28 +1590,53 @@ const GameMap: React.FC<GameMapProps> = ({
                     }
 
                     return (
-                      <select
-                        key={slotIndex}
-                        value={currentAction}
-                        onChange={(e) => handleActionChange(slotIndex, e.target.value)}
-                        className="w-full px-2 py-1.5 bg-gray-800 border border-purple-500/30 rounded text-white text-xs hover:border-purple-500/50 focus:outline-none focus:border-purple-500"
-                      >
-                        <option value="">-- Select Action --</option>
-                        {availableActions.map((action) => {
-                          const costDisplay = getActionCostDisplay(action);
-                          const canFit = canSelectAction(action, slotIndex, 3);
-                          return (
-                            <option
-                              key={action}
-                              value={action}
-                              disabled={!canFit}
-                              className={!canFit ? 'text-gray-500' : ''}
+                      <div key={slotIndex} className="space-y-1">
+                        <div className="flex gap-1">
+                          <select
+                            value={currentAction}
+                            onChange={(e) => {
+                              handleActionChange(slotIndex, e.target.value);
+                              // Collapse description when action changes
+                              setExpandedActionSlots(prev => {
+                                const newSet = new Set(prev);
+                                newSet.delete(slotIndex);
+                                return newSet;
+                              });
+                            }}
+                            className="flex-1 px-2 py-1.5 bg-gray-800 border border-purple-500/30 rounded text-white text-xs hover:border-purple-500/50 focus:outline-none focus:border-purple-500"
+                          >
+                            <option value="">-- Select Action --</option>
+                            {availableActions.map((action) => {
+                              const costDisplay = getActionCostDisplay(action);
+                              const canFit = canSelectAction(action, slotIndex, 3);
+                              return (
+                                <option
+                                  key={action}
+                                  value={action}
+                                  disabled={!canFit}
+                                  className={!canFit ? 'text-gray-500' : ''}
+                                >
+                                  {action}{costDisplay ? ` ${costDisplay}` : ''}
+                                </option>
+                              );
+                            })}
+                          </select>
+                          {currentAction && actionDescription && (
+                            <button
+                              onClick={toggleExpanded}
+                              className="px-2 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors font-bold"
+                              title={isExpanded ? 'Hide description' : 'Show description'}
                             >
-                              {action}{costDisplay ? ` ${costDisplay}` : ''}
-                            </option>
-                          );
-                        })}
-                      </select>
+                              {isExpanded ? '−' : '+'}
+                            </button>
+                          )}
+                        </div>
+                        {isExpanded && actionDescription && (
+                          <div className="px-2 py-1.5 bg-purple-900/50 border border-purple-500/30 rounded text-gray-300 text-xs italic">
+                            {actionDescription}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

@@ -117,6 +117,7 @@ function initializeHeistCityGame(connectedPlayers, lobby) {
       type: 'heist-city',
       phase: 'playing',
       mapId: mapId, // Pass map ID to client
+      gridType: 'hex', // Default to hex grid
       players: connectedPlayers.map(p => ({
         id: p.id,
         name: p.name,

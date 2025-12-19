@@ -49,7 +49,7 @@ export function deleteLoadout(name: string): void {
 }
 
 /**
- * Create a loadout from current character equipment
+ * Create a loadout from current character equipment, experience, and stats
  */
 export function createLoadoutFromCharacters(
   name: string,
@@ -61,12 +61,15 @@ export function createLoadoutFromCharacters(
     characters: characters.map(char => ({
       role: char.role,
       equipment: char.equipment || [],
+      experience: char.experience || 0,
+      stats: char.stats, // Save base stats (for permanent modifications)
     })),
   };
 }
 
 /**
  * Apply a loadout to characters (returns updated characters)
+ * Restores equipment, experience, and stats from the loadout
  */
 export function applyLoadoutToCharacters(
   loadout: EquipmentLoadout,
@@ -75,10 +78,26 @@ export function applyLoadoutToCharacters(
   return characters.map(char => {
     const loadoutChar = loadout.characters.find(lc => lc.role === char.role);
     if (loadoutChar) {
-      return {
+      const updated: CharacterToken = {
         ...char,
         equipment: loadoutChar.equipment,
       };
+
+      // Restore experience if available
+      if (loadoutChar.experience !== undefined) {
+        updated.experience = loadoutChar.experience;
+      }
+
+      // Restore stats if available (for permanent stat modifications)
+      if (loadoutChar.stats) {
+        updated.stats = {
+          ...loadoutChar.stats,
+          // Preserve current wounds (don't override with saved wounds)
+          wounds: char.stats.wounds,
+        };
+      }
+
+      return updated;
     }
     return char;
   });
@@ -111,7 +130,12 @@ export function importLoadoutFromJson(jsonString: string): EquipmentLoadout | nu
     return {
       name: parsed.name,
       timestamp: parsed.timestamp || Date.now(),
-      characters: parsed.characters,
+      characters: parsed.characters.map((char: any) => ({
+        role: char.role,
+        equipment: char.equipment,
+        experience: char.experience, // Optional field
+        stats: char.stats, // Optional field
+      })),
     };
   } catch (error) {
     console.error('Error parsing loadout JSON:', error);

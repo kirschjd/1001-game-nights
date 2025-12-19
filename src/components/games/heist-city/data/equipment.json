@@ -206,7 +206,8 @@
       "Attacks": 1,
       "Damage": 2,
       "Notice": {},
-      "Special": { "+1 Hack": true }
+      "Special": { "+1 Hack": true },
+      "StatBonus": { "hack": -1 }
     },      
     {
       "id": "Attache Case",
@@ -215,7 +216,8 @@
       "Attacks": 1,
       "Damage": 3,
       "Notice": { "Disguised": true },
-      "Special": { "+1 Inventory": true }
+      "Special": { "+1 Inventory": true },
+      "StatBonus": { "inventorySlots": 1 }
     },    
     {
       "id": "Lazer Watch",
@@ -224,7 +226,8 @@
       "Attacks": 1,
       "Damage": 3,
       "Notice": { "Disguised": true },
-      "Special": { "+1 Con": true }
+      "Special": { "+1 Con": true },
+      "StatBonus": { "con": -1 }
     },    
     {
       "id": "Hedgehog Suit",
@@ -309,7 +312,8 @@
       "id": "Lockpicks",
       "type": "Tool",
       "Cost": 7,
-      "Description": "+1 on Hack checks"
+      "Description": "+1 on Hack checks",
+      "StatBonus": { "hack": -1 }
     },   
     {
       "id": "Camera Squib",
@@ -333,13 +337,15 @@
       "id": "Maintenance Uniform",
       "type": "Tool",
       "Cost": 12,
-      "Description": "+2 on Charm checks"
+      "Description": "+2 on Charm checks",
+      "StatBonus": { "con": -2 }
     },    
     {
       "id": "Body Armor",
       "type": "Tool",
       "Cost": 16,
-      "Description": "+1 to Defense"
+      "Description": "+1 to Defense",
+      "StatBonus": { "defense": -1 }
     },    
     {
       "id": "Breaching Charge",
@@ -369,13 +375,15 @@
       "id": "Scope",
       "type": "Tool",
       "Cost": 17,
-      "Description": "Increase BS by 1"
+      "Description": "Increase BS by 1",
+      "StatBonus": { "ballisticSkill": -1 }
     },
     {
       "id": "Steroids",
       "type": "Tool",
       "Cost": 20,
-      "Description": "Increase MS by 1"
+      "Description": "Increase MS by 1",
+      "StatBonus": { "meleeSkill": -1 }
     },
     {
       "id": "Teleporter Beacon",

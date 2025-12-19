@@ -42,7 +42,7 @@ interface GameState {
 const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId }) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [mapState, setMapState] = useState<MapState | null>(null);
-  const [gridType, setGridType] = useState<GridType>('square');
+  const [gridType, setGridType] = useState<GridType>('hex');
   const [playerSelections, setPlayerSelections] = useState<PlayerSelection[]>([]);
   // Version tracking for sync detection
   const [lastKnownVersion, setLastKnownVersion] = useState<number>(0);
@@ -359,9 +359,11 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
   const handleMapStateChange = (newMapState: MapState) => {
     setMapState(newMapState);
     // Emit map state changes to server for synchronization
+    // Include gridType to ensure server stays in sync
     socket.emit('heist-city-map-state-change', {
       lobbyId,
       mapState: newMapState,
+      gridType,
     });
   };
 
@@ -443,6 +445,22 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
 
     const updatedCharacters = mapState.characters.map(char =>
       char.id === characterId ? { ...char, victoryPoints } : char
+    );
+
+    const newMapState = {
+      ...mapState,
+      characters: updatedCharacters,
+    };
+
+    handleMapStateChange(newMapState);
+  };
+
+  // Handle character experience update
+  const handleExperienceUpdate = (characterId: string, experience: number) => {
+    if (!mapState) return;
+
+    const updatedCharacters = mapState.characters.map(char =>
+      char.id === characterId ? { ...char, experience } : char
     );
 
     const newMapState = {
@@ -1282,6 +1300,7 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
                     onStatsUpdate={handleStatsUpdate}
                     onStateUpdate={handleStateUpdate}
                     onEquipmentUpdate={handleEquipmentUpdate}
+                    onExperienceUpdate={handleExperienceUpdate}
                   />
                 ))}
             </div>
@@ -1301,6 +1320,7 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
                     onStatsUpdate={handleStatsUpdate}
                     onStateUpdate={handleStateUpdate}
                     onEquipmentUpdate={handleEquipmentUpdate}
+                    onExperienceUpdate={handleExperienceUpdate}
                   />
                 ))}
             </div>
