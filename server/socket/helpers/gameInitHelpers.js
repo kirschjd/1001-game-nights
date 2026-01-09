@@ -7,6 +7,7 @@ const { DiceFactoryGame: DiceFactoryGameV015 } = require('../../games/dice-facto
 const { DiceFactoryGame: DiceFactoryGameV021 } = require('../../games/dice-factory-v0.2.1');
 const { KillTeamDraftGame } = require('../../games/kill-team-draft');
 const { HeistCityGame } = require('../../games/heist-city');
+const { BadukAnalysis } = require('../../games/baduk-analysis');
 
 /**
  * Initialize a War game
@@ -134,6 +135,22 @@ function initializeHeistCityGame(connectedPlayers, lobby) {
 }
 
 /**
+ * Initialize a Baduk Analysis game
+ */
+function initializeBadukAnalysisGame(connectedPlayers, lobby) {
+  const komi = lobby.gameOptions?.komi || 6.5;
+  const handicap = lobby.gameOptions?.handicap || 0;
+
+  const game = new BadukAnalysis({
+    players: connectedPlayers,
+    komi,
+    handicap
+  });
+
+  return game;
+}
+
+/**
  * Create game based on lobby type
  */
 function createGame(lobby, connectedPlayers, clientVariantOrVersion, botSystem) {
@@ -158,6 +175,10 @@ function createGame(lobby, connectedPlayers, clientVariantOrVersion, botSystem) 
 
     case 'heist-city':
       game = initializeHeistCityGame(connectedPlayers, lobby);
+      break;
+
+    case 'baduk-analysis':
+      game = initializeBadukAnalysisGame(connectedPlayers, lobby);
       break;
 
     default:
@@ -220,5 +241,6 @@ module.exports = {
   initializeDiceFactoryGame,
   initializeHenHurGame,
   initializeKillTeamDraftGame,
-  initializeHeistCityGame
+  initializeHeistCityGame,
+  initializeBadukAnalysisGame
 };

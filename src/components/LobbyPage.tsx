@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
 import CardSelectionModal from './games/henhur/components/CardSelectionModal';
-import { ALL_CARDS } from './games/henhur/data/cards';
 import AbilitySelectionModal from './AbilitySelectionModal';
 import ABILITY_DECKS from './games/dice-factory-v0.2.1/data/abilityDecks.json';
 import { getAvailableMaps } from './games/heist-city/data/mapLoader';
@@ -68,7 +67,8 @@ const LobbyPage: React.FC = () => {
   const [selectedDFVariant, setSelectedDFVariant] = useState('v0.1.5');
   const [selectedAbilityIds, setSelectedAbilityIds] = useState<string[]>([]);
   const [selectedHenhurVariant, setSelectedHenhurVariant] = useState('standard');
-  const [selectedCardIds, setSelectedCardIds] = useState<string[]>(ALL_CARDS.map(card => card.id));
+  const [henhurCards, setHenhurCards] = useState<any[]>([]);
+  const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   const [ktdPackSize, setKtdPackSize] = useState(15);
   const [ktdTotalPacks, setKtdTotalPacks] = useState(3);
   const [selectedHeistCityMap, setSelectedHeistCityMap] = useState('bank-job');
@@ -168,6 +168,27 @@ const LobbyPage: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch Henhur cards from server
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleHenhurCards = (cards: any[]) => {
+      setHenhurCards(cards);
+      // Select all cards by default if none selected yet
+      if (selectedCardIds.length === 0) {
+        setSelectedCardIds(cards.map((card: any) => card.id));
+      }
+    };
+
+    socket.on('henhur:cards', handleHenhurCards);
+    socket.emit('henhur:get-cards');
+
+    return () => {
+      socket.off('henhur:cards', handleHenhurCards);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket]);
 
   // Handlers
   const handleTitleChange = (newTitle: string) => {
@@ -275,6 +296,8 @@ const LobbyPage: React.FC = () => {
       if (!lobby.gameOptions) lobby.gameOptions = {};
       lobby.gameOptions.mapId = selectedHeistCityMap;
       socket.emit(SOCKET_EVENTS.START_GAME, { slug });
+    } else if (lobby.gameType === 'baduk-analysis') {
+      socket.emit(SOCKET_EVENTS.START_GAME, { slug });
     } else {
       socket.emit(SOCKET_EVENTS.ERROR, { message: 'Invalid game type' });
     }
@@ -356,6 +379,7 @@ const LobbyPage: React.FC = () => {
                   <option value="henhur">HenHur</option>
                   <option value="heist-city">Heist City</option>
                   <option value="kill-team-draft">Kill Team Draft</option>
+                  <option value="baduk-analysis">Baduk Analysis</option>
                 </select>
                 <img
                   src={`/assets/icon-${lobby.gameType}.jpg`}
@@ -388,7 +412,7 @@ const LobbyPage: React.FC = () => {
               <HenHurOptions
                 selectedVariant={selectedHenhurVariant}
                 selectedCardCount={selectedCardIds.length}
-                totalCardCount={ALL_CARDS.length}
+                totalCardCount={henhurCards.length}
                 isLeader={!!isLeader}
                 onVariantChange={handleHenhurVariantChange}
                 onOpenCardSelection={() => setShowCardSelection(true)}
@@ -451,6 +475,7 @@ const LobbyPage: React.FC = () => {
         onClose={() => setShowCardSelection(false)}
         selectedCardIds={selectedCardIds}
         onSave={(cardIds) => setSelectedCardIds(cardIds)}
+        allCards={henhurCards}
       />
 
       <AbilitySelectionModal

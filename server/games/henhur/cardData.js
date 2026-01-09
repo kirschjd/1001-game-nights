@@ -8,7 +8,9 @@ const BASE_CARDS = [
     trickNumber: 2,
     raceNumber: 1,
     priority: { base: 1, dice: 'd6' },
-    description: 'Deck Maintenance - Discard a card from your burn stack',
+    description: 'Deck Maintenance',
+    effectText: 'Move 1 space',
+    burnEffectText: 'Discard a card from your burn stack',
     effect: [
       {
         type: 'move_player_position',
@@ -34,7 +36,9 @@ const BASE_CARDS = [
     trickNumber: 7,
     raceNumber: 1,
     priority: { base: 1, dice: 'd4' },
-    description: 'Econ - Move 1 space and gain 4 trick value',
+    description: 'Econ',
+    effectText: 'Move 1 space',
+    burnEffectText: 'Gain a P+ token',
     effect: [
       {
         type: 'move_player_position',
@@ -56,7 +60,9 @@ const BASE_CARDS = [
     trickNumber: 5,
     raceNumber: 1,
     priority: { base: 2, dice: 'd8' },
-    description: 'Econ - Move 1 space and gain 8 trick value',
+    description: 'Econ',
+    effectText: 'Move 1 space',
+    burnEffectText: 'Gain an A+ token',
     effect: [
       {
         type: 'move_player_position',
@@ -78,7 +84,9 @@ const BASE_CARDS = [
     trickNumber: 1,
     raceNumber: 5,
     priority: { base: 2, dice: 'd8' },
-    description: 'Sprint - Move 4 spaces, you may move at any point in the turn',
+    description: 'Sprint',
+    effectText: 'Move 4 spaces, you may move at any point in the turn',
+    burnEffectText: 'Gain an R+ token',
     effect: [
       {
         type: 'move_player_position',
@@ -104,7 +112,9 @@ const BASE_CARDS = [
     trickNumber: 1,
     raceNumber: 7,
     priority: { base: 2, dice: 'd8' },
-    description: 'Stride - Move forward without using race number',
+    description: 'Stride',
+    effectText: 'Move forward without using race number',
+    burnEffectText: 'Move 8 spaces',
     effect: [
       {
         type: 'move_player_position',
@@ -126,7 +136,9 @@ const BASE_CARDS = [
     trickNumber: 3,
     raceNumber: 4,
     priority: { base: 2, dice: 'd8' },
-    description: 'Fight - Move 2 spaces, then move an adjacent opponent 2 or give a damage token',
+    description: 'Fight',
+    effectText: 'Move 2 spaces, then move an adjacent opponent 2 or give a damage token',
+    burnEffectText: 'Move an adjacent opponent 4 spaces',
     effect: [
       {
         type: 'move_player_position',
@@ -149,43 +161,284 @@ const BASE_CARDS = [
 
 const LAP1_CARDS = [
   {
-    id: 'lap1_dash',
-    title: 'Dash',
+    id: 'lap1_golden_grain',
+    title: 'Golden Grain',
     deckType: 'lap1',
-    trickNumber: 2,
-    raceNumber: 1,
-    priority: 7,
-    description: 'Move forward 3 spaces',
-    effect: [
-      {
-        type: 'move_player_position',
-        params: { distance: 3 }
-      }
-    ],
-    burnEffect: [
-      {
-        type: 'draw_cards',
-        params: { count: 1 }
-      }
-    ],
-    copies: 4
+    trickNumber: 7,
+    raceNumber: 2,
+    priority: { base: 1, dice: 'd6' },
+    description: 'Econ',
+    effectText: 'N/A',
+    burnEffectText: 'Race 7',
+    effect: [],
+    burnEffect: [{ type: 'move_player_position', params: { distance: 7 } }],
+    copies: 2
   },
   {
-    id: 'lap1_trip',
-    title: 'Trip',
+    id: 'lap1_merchants_wager',
+    title: "Merchant's Wager",
+    deckType: 'lap1',
+    trickNumber: 9,
+    raceNumber: 1,
+    priority: { base: 3, dice: 'd4' },
+    description: 'Econ',
+    effectText: "As you play this card, discard a token, if you don't, the trick number goes to 4",
+    burnEffectText: 'Ignore the effect of this card',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_speed_sandals',
+    title: 'Speed Sandals',
+    deckType: 'lap1',
+    trickNumber: 4,
+    raceNumber: 1,
+    priority: { base: 4, dice: 'd8' },
+    description: 'Deck Maintenance',
+    effectText: 'Loot 2',
+    burnEffectText: 'Loot 4',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_chariot_upgrade',
+    title: 'Chariot Upgrade',
+    deckType: 'lap1',
+    trickNumber: 5,
+    raceNumber: 1,
+    priority: { base: 0, dice: 'd6' },
+    description: 'Deck Maintenance',
+    effectText: 'Remove a damage token, or discard a card from your burn stack',
+    burnEffectText: 'Remove all damage tokens',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_crowd_pleaser',
+    title: 'Crowd Pleaser',
+    deckType: 'lap1',
+    trickNumber: 3,
+    raceNumber: 3,
+    priority: { base: 3, dice: 'd6' },
+    description: 'Special',
+    effectText: 'Get a token of your choice',
+    burnEffectText: 'Get 2 tokens of 1 type',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_praetorian_plumes',
+    title: 'Praetorian Plumes',
+    deckType: 'lap1',
+    trickNumber: 5,
+    raceNumber: 1,
+    priority: { base: 2, dice: 'd6' },
+    description: 'Fight',
+    effectText: 'Push enemy 3',
+    burnEffectText: '@ Push an enemy 3',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_auctioneers_gavel',
+    title: "Auctioneer's Gavel",
+    deckType: 'lap1',
+    trickNumber: 6,
+    raceNumber: 1,
+    priority: { base: 1, dice: 'd4' },
+    description: 'Econ',
+    effectText: 'Rummage',
+    burnEffectText: 'Rummage 2',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_bread_and_circuses',
+    title: 'Bread and Circuses',
+    deckType: 'lap1',
+    trickNumber: 6,
+    raceNumber: 1,
+    priority: { base: 1, dice: 'd6' },
+    description: 'Econ',
+    effectText: 'Get 2 trick tokens, everyone else gets a race token',
+    burnEffectText: 'Get 2 trick tokens and a race token',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_veterans_pension',
+    title: "Veteran's Pension",
+    deckType: 'lap1',
+    trickNumber: 4,
+    raceNumber: 1,
+    priority: { base: 2, dice: 'd4' },
+    description: 'Econ',
+    effectText: 'Get a trick token or a race token',
+    burnEffectText: '@ get a trick token and a race token',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_chariot_craftsman',
+    title: 'Chariot Craftsman',
+    deckType: 'lap1',
+    trickNumber: 5,
+    raceNumber: 0,
+    priority: { base: 0, dice: 'd6' },
+    description: 'Deck Maintenance',
+    effectText: 'Remove up to 2 damage tokens',
+    burnEffectText: 'Remove all damage tokens',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_gladiator_gear_grab',
+    title: 'Gladiator Gear Grab',
+    deckType: 'lap1',
+    trickNumber: 3,
+    raceNumber: 0,
+    priority: { base: 0, dice: 'd4' },
+    description: 'Deck Maintenance',
+    effectText: 'Discard a burn card',
+    burnEffectText: 'Loot 3',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_molting_mishap',
+    title: 'Molting Mishap',
+    deckType: 'lap1',
+    trickNumber: 3,
+    raceNumber: 6,
+    priority: { base: 2, dice: 'd4' },
+    description: 'Defense',
+    effectText: 'Remove a damage token',
+    burnEffectText: 'Discard a burn card',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_chariot_splinter',
+    title: 'Chariot Splinter',
+    deckType: 'lap1',
+    trickNumber: 3,
+    raceNumber: 5,
+    priority: { base: 3, dice: 'd4' },
+    description: 'Fight',
+    effectText: 'Give the closest enemy a damage token',
+    burnEffectText: 'Give 2 damage tokens to the closest enemy',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_broken_axle',
+    title: 'Broken Axle',
     deckType: 'lap1',
     trickNumber: 2,
-    raceNumber: 2,
-    priority: 6,
-    description: 'Move opponent back 1 space',
-    effect: [
-      {
-        type: 'move_opponent_position',
-        params: { distance: -1, targetSelection: 'choose' }
-      }
-    ],
+    raceNumber: 3,
+    priority: { base: 2, dice: 'd6' },
+    description: 'Fight',
+    effectText: 'Give 2 damage tokens to an enemy',
+    burnEffectText: 'Give 3 damage tokens to an enemy',
+    effect: [],
     burnEffect: [],
-    copies: 3
+    copies: 2
+  },
+  {
+    id: 'lap1_spur_strike',
+    title: 'Spur Strike',
+    deckType: 'lap1',
+    trickNumber: 1,
+    raceNumber: 6,
+    priority: { base: 3, dice: 'd8' },
+    description: 'Fight',
+    effectText: 'Move an enemy 1',
+    burnEffectText: 'Move an enemy 1 and give them a damage token',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_gizzard_grind',
+    title: 'Gizzard Grind',
+    deckType: 'lap1',
+    trickNumber: 5,
+    raceNumber: 7,
+    priority: { base: 0, dice: 'd4' },
+    description: 'Defense',
+    effectText: 'Get a damage token',
+    burnEffectText: 'N/A',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_wing_boost',
+    title: 'Wing Boost',
+    deckType: 'lap1',
+    trickNumber: 5,
+    raceNumber: 5,
+    priority: { base: 4, dice: 'd8' },
+    description: 'Stride',
+    effectText: 'N/A',
+    burnEffectText: 'Move all enemies 1',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_chariot_collision',
+    title: 'Chariot Collision',
+    deckType: 'lap1',
+    trickNumber: 2,
+    raceNumber: 6,
+    priority: { base: 3, dice: 'd6' },
+    description: 'Fight',
+    effectText: 'Get a damage token, give 2 damage tokens to another player',
+    burnEffectText: 'Before moving, you may swap with an adjacent enemy',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_sharp_turn',
+    title: 'Sharp Turn',
+    deckType: 'lap1',
+    trickNumber: 4,
+    raceNumber: 6,
+    priority: { base: 5, dice: 'd8' },
+    description: 'Sprint',
+    effectText: 'If played on a turn (on the map), race value +2',
+    burnEffectText: 'If played on a turn (on the map), race value +4',
+    effect: [],
+    burnEffect: [],
+    copies: 2
+  },
+  {
+    id: 'lap1_rooster_rush',
+    title: 'Rooster Rush',
+    deckType: 'lap1',
+    trickNumber: 2,
+    raceNumber: 7,
+    priority: { base: 7, dice: 'd8' },
+    description: 'Sprint',
+    effectText: 'N/A',
+    burnEffectText: 'Move an additional D4',
+    effect: [],
+    burnEffect: [],
+    copies: 2
   }
 ];
 

@@ -16,7 +16,9 @@
       "Bash(dir:*)",
       "Bash(mkdir:*)",
       "Bash(move:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(node -c:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []

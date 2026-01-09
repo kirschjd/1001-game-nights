@@ -198,7 +198,7 @@ const RaceTurnControls: React.FC<RaceTurnControlsProps> = ({
             availableTokens={tokens}
             selectedTokens={selectedTokens}
             onToggleToken={handleToggleToken}
-            mode="priority"
+            mode="race_turn"
           />
 
           {/* Summary */}

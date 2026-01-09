@@ -2,6 +2,7 @@
 // Handles all multiplayer communication for HenHur game
 
 const persistence = require('../utils/persistence');
+const { ALL_CARDS } = require('../games/henhur/cardData');
 
 /**
  * Register HenHur-specific socket events
@@ -11,6 +12,13 @@ const persistence = require('../utils/persistence');
  * @param {Map} games - Games storage
  */
 function registerHenHurEvents(io, socket, lobbies, games) {
+
+  /**
+   * Get all available cards (for lobby card selection)
+   */
+  socket.on('henhur:get-cards', () => {
+    socket.emit('henhur:cards', ALL_CARDS);
+  });
 
   /**
    * Player selects a card for race turn

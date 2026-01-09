@@ -16,6 +16,7 @@ const {
   broadcastGameStart,
   scheduleDiceFactoryBotsIfNeeded
 } = require('./helpers/gameInitHelpers');
+const { broadcastGameState } = require('./henHurEvents');
 const persistence = require('../utils/persistence');
 
 // Track pending leader transfer timeouts by lobby slug
@@ -260,9 +261,10 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     }
 
     const connectedPlayers = lobby.players.filter(p => p.isConnected);
-    // Allow solo play for: HenHur, Heist City, and Dice Factory v0.2.1
+    // Allow solo play for: HenHur, Heist City, Baduk Analysis, and Dice Factory v0.2.1
     const allowSolo = lobby.gameType === 'henhur' ||
                       lobby.gameType === 'heist-city' ||
+                      lobby.gameType === 'baduk-analysis' ||
                       (lobby.gameType === 'dice-factory' && clientVersion === 'v0.2.1');
     if (!allowSolo && connectedPlayers.length < 2) {
       socket.emit('error', { message: 'Need at least 2 players to start' });
@@ -284,6 +286,13 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     lobby.currentGame = game.state.type;
 
     console.log(`🚀 Started ${lobby.gameType} game in lobby ${slug} with ${connectedPlayers.length} players`);
+
+    // Set up state change callback for HenHur
+    if (lobby.gameType === 'henhur' && game.setStateChangeCallback) {
+      game.setStateChangeCallback(() => {
+        broadcastGameState(io, slug, game);
+      });
+    }
 
     // Broadcast game start to all players
     broadcastGameStart(io, game, connectedPlayers);

@@ -3,6 +3,15 @@
 
 const { BASE_CARDS } = require('./cardData');
 const { initializePlayerDeck, drawCards, playCard, getDeckStats, shuffleDeck, discardCard } = require('./cardUtils');
+const config = require('./gameConfig');
+const {
+  rollPriority,
+  executeEffects,
+  calculatePriorityBonus,
+  calculateRaceBonus,
+  calculateAuctionBonus,
+  generateAuctionPool
+} = require('./gameUtils');
 
 /**
  * Enhanced HenHur Game Class
@@ -12,6 +21,23 @@ class HenHurGameEnhanced {
   constructor(options = {}) {
     this.options = options;
     this.state = this.initializeState(options);
+    this.onStateChange = null; // Callback for broadcasting state changes
+  }
+
+  /**
+   * Set callback for state changes (called by socket layer)
+   */
+  setStateChangeCallback(callback) {
+    this.onStateChange = callback;
+  }
+
+  /**
+   * Notify listeners of state change
+   */
+  notifyStateChange() {
+    if (this.onStateChange) {
+      this.onStateChange();
+    }
   }
 
   /**
@@ -26,10 +52,10 @@ class HenHurGameEnhanced {
       started: false,
       variant: options.variant || 'standard',
 
-      // Track configuration
+      // Track configuration (from gameConfig.js)
       track: {
-        trackLength: 30,  // 30 spaces per lap
-        lapsToWin: 3
+        trackLength: config.track.spacesPerLap,
+        lapsToWin: config.track.lapsToWin
       },
 
       // Turn management
@@ -40,22 +66,23 @@ class HenHurGameEnhanced {
         phase: 'waiting',
         raceSelections: new Map(),
         auctionBids: new Map(),
-        auctionPool: [],
+        auctionPool: [],        // Currently visible cards for drafting
         auctionOrder: [],
-        currentDrafter: null
+        currentDrafter: null,
+        sharedAuctionDeck: []   // Persistent deck that all players draft from
       },
 
       // Players
       players: players.map(p => this.initializePlayer(p)),
 
-      // Game configuration
+      // Game configuration (pull from gameConfig.js)
       config: {
-        turnsPerRound: 8,
-        handSize: 3,
-        trackLength: 30,
-        lapsToWin: 3,
-        maxTokens: 10,
-        burnSlots: 3,
+        turnsPerRound: config.turns.perRound,
+        handSize: config.hand.size,
+        trackLength: config.track.spacesPerLap,
+        lapsToWin: config.track.lapsToWin,
+        maxTokens: config.tokens.maxPerPlayer,
+        burnSlots: config.burn.slotsPerPlayer,
         selectedCards: options.selectedCards || []
       },
 
@@ -87,16 +114,9 @@ class HenHurGameEnhanced {
         lap: 1           // Start on lap 1
       },
 
-      // Resources
-      tokens: {
-        'P+': 0,
-        'R+': 0,
-        'A+': 0,
-        'W+': 0,
-        'P+3': 0,
-        'D': 0
-      },
-      maxTokens: 10,
+      // Resources - Use starting tokens from config
+      tokens: { ...config.starting.tokens },
+      maxTokens: config.tokens.maxPerPlayer,
 
       // Burn slots
       burnSlots: [
@@ -127,12 +147,18 @@ class HenHurGameEnhanced {
   start() {
     console.log('🏁 Starting HenHur game...');
 
-    // Deal initial cards (3 per player)
+    // Deal initial cards (8 per player)
     this.state.players.forEach(player => {
       const result = drawCards(player.deck, this.state.config.handSize);
       player.deck = result.updatedDeck;
       console.log(`  Dealt ${result.drawnCards.length} cards to ${player.playerName}`);
     });
+
+    // Initialize shared auction deck from Lap 1 cards
+    this.initializeSharedAuctionDeck();
+
+    // Reveal first auction pool (so players can see what's coming during race turns)
+    this.revealAuctionPool();
 
     // Start first turn
     this.state.started = true;
@@ -142,6 +168,38 @@ class HenHurGameEnhanced {
     this.state.turn.phase = 'race_selection';
 
     console.log('✅ Game started - Turn 1 (Race)');
+  }
+
+  /**
+   * Initialize the shared auction deck from available cards
+   */
+  initializeSharedAuctionDeck() {
+    const { LAP1_CARDS } = require('./cardData');
+    const { shuffleArray } = require('./gameUtils');
+
+    // Get selected cards (from lobby) or use all Lap 1 cards
+    const selectedCardIds = this.state.config.selectedCards || [];
+
+    // Filter to Lap 1 cards that are selected (or all if none selected)
+    let eligibleCards = LAP1_CARDS;
+    if (selectedCardIds.length > 0) {
+      eligibleCards = LAP1_CARDS.filter(c => selectedCardIds.includes(c.id));
+    }
+
+    // Expand by copies and create instances
+    let deck = [];
+    eligibleCards.forEach(card => {
+      const copies = card.copies || 2;
+      for (let i = 0; i < copies; i++) {
+        deck.push({ ...card, instanceId: `${card.id}_${i}_${Date.now()}` });
+      }
+    });
+
+    // Shuffle the deck
+    shuffleArray(deck);
+
+    this.state.turn.sharedAuctionDeck = deck;
+    console.log(`  Initialized shared auction deck with ${deck.length} cards`);
   }
 
   /**
@@ -308,22 +366,35 @@ class HenHurGameEnhanced {
     switch (currentPhase) {
       case 'race_selection':
         this.state.turn.phase = 'race_reveal';
-        setTimeout(() => this.resolveRaceTurn(), 2000); // 2s reveal delay
+        this.notifyStateChange(); // Show reveal phase to clients
+        setTimeout(() => {
+          this.resolveRaceTurn();
+          this.notifyStateChange(); // Broadcast after resolution
+        }, 2000);
         break;
 
       case 'race_reveal':
         this.state.turn.phase = 'race_resolution';
         this.resolveRaceTurn();
+        this.notifyStateChange();
         break;
 
       case 'auction_selection':
         this.state.turn.phase = 'auction_reveal';
-        setTimeout(() => this.resolveAuctionBids(), 2000);
+        this.notifyStateChange(); // Show reveal phase to clients
+        setTimeout(() => {
+          this.resolveAuctionBids();
+          // Transition to drafting phase
+          this.state.turn.phase = 'auction_drafting';
+          this.startAuctionDrafting();
+          this.notifyStateChange(); // Broadcast after resolution
+        }, 2000);
         break;
 
       case 'auction_reveal':
         this.state.turn.phase = 'auction_drafting';
         this.startAuctionDrafting();
+        this.notifyStateChange();
         break;
 
       case 'auction_drafting':
@@ -341,14 +412,16 @@ class HenHurGameEnhanced {
     // Get all selections
     const selections = Array.from(this.state.turn.raceSelections.entries());
 
-    // Calculate priorities (card priority + modifiers + tokens)
+    // Calculate priorities (roll dice + modifiers + tokens)
     const withPriorities = selections.map(([playerId, selection]) => {
       const player = this.getPlayer(playerId);
-      const basePriority = selection.card.priority;
-      const tokenBonus = this.calculatePriorityBonus(selection.tokensUsed);
-      const totalPriority = basePriority + player.priorityModifier + tokenBonus;
+      // Roll dice for priority (e.g., { base: 2, dice: 'd8' } becomes 2 + roll)
+      const rolledPriority = rollPriority(selection.card.priority);
+      const tokenBonus = calculatePriorityBonus(selection.tokensUsed);
+      const totalPriority = rolledPriority + player.priorityModifier + tokenBonus;
 
-      return { playerId, player, selection, totalPriority };
+      console.log(`    ${player.playerName}: priority ${rolledPriority} + ${tokenBonus} tokens = ${totalPriority}`);
+      return { playerId, player, selection, totalPriority, rolledPriority };
     });
 
     // Sort by priority (highest first)
@@ -376,7 +449,7 @@ class HenHurGameEnhanced {
 
     // Calculate movement
     const baseMovement = card.raceNumber;
-    const tokenBonus = this.calculateRaceBonus(tokensUsed);
+    const tokenBonus = calculateRaceBonus(tokensUsed);
     const totalMovement = baseMovement + tokenBonus;
 
     // Move player
@@ -396,15 +469,23 @@ class HenHurGameEnhanced {
         player.cardsBurned++;
         console.log(`    Burned to slot ${slot.slotIndex}`);
 
-        // Execute burn effect
-        // TODO: Implement effect execution
+        // Execute burn effects
+        if (card.burnEffect && card.burnEffect.length > 0) {
+          const context = { player, gameState: this.state, isBurn: true };
+          const results = executeEffects(card.burnEffect, context);
+          results.forEach(r => console.log(`      Effect: ${r.message}`));
+        }
       }
     } else {
       player.deck.discard.push(card);
       console.log(`    Discarded`);
 
-      // Execute normal effect
-      // TODO: Implement effect execution
+      // Execute normal card effects
+      if (card.effect && card.effect.length > 0) {
+        const context = { player, gameState: this.state, isBurn: false };
+        const results = executeEffects(card.effect, context);
+        results.forEach(r => console.log(`      Effect: ${r.message}`));
+      }
     }
 
     // Use tokens
@@ -414,11 +495,11 @@ class HenHurGameEnhanced {
       }
     });
 
-    // Draw back to hand size
-    const cardsToDraw = this.state.config.handSize - player.deck.hand.length;
-    if (cardsToDraw > 0) {
-      const result = drawCards(player.deck, cardsToDraw);
+    // Only refill hand when completely empty
+    if (player.deck.hand.length === 0) {
+      const result = drawCards(player.deck, this.state.config.handSize);
       player.deck = result.updatedDeck;
+      console.log(`    Hand empty - drew ${result.drawnCards.length} new cards`);
     }
 
     player.cardsPlayed++;
@@ -463,18 +544,21 @@ class HenHurGameEnhanced {
     const withValues = bids.map(([playerId, bid]) => {
       const player = this.getPlayer(playerId);
       const baseTrick = bid.card.trickNumber;
-      const tokenBonus = this.calculateAuctionBonus(bid.tokensUsed);
+      const tokenBonus = calculateAuctionBonus(bid.tokensUsed);
       const totalValue = baseTrick + tokenBonus;
+      // Roll priority for tie-breaking
+      const rolledPriority = rollPriority(bid.card.priority);
 
-      return { playerId, player, bid, totalValue, basePriority: bid.card.priority };
+      console.log(`    ${player.playerName}: trick ${baseTrick} + ${tokenBonus} = ${totalValue} (priority: ${rolledPriority})`);
+      return { playerId, player, bid, totalValue, rolledPriority };
     });
 
-    // Sort by trick value (highest first), use priority to break ties
+    // Sort by trick value (highest first), use rolled priority to break ties
     withValues.sort((a, b) => {
       if (b.totalValue !== a.totalValue) {
         return b.totalValue - a.totalValue;
       }
-      return b.basePriority - a.basePriority;
+      return b.rolledPriority - a.rolledPriority;
     });
 
     // Set draft order
@@ -506,6 +590,13 @@ class HenHurGameEnhanced {
         }
       });
 
+      // Check for hand refill (if hand is empty after bidding)
+      if (player.deck.hand.length === 0) {
+        const result = drawCards(player.deck, this.state.config.handSize);
+        player.deck = result.updatedDeck;
+        console.log(`    ${player.playerName} hand empty - drew ${result.drawnCards.length} new cards`);
+      }
+
       player.selectedCard = null;
       player.selectedTokens = [];
       player.willBurn = false;
@@ -517,20 +608,50 @@ class HenHurGameEnhanced {
    * Start auction drafting phase
    */
   startAuctionDrafting() {
-    // Generate auction pool (# players + 1 cards)
-    const numCards = this.state.players.length + 1;
-
-    // Determine current lap (highest lap any player is on)
-    const currentLap = Math.max(...this.state.players.map(p => p.position.lap));
-
-    // TODO: Draw from appropriate lap deck
-    // For now, just create empty pool
-    this.state.turn.auctionPool = [];
-
-    // Set first drafter
+    // Cards are already revealed in auctionPool (done at start of auction turn)
+    // Just set the first drafter
     this.state.turn.currentDrafter = this.state.turn.auctionOrder[0];
 
     console.log(`🎪 Auction drafting started - ${this.state.turn.auctionPool.length} cards available`);
+    console.log(`    First drafter: ${this.getPlayer(this.state.turn.currentDrafter).playerName}`);
+  }
+
+  /**
+   * Refill the shared auction deck when it runs low
+   */
+  refillSharedAuctionDeck() {
+    const { LAP1_CARDS, LAP2_CARDS, LAP3_CARDS } = require('./cardData');
+    const { shuffleArray } = require('./gameUtils');
+
+    // Determine current lap (highest lap any player is on)
+    const highestLap = Math.max(...this.state.players.map(p => p.position.lap));
+    const availableDecks = config.auction.getAvailableDecks(highestLap);
+
+    // Collect cards from available decks
+    let newCards = [];
+    if (availableDecks.includes('lap1')) {
+      newCards = newCards.concat(LAP1_CARDS);
+    }
+    if (availableDecks.includes('lap2')) {
+      newCards = newCards.concat(LAP2_CARDS);
+    }
+    if (availableDecks.includes('lap3')) {
+      newCards = newCards.concat(LAP3_CARDS);
+    }
+
+    // Expand by copies
+    let expandedCards = [];
+    newCards.forEach(card => {
+      const copies = card.copies || 2;
+      for (let i = 0; i < copies; i++) {
+        expandedCards.push({ ...card, instanceId: `${card.id}_refill_${i}_${Date.now()}` });
+      }
+    });
+
+    // Shuffle and add to deck
+    shuffleArray(expandedCards);
+    this.state.turn.sharedAuctionDeck = this.state.turn.sharedAuctionDeck.concat(expandedCards);
+    console.log(`  Refilled shared deck with ${expandedCards.length} cards (total: ${this.state.turn.sharedAuctionDeck.length})`);
   }
 
   /**
@@ -541,7 +662,14 @@ class HenHurGameEnhanced {
     const nextIndex = currentIndex + 1;
 
     if (nextIndex >= this.state.turn.auctionOrder.length) {
-      // All players have drafted - end auction turn
+      // All players have drafted - discard remaining card(s) and end auction turn
+      if (this.state.turn.auctionPool.length > 0) {
+        console.log(`  Discarding ${this.state.turn.auctionPool.length} undrafted card(s):`);
+        this.state.turn.auctionPool.forEach(card => {
+          console.log(`    - ${card.title} (discarded)`);
+        });
+        this.state.turn.auctionPool = []; // Discard, don't return to deck
+      }
       console.log('✅ Auction turn complete');
       this.advanceToNextTurn();
     } else {
@@ -557,9 +685,9 @@ class HenHurGameEnhanced {
     // Clear turn state
     this.state.turn.raceSelections.clear();
     this.state.turn.auctionBids.clear();
-    this.state.turn.auctionPool = [];
     this.state.turn.auctionOrder = [];
     this.state.turn.currentDrafter = null;
+    // Note: auctionPool is NOT cleared here - it stays visible until next auction
 
     // Increment turn
     this.state.turn.turnNumber++;
@@ -575,7 +703,33 @@ class HenHurGameEnhanced {
     this.state.turn.turnType = (this.state.turn.turnNumber % 2 === 1) ? 'race' : 'auction';
     this.state.turn.phase = this.state.turn.turnType === 'race' ? 'race_selection' : 'auction_selection';
 
+    // If auction turn, reveal the next cards for drafting
+    if (this.state.turn.turnType === 'auction') {
+      this.revealAuctionPool();
+    }
+
     console.log(`\n📍 Turn ${this.state.turn.turnNumber} - ${this.state.turn.turnType.toUpperCase()}\n`);
+  }
+
+  /**
+   * Reveal cards for the upcoming auction (so players can plan during race turn)
+   */
+  revealAuctionPool() {
+    const numCards = this.state.players.length + 1;
+
+    // Check if we have enough cards in the shared deck
+    if (this.state.turn.sharedAuctionDeck.length < numCards) {
+      console.log(`⚠️ Shared auction deck low (${this.state.turn.sharedAuctionDeck.length} cards) - refilling`);
+      this.refillSharedAuctionDeck();
+    }
+
+    // Draw cards from the top of the shared deck
+    this.state.turn.auctionPool = this.state.turn.sharedAuctionDeck.splice(0, numCards);
+
+    console.log(`👁️ Revealed ${this.state.turn.auctionPool.length} cards for auction:`);
+    this.state.turn.auctionPool.forEach(card => {
+      console.log(`    - ${card.title} (T:${card.trickNumber}, R:${card.raceNumber})`);
+    });
   }
 
   /**
@@ -607,42 +761,7 @@ class HenHurGameEnhanced {
     return { valid: true };
   }
 
-  /**
-   * Calculate priority bonus from tokens
-   */
-  calculatePriorityBonus(tokens) {
-    let bonus = 0;
-    tokens.forEach(token => {
-      if (token === 'P+') bonus += 1;
-      if (token === 'P+3') bonus += 3;
-      if (token === 'W+') bonus += 1;
-    });
-    return bonus;
-  }
-
-  /**
-   * Calculate race bonus from tokens
-   */
-  calculateRaceBonus(tokens) {
-    let bonus = 0;
-    tokens.forEach(token => {
-      if (token === 'R+') bonus += 1;
-      if (token === 'W+') bonus += 1;
-    });
-    return bonus;
-  }
-
-  /**
-   * Calculate auction bonus from tokens
-   */
-  calculateAuctionBonus(tokens) {
-    let bonus = 0;
-    tokens.forEach(token => {
-      if (token === 'A+') bonus += 1;
-      if (token === 'W+') bonus += 1;
-    });
-    return bonus;
-  }
+  // Token bonus calculations now imported from gameUtils.js
 
   /**
    * Get player by ID

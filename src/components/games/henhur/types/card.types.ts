@@ -38,7 +38,9 @@ export interface Card {
   trickNumber: number;
   raceNumber: number; // Static race value
   priority: number | PriorityValue; // Can be static number or base + dice
-  description: string;
+  description: string; // Category (Econ, Fight, Sprint, etc.)
+  effectText?: string; // Human-readable effect description
+  burnEffectText?: string; // Human-readable burn effect description
   effect: CardEffect[];
   burnEffect: CardEffect[];
   copies?: number; // Number of copies per player (for base deck) or in pool (for lap decks)

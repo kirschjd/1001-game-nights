@@ -137,3 +137,25 @@ export const KTD_EVENTS = {
   REORDER_DECK: 'ktd-reorder-deck',
   DRAFT_AGAIN: 'ktd-draft-again',
 } as const;
+
+// ============ BADUK ANALYSIS ============
+export const BADUK_EVENTS = {
+  PLACE_STONE: 'baduk:place-stone',
+  PASS: 'baduk:pass',
+  NAVIGATE: 'baduk:navigate',
+  UPLOAD_SGF: 'baduk:upload-sgf',
+  ADD_COMMENT: 'baduk:add-comment',
+  ADD_ANNOTATION: 'baduk:add-annotation',
+  REMOVE_ANNOTATION: 'baduk:remove-annotation',
+  DELETE_VARIATION: 'baduk:delete-variation',
+  RESET: 'baduk:reset',
+  REQUEST_STATE: 'baduk:request-state',
+  GAME_STATE: 'baduk:game-state',
+  REQUEST_ANALYSIS: 'baduk:request-analysis',
+  ANALYSIS_RESULT: 'baduk:analysis-result',
+  ANALYSIS_STATUS: 'baduk:analysis-status',
+  // Scoring phase events
+  TOGGLE_DEAD_STONE: 'baduk:toggle-dead-stone',
+  ACCEPT_SCORE: 'baduk:accept-score',
+  RESUME_GAME: 'baduk:resume-game',
+} as const;

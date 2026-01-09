@@ -7,7 +7,7 @@ import GamePhaseIndicator from './components/GamePhaseIndicator';
 import RaceTurnControls from './components/RaceTurnControls';
 import AuctionTurnControls from './components/AuctionTurnControls';
 import EnhancedPlayerMat from './components/EnhancedPlayerMat';
-import RaceMat from './components/RaceMat';
+import RaceTrack from './components/RaceTrack';
 import PlayerStatusDrawer from './components/PlayerStatusDrawer';
 import LeftInfoDrawer from './components/LeftInfoDrawer';
 import CardHand from './components/CardHand';
@@ -113,11 +113,12 @@ const HenHurGameEnhanced: React.FC<HenHurGameEnhancedProps> = ({
 
         {/* Race Track */}
         <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <RaceMat />
-          {/* TODO: Update RaceMat to show actual player positions */}
-          <div className="mt-2 text-gray-400 text-sm">
-            Your position: Lap {myState.position.lap}, Space {myState.position.space}
-          </div>
+          <RaceTrack
+            myPosition={myState.position}
+            myName={myState.playerName}
+            otherPlayers={otherPlayers}
+            trackConfig={track}
+          />
         </div>
 
         {/* Two Column Layout */}
@@ -245,7 +246,7 @@ const HenHurGameEnhanced: React.FC<HenHurGameEnhancedProps> = ({
       </div>
 
       {/* Drawers */}
-      <PlayerStatusDrawer />
+      <PlayerStatusDrawer players={otherPlayers} readyPlayers={readyPlayers} />
       <LeftInfoDrawer
         variant={variant}
         socket={socket}

@@ -11,6 +11,7 @@ import { DiceFactoryGame as DiceFactoryGameV021 } from './games/dice-factory-v0.
 import HenHurGame from './games/henhur';
 import KillTeamDraftGame from './games/kill-team-draft/KillTeamDraftGame';
 import HeistCityGame from './games/heist-city';
+import { BadukAnalysis } from './games/baduk-analysis';
 import { GameHeader } from './shared';
 import {
   SOCKET_EVENTS,
@@ -296,6 +297,8 @@ useEffect(() => {
             ? 'HenHur'
             : gameState.type === 'kill-team-draft'
             ? 'Kill Team Draft'
+            : gameState.type === 'baduk-analysis'
+            ? 'Baduk Analysis'
             : gameState.type
         }
         players={lobbyPlayers}
@@ -362,8 +365,18 @@ useEffect(() => {
           />
         )}
 
+        {gameState.type === 'baduk-analysis' && slug && socket && (
+          <BadukAnalysis
+            socket={socket}
+            slug={slug}
+            playerName={playerName}
+            isLeader={isLeader}
+            gameState={gameState as any}
+          />
+        )}
+
         {/* Fallback for unknown game types */}
-        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && gameState.type !== 'kill-team-draft' && gameState.type !== 'heist-city' && (
+        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && gameState.type !== 'kill-team-draft' && gameState.type !== 'heist-city' && gameState.type !== 'baduk-analysis' && (
           <div className="text-center p-8">
             <h2 className="text-2xl font-bold mb-4 text-red-400">Unknown Game Type</h2>
             <p className="text-gray-400 mb-4">Game type "{gameState.type}" is not supported.</p>

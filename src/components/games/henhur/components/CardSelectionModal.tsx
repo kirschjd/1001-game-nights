@@ -2,7 +2,6 @@
 // Allows lobby leader to select which cards are available for the game
 
 import React, { useState, useEffect } from 'react';
-import { ALL_CARDS } from '../data/cards';
 import { Card, DeckType } from '../types/card.types';
 
 interface CardSelectionModalProps {
@@ -10,13 +9,15 @@ interface CardSelectionModalProps {
   onClose: () => void;
   selectedCardIds: string[];
   onSave: (cardIds: string[]) => void;
+  allCards: Card[];
 }
 
 const CardSelectionModal: React.FC<CardSelectionModalProps> = ({
   isOpen,
   onClose,
   selectedCardIds,
-  onSave
+  onSave,
+  allCards
 }) => {
   const [localSelection, setLocalSelection] = useState<Set<string>>(new Set(selectedCardIds));
 
@@ -26,7 +27,7 @@ const CardSelectionModal: React.FC<CardSelectionModalProps> = ({
 
   if (!isOpen) return null;
 
-  const groupedCards = ALL_CARDS.reduce((acc, card) => {
+  const groupedCards = allCards.reduce((acc, card) => {
     if (!acc[card.deckType]) {
       acc[card.deckType] = [];
     }
@@ -156,7 +157,7 @@ const CardSelectionModal: React.FC<CardSelectionModalProps> = ({
         {/* Footer */}
         <div className="bg-payne-grey-light border-t border-payne-grey p-6 flex justify-between items-center">
           <div className="text-sm text-gray-300">
-            <strong>{localSelection.size}</strong> of <strong>{ALL_CARDS.length}</strong> cards selected
+            <strong>{localSelection.size}</strong> of <strong>{allCards.length}</strong> cards selected
           </div>
           <div className="flex gap-3">
             <button
