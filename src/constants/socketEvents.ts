@@ -158,4 +158,10 @@ export const BADUK_EVENTS = {
   TOGGLE_DEAD_STONE: 'baduk:toggle-dead-stone',
   ACCEPT_SCORE: 'baduk:accept-score',
   RESUME_GAME: 'baduk:resume-game',
+  // AI opponent events
+  CONFIGURE_AI: 'baduk:configure-ai',
+  GET_SKILL_LEVELS: 'baduk:get-skill-levels',
+  SKILL_LEVELS: 'baduk:skill-levels',
+  REQUEST_AI_MOVE: 'baduk:request-ai-move',
+  AI_MOVE: 'baduk:ai-move',
 } as const;

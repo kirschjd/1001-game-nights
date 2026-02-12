@@ -3,7 +3,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useBadukAnalysis } from './hooks/useBadukAnalysis';
-import { GoBoard, ControlPanel, GameInfo, MoveTree, SGFUploader, CommentPanel, ScorePanel, AnalysisPanel } from './components';
+import { GoBoard, ControlPanel, GameInfo, MoveTree, SGFUploader, CommentPanel, ScorePanel, AnalysisPanel, AISettingsPanel } from './components';
 import { BadukAnalysisState } from './types/baduk.types';
 
 interface BadukAnalysisProps {
@@ -21,11 +21,21 @@ const BadukAnalysis: React.FC<BadukAnalysisProps> = ({
   isLeader,
   gameState: initialGameState
 }) => {
-  const { gameState, error, analysisResult, analysisStatus, isAnalyzing, actions } = useBadukAnalysis({
+  const { gameState, error, analysisResult, analysisStatus, isAnalyzing, skillLevels, actions } = useBadukAnalysis({
     socket,
     slug,
     initialState: initialGameState
   });
+
+  // Track if KataGo is available based on analysis result
+  const [kataGoAvailable, setKataGoAvailable] = useState(true);
+
+  // Check KataGo availability from analysis result
+  useEffect(() => {
+    if (analysisResult && analysisResult.available === false) {
+      setKataGoAvailable(false);
+    }
+  }, [analysisResult]);
 
   // Local UI state for territory visualization (not synced to server)
   const [showTerritory, setShowTerritory] = useState(false);
@@ -96,6 +106,14 @@ const BadukAnalysis: React.FC<BadukAnalysisProps> = ({
         </div>
       )}
 
+      {/* AI thinking banner */}
+      {gameState.aiOpponent.enabled && gameState.aiOpponent.isThinking && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded shadow-lg z-40 flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          AI is thinking...
+        </div>
+      )}
+
       {/* Left: Go Board */}
       <div className="flex-shrink-0 flex justify-center items-start">
         <GoBoard
@@ -138,6 +156,16 @@ const BadukAnalysis: React.FC<BadukAnalysisProps> = ({
           onRequestAnalysis={actions.requestAnalysis}
           onClearAnalysis={actions.clearAnalysis}
           currentTurn={gameState.currentTurn}
+          disabled={isScoring || isFinished}
+        />
+
+        {/* AI Opponent Settings */}
+        <AISettingsPanel
+          aiSettings={gameState.aiOpponent}
+          skillLevels={skillLevels}
+          onConfigure={actions.configureAI}
+          onRequestSkillLevels={actions.requestSkillLevels}
+          kataGoAvailable={kataGoAvailable}
           disabled={isScoring || isFinished}
         />
 

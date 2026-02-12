@@ -118,7 +118,15 @@ class BadukAnalysis {
       deadStones: [],
 
       // Track consecutive passes for scoring trigger
-      consecutivePasses: 0
+      consecutivePasses: 0,
+
+      // AI opponent settings
+      aiOpponent: {
+        enabled: false,
+        color: 'white',        // AI plays as 'black' or 'white'
+        skillLevel: '5k',      // Skill level key (e.g., '30k', '5k', '1d', 'max')
+        isThinking: false      // True when AI is generating a move
+      }
     };
   }
 
@@ -332,6 +340,42 @@ class BadukAnalysis {
 
     this.notifyStateChange();
     return { success: true, message: 'Game resumed' };
+  }
+
+  /**
+   * Configure AI opponent settings
+   * @param settings { enabled, color, skillLevel }
+   */
+  configureAI(settings) {
+    if (settings.enabled !== undefined) {
+      this.state.aiOpponent.enabled = settings.enabled;
+    }
+    if (settings.color && ['black', 'white'].includes(settings.color)) {
+      this.state.aiOpponent.color = settings.color;
+    }
+    if (settings.skillLevel) {
+      this.state.aiOpponent.skillLevel = settings.skillLevel;
+    }
+
+    this.notifyStateChange();
+    return { success: true, message: 'AI settings updated' };
+  }
+
+  /**
+   * Check if it's AI's turn to play
+   */
+  isAITurn() {
+    return this.state.aiOpponent.enabled &&
+           this.state.currentTurn === this.state.aiOpponent.color &&
+           this.state.phase === 'analyzing';
+  }
+
+  /**
+   * Set AI thinking state
+   */
+  setAIThinking(thinking) {
+    this.state.aiOpponent.isThinking = thinking;
+    this.notifyStateChange();
   }
 
   /**
@@ -750,6 +794,9 @@ class BadukAnalysis {
 
       // Dead stones (for scoring phase)
       deadStones: this.state.deadStones,
+
+      // AI opponent settings
+      aiOpponent: this.state.aiOpponent,
 
       // Config for client
       config: {

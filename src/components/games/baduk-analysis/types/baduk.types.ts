@@ -87,6 +87,30 @@ export interface BoardConfig {
   starPoints: [number, number][];
 }
 
+// AI opponent settings
+export interface AIOpponentSettings {
+  enabled: boolean;
+  color: 'black' | 'white';
+  skillLevel: string;
+  isThinking: boolean;
+}
+
+// Skill level option for UI
+export interface SkillLevelOption {
+  id: string;
+  name: string;
+  description: string;
+}
+
+// AI move result
+export interface AIMoveResult {
+  move: Point | null;
+  isPass: boolean;
+  winrate: number;
+  scoreLead: number;
+  skillLevel: string;
+}
+
 // Game phases
 export type GamePhase = 'analyzing' | 'scoring' | 'finished';
 
@@ -125,6 +149,9 @@ export interface BadukAnalysisState {
 
   // Dead stones (for scoring phase) - array of "x,y" strings
   deadStones: string[];
+
+  // AI opponent settings
+  aiOpponent: AIOpponentSettings;
 
   // Board config
   config: BoardConfig;

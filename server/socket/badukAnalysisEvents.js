@@ -2,7 +2,7 @@
 // Handles multiplayer communication for Go analysis tool
 
 const persistence = require('../utils/persistence');
-const { getKataGoManager, isKataGoAvailable } = require('../games/baduk-analysis/kataGoManager');
+const { getKataGoManager, isKataGoAvailable, getSkillLevels } = require('../games/baduk-analysis/kataGoManager');
 
 /**
  * Register Baduk Analysis socket events
@@ -34,6 +34,11 @@ function registerBadukAnalysisEvents(io, socket, lobbies, games) {
 
     if (result.success) {
       broadcastGameState(io, slug, game);
+
+      // Trigger AI move if it's now AI's turn
+      if (game.isAITurn()) {
+        triggerAIMove(io, slug, game);
+      }
     } else {
       socket.emit('error', { message: result.message });
     }
@@ -60,6 +65,11 @@ function registerBadukAnalysisEvents(io, socket, lobbies, games) {
 
     if (result.success) {
       broadcastGameState(io, slug, game);
+
+      // Trigger AI move if it's now AI's turn (and not in scoring phase)
+      if (game.isAITurn()) {
+        triggerAIMove(io, slug, game);
+      }
     } else {
       socket.emit('error', { message: result.message });
     }
@@ -439,6 +449,145 @@ function registerBadukAnalysisEvents(io, socket, lobbies, games) {
       });
     }
   });
+
+  /**
+   * Configure AI opponent settings
+   */
+  socket.on('baduk:configure-ai', (data) => {
+    const { slug, enabled, color, skillLevel } = data;
+
+    if (!slug) {
+      socket.emit('error', { message: 'Missing slug' });
+      return;
+    }
+
+    const game = games.get(slug);
+    if (!game || game.state.gameType !== 'baduk-analysis') {
+      socket.emit('error', { message: 'Game not found' });
+      return;
+    }
+
+    const result = game.configureAI({ enabled, color, skillLevel });
+
+    if (result.success) {
+      broadcastGameState(io, slug, game);
+      console.log(`🤖 AI configured in ${slug}: ${enabled ? `${skillLevel} as ${color}` : 'disabled'}`);
+
+      // If AI is enabled and it's AI's turn, trigger AI move
+      if (enabled && game.isAITurn()) {
+        triggerAIMove(io, slug, game);
+      }
+    }
+  });
+
+  /**
+   * Get available AI skill levels
+   */
+  socket.on('baduk:get-skill-levels', () => {
+    socket.emit('baduk:skill-levels', getSkillLevels());
+  });
+
+  /**
+   * Request AI to make a move (manual trigger or after player move)
+   */
+  socket.on('baduk:request-ai-move', async (data) => {
+    const { slug } = data;
+
+    if (!slug) {
+      socket.emit('error', { message: 'Missing slug' });
+      return;
+    }
+
+    const game = games.get(slug);
+    if (!game || game.state.gameType !== 'baduk-analysis') {
+      socket.emit('error', { message: 'Game not found' });
+      return;
+    }
+
+    if (!game.state.aiOpponent.enabled) {
+      socket.emit('error', { message: 'AI opponent is not enabled' });
+      return;
+    }
+
+    if (!game.isAITurn()) {
+      socket.emit('error', { message: 'Not AI\'s turn' });
+      return;
+    }
+
+    await triggerAIMove(io, slug, game);
+  });
+}
+
+/**
+ * Trigger AI to make a move
+ */
+async function triggerAIMove(io, slug, game) {
+  if (!isKataGoAvailable()) {
+    console.log('KataGo not available for AI move');
+    return;
+  }
+
+  if (game.state.aiOpponent.isThinking) {
+    console.log('AI already thinking');
+    return;
+  }
+
+  try {
+    game.setAIThinking(true);
+    broadcastGameState(io, slug, game);
+
+    const kataGo = getKataGoManager();
+
+    // Start KataGo if not running
+    if (!kataGo.isReady) {
+      await kataGo.start();
+    }
+
+    // Get AI move at the configured skill level
+    const moveResult = await kataGo.getAIMove(
+      game.state.board,
+      game.state.currentTurn,
+      game.state.aiOpponent.skillLevel,
+      {
+        komi: game.state.metadata.komi,
+        maxVisits: 50 // Keep it fast for responsive play
+      }
+    );
+
+    game.setAIThinking(false);
+
+    // Play the AI's move
+    if (moveResult.isPass) {
+      game.pass('ai');
+    } else if (moveResult.move) {
+      game.placeStone('ai', moveResult.move.x, moveResult.move.y);
+    }
+
+    broadcastGameState(io, slug, game);
+    console.log(`🤖 AI played: ${moveResult.isPass ? 'pass' : `(${moveResult.move?.x}, ${moveResult.move?.y})`}`);
+
+    // Emit AI move info for client display
+    const lobby = io.sockets.adapter.rooms.get(slug);
+    if (lobby) {
+      for (const socketId of lobby) {
+        const playerSocket = io.sockets.sockets.get(socketId);
+        if (playerSocket) {
+          playerSocket.emit('baduk:ai-move', {
+            move: moveResult.move,
+            isPass: moveResult.isPass,
+            winrate: moveResult.winrate,
+            scoreLead: moveResult.scoreLead,
+            skillLevel: moveResult.skillLevel
+          });
+        }
+      }
+    }
+
+  } catch (err) {
+    console.error('AI move error:', err);
+    game.setAIThinking(false);
+    broadcastGameState(io, slug, game);
+  }
 }
 
 /**

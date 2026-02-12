@@ -6,3 +6,4 @@ export { default as SGFUploader } from './SGFUploader';
 export { default as CommentPanel } from './CommentPanel';
 export { default as ScorePanel } from './ScorePanel';
 export { default as AnalysisPanel } from './AnalysisPanel';
+export { default as AISettingsPanel } from './AISettingsPanel';

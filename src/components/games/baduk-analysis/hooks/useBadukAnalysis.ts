@@ -1,7 +1,7 @@
 // Custom hook for Baduk Analysis game state and socket communication
 
 import { useState, useEffect, useCallback } from 'react';
-import { BadukAnalysisState, NavigationDirection, AnnotationType, AIAnalysisResult, AIAnalysisStatus } from '../types/baduk.types';
+import { BadukAnalysisState, NavigationDirection, AnnotationType, AIAnalysisResult, AIAnalysisStatus, SkillLevelOption, AIMoveResult } from '../types/baduk.types';
 
 interface UseBadukAnalysisOptions {
   socket: any;
@@ -15,6 +15,10 @@ export function useBadukAnalysis({ socket, slug, initialState }: UseBadukAnalysi
   const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(null);
   const [analysisStatus, setAnalysisStatus] = useState<AIAnalysisStatus | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // AI opponent state
+  const [skillLevels, setSkillLevels] = useState<SkillLevelOption[]>([]);
+  const [lastAIMove, setLastAIMove] = useState<AIMoveResult | null>(null);
 
   // Listen for game state updates
   useEffect(() => {
@@ -52,10 +56,22 @@ export function useBadukAnalysis({ socket, slug, initialState }: UseBadukAnalysi
       setAnalysisStatus(data);
     };
 
+    const handleSkillLevels = (data: SkillLevelOption[]) => {
+      console.log('Skill levels:', data);
+      setSkillLevels(data);
+    };
+
+    const handleAIMove = (data: AIMoveResult) => {
+      console.log('AI move:', data);
+      setLastAIMove(data);
+    };
+
     socket.on('game-started', handleGameStarted);
     socket.on('baduk:game-state', handleGameState);
     socket.on('baduk:analysis-result', handleAnalysisResult);
     socket.on('baduk:analysis-status', handleAnalysisStatus);
+    socket.on('baduk:skill-levels', handleSkillLevels);
+    socket.on('baduk:ai-move', handleAIMove);
     socket.on('error', handleError);
 
     return () => {
@@ -63,6 +79,8 @@ export function useBadukAnalysis({ socket, slug, initialState }: UseBadukAnalysi
       socket.off('baduk:game-state', handleGameState);
       socket.off('baduk:analysis-result', handleAnalysisResult);
       socket.off('baduk:analysis-status', handleAnalysisStatus);
+      socket.off('baduk:skill-levels', handleSkillLevels);
+      socket.off('baduk:ai-move', handleAIMove);
       socket.off('error', handleError);
     };
   }, [socket]);
@@ -148,6 +166,24 @@ export function useBadukAnalysis({ socket, slug, initialState }: UseBadukAnalysi
     setIsAnalyzing(false);
   }, []);
 
+  // Request skill levels on mount
+  const requestSkillLevels = useCallback(() => {
+    if (!socket) return;
+    socket.emit('baduk:get-skill-levels');
+  }, [socket]);
+
+  // Configure AI opponent
+  const configureAI = useCallback((settings: { enabled?: boolean; color?: 'black' | 'white'; skillLevel?: string }) => {
+    if (!socket || !slug) return;
+    socket.emit('baduk:configure-ai', { slug, ...settings });
+  }, [socket, slug]);
+
+  // Request AI to make a move (manual trigger)
+  const requestAIMove = useCallback(() => {
+    if (!socket || !slug) return;
+    socket.emit('baduk:request-ai-move', { slug });
+  }, [socket, slug]);
+
   // Scoring phase actions
   const toggleDeadStone = useCallback((x: number, y: number) => {
     if (!socket || !slug) return;
@@ -171,6 +207,9 @@ export function useBadukAnalysis({ socket, slug, initialState }: UseBadukAnalysi
     analysisResult,
     analysisStatus,
     isAnalyzing,
+    // AI opponent state
+    skillLevels,
+    lastAIMove,
     actions: {
       requestState,
       placeStone,
@@ -190,6 +229,10 @@ export function useBadukAnalysis({ socket, slug, initialState }: UseBadukAnalysi
       // Analysis
       requestAnalysis,
       clearAnalysis,
+      // AI opponent
+      requestSkillLevels,
+      configureAI,
+      requestAIMove,
       // Scoring phase
       toggleDeadStone,
       acceptScore,
