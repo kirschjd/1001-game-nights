@@ -9,11 +9,13 @@
  * - enemyStats: Enemy unit statistics
  */
 
-// Character stats and roles
+// Character stats, roles, and level calculations
 export {
   CHARACTER_DATA,
   INITIAL_CHARACTER_STATS,
   CHARACTER_ROLES,
+  calculateLevel,
+  getLevelThresholds,
   type CharacterAbility,
   type CharacterInfo,
 } from './characterStats';
@@ -59,3 +61,9 @@ export {
   formatWeaponAction,
   type CoreAction,
 } from './coreActions';
+
+// Action utilities (available actions for a character)
+export { getAvailableActions } from './actionUtils';
+
+// Action slot logic (assignment, continuation, clearing)
+export { isContinuationSlot, assignAction } from './actionSlots';

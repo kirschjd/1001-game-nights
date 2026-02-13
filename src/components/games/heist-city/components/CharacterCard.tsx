@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { CharacterToken, CharacterState, EquipmentItem, CharacterStats } from '../types';
-import { CHARACTER_DATA } from '../data/characters';
+import { CHARACTER_DATA, calculateLevel, getLevelThresholds } from '../data/characters';
 import { getAllEquipment, getEquipmentByIds, getEquipmentStatBonuses } from '../data/equipmentLoader';
 
 interface CharacterCardProps {
@@ -10,34 +10,6 @@ interface CharacterCardProps {
   onStateUpdate: (characterId: string, newState: CharacterState) => void;
   onEquipmentUpdate: (characterId: string, equipment: string[]) => void;
   onExperienceUpdate?: (characterId: string, experience: number) => void;
-}
-
-/**
- * Calculate level from experience points
- * Level 1: 0-5 XP
- * Level 2: 6-14 XP
- * Level 3: 15-25 XP
- * Level 4+: Every 15 XP thereafter
- */
-function calculateLevel(experience: number): number {
-  if (experience <= 5) return 1;
-  if (experience <= 14) return 2;
-  if (experience <= 25) return 3;
-  // After level 3, new levels every 15 XP (26-40 = L4, 41-55 = L5, etc.)
-  return 4 + Math.floor((experience - 26) / 15);
-}
-
-/**
- * Get XP thresholds for a level
- */
-function getLevelThresholds(level: number): { min: number; max: number } {
-  if (level === 1) return { min: 0, max: 5 };
-  if (level === 2) return { min: 6, max: 14 };
-  if (level === 3) return { min: 15, max: 25 };
-  // Level 4+: starts at 26, each level is 15 XP
-  const min = 26 + (level - 4) * 15;
-  const max = min + 14;
-  return { min, max };
 }
 
 const CharacterCard: React.FC<CharacterCardProps> = ({ character, isOwnedByPlayer, onStatsUpdate, onStateUpdate, onEquipmentUpdate, onExperienceUpdate }) => {

@@ -62,6 +62,48 @@ function registerHeistCityEvents(io, socket, lobbies, games) {
   });
 
   /**
+   * Handle granular character updates
+   * Sends only { characterId, updates } instead of the full mapState,
+   * preventing simultaneous edits to different characters from overwriting each other.
+   */
+  socket.on('heist-city-character-update', (data) => {
+    const { lobbyId, characterId, updates } = data;
+
+    if (!lobbyId || !characterId || !updates) {
+      socket.emit('error', { message: 'Missing required character update data' });
+      return;
+    }
+
+    const game = games.get(lobbyId);
+    if (!game || game.state.type !== 'heist-city') {
+      socket.emit('error', { message: 'Heist City game not found' });
+      return;
+    }
+
+    // Apply partial update to the stored mapState
+    if (game.state.mapState && game.state.mapState.characters) {
+      game.state.mapState.characters = game.state.mapState.characters.map(char =>
+        char.id === characterId ? { ...char, ...updates } : char
+      );
+    }
+
+    // Increment version on state change
+    const newVersion = incrementVersion(game.state);
+
+    // Broadcast to all other players in the lobby
+    socket.to(lobbyId).emit('heist-city-character-updated', {
+      characterId,
+      updates,
+      version: newVersion
+    });
+
+    // Persist game state (throttled)
+    persistence.saveGame(lobbyId, game);
+
+    console.log(`🧑 Broadcasted character update (${characterId}) to lobby ${lobbyId} (v${newVersion})`);
+  });
+
+  /**
    * Handle dice roll events
    * This syncs dice rolls across all players in the lobby
    */

@@ -119,6 +119,8 @@ export const HENHUR_EVENTS = {
 export const HEIST_CITY_EVENTS = {
   MAP_STATE_CHANGE: 'heist-city-map-state-change',
   MAP_STATE_UPDATE: 'heist-city-map-state-update',
+  CHARACTER_UPDATE: 'heist-city-character-update',
+  CHARACTER_UPDATED: 'heist-city-character-updated',
   DICE_ROLL: 'heist-city-dice-roll',
   GAME_INFO_UPDATE: 'heist-city-game-info-update',
   SELECTION_CHANGE: 'heist-city-selection-change',

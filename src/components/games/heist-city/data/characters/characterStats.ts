@@ -151,3 +151,29 @@ export const INITIAL_CHARACTER_STATS: Record<CharacterRole, CharacterStats> = {
 };
 
 export const CHARACTER_ROLES: CharacterRole[] = ['Face', 'Muscle', 'Ninja', 'Brain', 'Spook'];
+
+/**
+ * Calculate level from experience points
+ * Level 1: 0-5 XP
+ * Level 2: 6-14 XP
+ * Level 3: 15-25 XP
+ * Level 4+: Every 15 XP thereafter
+ */
+export function calculateLevel(experience: number): number {
+  if (experience <= 5) return 1;
+  if (experience <= 14) return 2;
+  if (experience <= 25) return 3;
+  return 4 + Math.floor((experience - 26) / 15);
+}
+
+/**
+ * Get XP thresholds for a level
+ */
+export function getLevelThresholds(level: number): { min: number; max: number } {
+  if (level === 1) return { min: 0, max: 5 };
+  if (level === 2) return { min: 6, max: 14 };
+  if (level === 3) return { min: 15, max: 25 };
+  const min = 26 + (level - 4) * 15;
+  const max = min + 14;
+  return { min, max };
+}
