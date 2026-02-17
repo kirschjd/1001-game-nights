@@ -103,13 +103,23 @@ function buildActionDescriptionMap(): Map<string, string> {
     descMap.set(action.name, action.description);
   }
 
-  // Extract core actions
+  // Extract core actions — store both the raw id and the format prefix.
+  // The format prefix is the part before " (" (e.g. "Con" from "Con (6+)").
+  // This ensures lookup works for formatted action names like "Con (6+)" even though
+  // the core action id is "Charm".
   for (const action of CORE_ACTIONS) {
     descMap.set(action.id, action.description);
+    // Use a dummy stats object to derive the formatted prefix
+    const dummyFormatted = action.format({ wounds: 0, maxWounds: 0, movement: 0, meleeSkill: 0, ballisticSkill: 0, defense: 0, hack: 0, con: 0 });
+    const prefix = dummyFormatted.split(' (')[0];
+    if (prefix !== action.id) {
+      descMap.set(prefix, action.description);
+    }
   }
 
-  // Add default melee
+  // Add default melee — store both the raw id and capitalized name
   descMap.set(DEFAULT_MELEE.id, DEFAULT_MELEE.description);
+  descMap.set(DEFAULT_MELEE.name, DEFAULT_MELEE.description);
 
   // Add equipment-based actions
   descMap.set('Reload', 'Reload a weapon with the Reload special. Required before the weapon can be used again.');
@@ -131,10 +141,12 @@ export function getActionDescription(actionName: string): string | null {
   }
 
   // Check if action starts with any known action name (for formatted actions like "Move (4")")
+  // Case-insensitive to handle mismatches like "Pick Up Item" vs "Pick up item"
+  const lowerAction = actionName.toLowerCase();
   const entries = Array.from(ACTION_DESCRIPTIONS.entries());
   for (let i = 0; i < entries.length; i++) {
     const [name, description] = entries[i];
-    if (actionName.startsWith(name)) {
+    if (lowerAction.startsWith(name.toLowerCase())) {
       return description;
     }
   }

@@ -5,10 +5,14 @@ import CharacterCard from './components/CharacterCard';
 import LoadoutModal from './components/LoadoutModal';
 import GameSaveModal from './components/GameSaveModal';
 import TeamInfoPanel from './components/TeamInfoPanel';
+import AIControlsPanel from './components/AIControlsPanel';
+import AdvisorPanel from './components/AdvisorPanel';
 import { CharacterToken, CharacterState, PlayerSelection, SavedGameState } from './types';
 import { loadMap } from './data/mapLoader';
 import { useHeistCityState } from './hooks/useHeistCityState';
 import { useHeistCitySocket } from './hooks/useHeistCitySocket';
+import { useAIController } from './hooks/useAIController';
+import { useRulesAdvisor } from './hooks/useRulesAdvisor';
 
 interface HeistCityGameProps {
   socket: Socket;
@@ -31,7 +35,34 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
     emitSelectionChange,
     emitMapLoad,
     emitRulerUpdate,
+    emitAILogBroadcast,
   } = useHeistCitySocket(socket, lobbyId, playerId, state, dispatch);
+
+  // --- AI Controller ---
+  const ai = useAIController({
+    enabled: state.aiEnabled,
+    difficulty: state.aiDifficulty,
+    playerNumber: state.aiPlayerNumber,
+    mapState,
+    turnNumber,
+    gridType,
+    alertModifier,
+    emitters: { emitCharacterUpdate, emitDiceRoll, emitMapStateChange, emitGameInfoUpdate },
+    dispatch,
+  });
+
+  // --- Rules Advisor ---
+  const advisor = useRulesAdvisor({
+    enabled: state.advisorEnabled,
+    config: state.advisorConfig,
+    mapState,
+    turnNumber,
+    gridType,
+    alertModifier,
+    dispatch,
+  });
+
+  const aiActive = state.aiStatus === 'thinking' || state.aiStatus === 'executing';
 
   // --- Local-only UI state ---
   const [showLoadoutModal, setShowLoadoutModal] = useState<{ type: 'save' | 'load' | 'export'; playerNumber: 1 | 2 } | null>(null);
@@ -247,10 +278,22 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
           <div className="space-y-4">
             {/* Turn Number */}
             <div className="flex items-center justify-between">
-              <span className="text-gray-300 text-sm font-semibold">Turn Number: {turnNumber}</span>
+              <span className="text-gray-300 text-sm font-semibold">
+                Turn Number: {turnNumber}
+                {aiActive && (
+                  <span className="text-cyan-400 ml-2 text-xs">
+                    — AI {state.aiStatus === 'thinking' ? 'thinking...' : 'executing...'}
+                  </span>
+                )}
+              </span>
               <button
                 onClick={handlePassTurn}
-                className="px-4 py-2 rounded-lg font-semibold text-white text-sm transition-all bg-green-600 hover:bg-green-700 active:scale-95"
+                disabled={aiActive}
+                className={`px-4 py-2 rounded-lg font-semibold text-white text-sm transition-all ${
+                  aiActive
+                    ? 'bg-gray-600 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 active:scale-95'
+                }`}
               >
                 Pass Turn
               </button>
@@ -277,6 +320,32 @@ const HeistCityGame: React.FC<HeistCityGameProps> = ({ socket, lobbyId, playerId
               onShowLoadoutModal={(type) => setShowLoadoutModal({ type, playerNumber: 2 })}
             />
           </div>
+        </div>
+
+        {/* AI & Advisor Panels */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AIControlsPanel
+            enabled={state.aiEnabled}
+            onToggle={(enabled) => dispatch({ type: 'SET_AI_ENABLED', enabled })}
+            difficulty={state.aiDifficulty}
+            onDifficultyChange={(d) => dispatch({ type: 'SET_AI_DIFFICULTY', difficulty: d })}
+            playerNumber={state.aiPlayerNumber}
+            onPlayerNumberChange={(p) => dispatch({ type: 'SET_AI_PLAYER', playerNumber: p })}
+            aiStatus={state.aiStatus}
+            pendingActivation={ai.pendingActivation}
+            lastReasoning={ai.lastReasoning}
+            error={ai.error}
+            onPlanNext={ai.planNext}
+            onExecuteNext={ai.executeNext}
+          />
+          <AdvisorPanel
+            enabled={state.advisorEnabled}
+            onToggle={(enabled) => dispatch({ type: 'SET_ADVISOR_ENABLED', enabled })}
+            entries={state.advisorEntries}
+            config={state.advisorConfig}
+            onConfigChange={(config) => dispatch({ type: 'SET_ADVISOR_CONFIG', config })}
+            onClear={advisor.clearEntries}
+          />
         </div>
 
         {/* Loadout Modal */}
