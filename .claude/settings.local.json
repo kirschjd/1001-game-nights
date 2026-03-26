@@ -18,7 +18,16 @@
       "Bash(move:*)",
       "Bash(mv:*)",
       "Bash(node -c:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(npx vite:*)",
+      "Bash(npx react-scripts test --watchAll=false --verbose)",
+      "Bash(npx react-scripts test --watchAll=false --roots=\"<rootDir>/src\" --verbose)",
+      "Bash(npx ts-jest --version)",
+      "Bash(npx jest:*)",
+      "Bash(npm install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx react-scripts test --watchAll=false --showConfig)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []

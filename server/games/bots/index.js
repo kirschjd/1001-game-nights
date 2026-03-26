@@ -3,7 +3,7 @@
 
 const { botSystem } = require('./BotSystem');
 const WarBotHandler = require('./WarBotHandler');
-const DiceFactoryBotHandler = require('./DiceFactoryBotHandler');
+const DiceFactoryBotHandler = require('../dice-factory-legacy/bots/DiceFactoryBotHandler');
 const KillTeamDraftBotHandler = require('./KillTeamDraftBotHandler');
 
 // Initialize bot handlers

@@ -1,5 +1,6 @@
 // 1001 Game Nights - Dice Renderer Component
-// Version: 3.0.0 - Carried forward from legacy (dice-factory-legacy)
+// Version: 2.0.0 - Moved to dice-factory directory
+// Updated: December 2024
 
 import React from 'react';
 
@@ -42,7 +43,7 @@ const DiceRenderer: React.FC<DiceRendererProps> = ({
   };
 
   const colors = getDiceColors(die.sides);
-
+  
   // Size configurations
   const sizeConfig = {
     sm: { container: 'w-12 h-12', svg: 42, text: 'text-sm' },
@@ -51,7 +52,7 @@ const DiceRenderer: React.FC<DiceRendererProps> = ({
   };
 
   const config = sizeConfig[size];
-
+  
   const baseClasses = `
     relative ${config.container} flex items-center justify-center font-bold ${config.text}
     transition-all duration-200 select-none
@@ -190,7 +191,7 @@ const DiceRenderer: React.FC<DiceRendererProps> = ({
   const renderDiceContent = () => {
     // Adjust positioning based on die type for main face centering
     let valuePositioning = "absolute inset-0 flex items-center justify-center z-10";
-
+    
     if (die.sides === 4) {
       // 15% higher for tetrahedron
       valuePositioning = "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-2 z-10 flex items-center justify-center";
@@ -201,21 +202,21 @@ const DiceRenderer: React.FC<DiceRendererProps> = ({
       // Center on the inner pentagon (moved down)
       valuePositioning = "absolute top-6 left-1/2 transform -translate-x-1/2 z-10 flex items-center justify-center w-8 h-8";
     }
-
+    
     return (
       <>
         {/* Die type above the shape */}
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 font-semibold">
           d{die.sides}
         </div>
-
+        
         {/* Value in center of main face */}
         <div className={valuePositioning}>
           <div className={`${config.text} font-bold text-gray-900`}>
             {die.value || '?'}
           </div>
         </div>
-
+        
         {/* Special indicators */}
         {die.shiny && <div className="absolute top-1 right-1 text-xs">✨</div>}
         {die.rainbow && <div className="absolute top-1 left-1 text-xs">🌈</div>}

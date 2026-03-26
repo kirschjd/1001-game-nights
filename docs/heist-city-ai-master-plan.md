@@ -12,19 +12,19 @@ This project adds three capabilities to Heist City:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Existing Codebase                     │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────┐ │
-│  │ types/   │  │ data/    │  │ hooks/   │  │ comps/ │ │
-│  │ index.ts │  │ chars,   │  │ socket,  │  │ UI     │ │
-│  │          │  │ equip,   │  │ state,   │  │        │ │
-│  │          │  │ grid,    │  │ drag,    │  │        │ │
-│  │          │  │ maps     │  │ viewport │  │        │ │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────────┘ │
-│       │              │              │                    │
-└───────┼──────────────┼──────────────┼────────────────────┘
-        │              │              │
-   ┌────▼──────────────▼──┐     ┌────▼──────────────────┐
-   │   engine/ (Phases 1-3,5)│     │   ai/ (Phase 4)       │
+│                    Existing Codebase                    │
+│  ┌──────────┐  ┌──────────┐    ┌──────────┐  ┌────────┐ │
+│  │ types/   │  │ data/    │    │ hooks/   │  │ comps/ │ │
+│  │ index.ts │  │ chars,   │    │ socket,  │  │ UI     │ │
+│  │          │  │ equip,   │    │ state,   │  │        │ │
+│  │          │  │ grid,    │    │ drag,    │  │        │ │
+│  │          │  │ maps     │    │ viewport │  │        │ │
+│  └────┬─────┘  └────┬─────┘    └────┬─────┘  └────────┘ │
+│       │             │               │                   │
+└───────┼─────────────┼───────────────┼───────────────────┘
+        │             │               │
+   ┌────▼──────────────▼───┐     ┌────▼──────────────────┐
+   │ engine/ (Phases 1-3,5)│     │   ai/ (Phase 4)       │
    │                       │     │                       │
    │  Phase 1: Rules  ✅   │     │  - types.ts           │
    │  - actions.ts         │     │  - utilityScoring.ts  │
@@ -37,16 +37,16 @@ This project adds three capabilities to Heist City:
    │                       │     └───────┬───────────────┘
    │  Phase 2: Spatial ✅  │             │
    │  - pathfinding.ts     │     ┌───────▼───────────────┐
-   │  - lineOfSight.ts     │     │  Phase 6: Integration  │
-   │  - rangeQueries       │     │  (React/sockets/UI)    │
+   │  - lineOfSight.ts     │     │  Phase 6: Integration │
+   │  - rangeQueries       │     │  (React/sockets/UI)   │
    │  - coverDetection     │     │                       │
    │  - movementValidation │     │  - ai/aiAdapter.ts    │
-   │  - wallMap             │     │  - hooks/useAI...     │
+   │  - wallMap            │     │  - hooks/useAI...     │
    │                       │     │  - AI Controls Panel  │
    │  Phase 3: NPCs   ✅   │     │  - Advisor wiring     │
    │  - npcTargeting       │     │  - AdvisorPanel       │
    │  - npcMovement        │     │  - GameLog extensions │
-   │  - npcActions          │     │  - State reducer      │
+   │  - npcActions         │     │  - State reducer      │
    │  - npcPhase           │     └───────────────────────┘
    │  - eliteSpawner       │
    │                       │

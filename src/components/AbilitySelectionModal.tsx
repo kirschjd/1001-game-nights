@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // Import ability decks data
-import ABILITY_DECKS from './games/dice-factory-v0.2.1/data/abilityDecks.json';
+import ABILITY_DECKS from './games/dice-factory-legacy/v0.2.1/data/abilityDecks.json';
 
 interface AbilitySelectionModalProps {
   isOpen: boolean;
