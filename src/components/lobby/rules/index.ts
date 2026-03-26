@@ -4,3 +4,4 @@ export { default as HenHurRules } from './HenHurRules';
 export { default as HeistCityRules } from './HeistCityRules';
 export { default as KillTeamDraftRules } from './KillTeamDraftRules';
 export { default as DiceFactoryRules } from './DiceFactoryRules';
+export { default as LoddenThinksRules } from './LoddenThinksRules';

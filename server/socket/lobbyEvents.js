@@ -270,6 +270,10 @@ function registerLobbyEvents(io, socket, lobbies, games) {
       socket.emit('error', { message: 'Need at least 2 players to start' });
       return;
     }
+    if (lobby.gameType === 'lodden-thinks' && connectedPlayers.length < 3) {
+      socket.emit('error', { message: 'Lodden Thinks requires at least 3 players' });
+      return;
+    }
 
     // Create appropriate game instance using helper
     // Use version for dice-factory, variant for other games

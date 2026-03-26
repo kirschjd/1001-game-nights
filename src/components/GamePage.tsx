@@ -6,12 +6,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
 import { EnhancedWarGame } from './games/war';
-import { DiceFactoryGame as DiceFactoryGameV015 } from './games/dice-factory-v0.1.5';
-import { DiceFactoryGame as DiceFactoryGameV021 } from './games/dice-factory-v0.2.1';
+import { DiceFactoryGame as DiceFactoryGameV015 } from './games/dice-factory-legacy/v0.1.5';
+import { DiceFactoryGame as DiceFactoryGameV021 } from './games/dice-factory-legacy/v0.2.1';
 import HenHurGame from './games/henhur';
 import KillTeamDraftGame from './games/kill-team-draft/KillTeamDraftGame';
 import HeistCityGame from './games/heist-city';
 import { BadukAnalysis } from './games/baduk-analysis';
+import { LoddenThinksGame } from './games/lodden-thinks';
 import { GameHeader } from './shared';
 import {
   SOCKET_EVENTS,
@@ -299,6 +300,8 @@ useEffect(() => {
             ? 'Kill Team Draft'
             : gameState.type === 'baduk-analysis'
             ? 'Baduk Analysis'
+            : gameState.type === 'lodden-thinks'
+            ? 'Lodden Thinks'
             : gameState.type
         }
         players={lobbyPlayers}
@@ -375,8 +378,17 @@ useEffect(() => {
           />
         )}
 
+        {gameState.type === 'lodden-thinks' && socket && slug && (
+          <LoddenThinksGame
+            socket={socket}
+            gameState={gameState as any}
+            isLeader={isLeader}
+            slug={slug}
+          />
+        )}
+
         {/* Fallback for unknown game types */}
-        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && gameState.type !== 'kill-team-draft' && gameState.type !== 'heist-city' && gameState.type !== 'baduk-analysis' && (
+        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && gameState.type !== 'kill-team-draft' && gameState.type !== 'heist-city' && gameState.type !== 'baduk-analysis' && gameState.type !== 'lodden-thinks' && (
           <div className="text-center p-8">
             <h2 className="text-2xl font-bold mb-4 text-red-400">Unknown Game Type</h2>
             <p className="text-gray-400 mb-4">Game type "{gameState.type}" is not supported.</p>

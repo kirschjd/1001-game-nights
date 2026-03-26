@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
 import CardSelectionModal from './games/henhur/components/CardSelectionModal';
 import AbilitySelectionModal from './AbilitySelectionModal';
-import ABILITY_DECKS from './games/dice-factory-v0.2.1/data/abilityDecks.json';
+import ABILITY_DECKS from './games/dice-factory-legacy/v0.2.1/data/abilityDecks.json';
 import { getAvailableMaps } from './games/heist-city/data/mapLoader';
 import {
   SOCKET_EVENTS,
@@ -83,6 +83,7 @@ const LobbyPage: React.FC = () => {
   const gameColor = lobby?.gameType === 'war' ? 'tea-rose'
     : lobby?.gameType === 'henhur' ? 'amber-400'
     : lobby?.gameType === 'heist-city' ? 'purple-500'
+    : lobby?.gameType === 'lodden-thinks' ? 'amber-500'
     : 'uranian-blue';
 
   const gameColorClasses = lobby?.gameType === 'war'
@@ -91,7 +92,9 @@ const LobbyPage: React.FC = () => {
       ? 'border-amber-400/30 bg-amber-400/10'
       : lobby?.gameType === 'heist-city'
         ? 'border-purple-500/30 bg-purple-500/10'
-        : 'border-uranian-blue/30 bg-uranian-blue/10';
+        : lobby?.gameType === 'lodden-thinks'
+          ? 'border-amber-500/30 bg-amber-500/10'
+          : 'border-uranian-blue/30 bg-uranian-blue/10';
 
   // Register socket event listeners
   useEffect(() => {
@@ -298,6 +301,8 @@ const LobbyPage: React.FC = () => {
       socket.emit(SOCKET_EVENTS.START_GAME, { slug });
     } else if (lobby.gameType === 'baduk-analysis') {
       socket.emit(SOCKET_EVENTS.START_GAME, { slug });
+    } else if (lobby.gameType === 'lodden-thinks') {
+      socket.emit(SOCKET_EVENTS.START_GAME, { slug });
     } else {
       socket.emit(SOCKET_EVENTS.ERROR, { message: 'Invalid game type' });
     }
@@ -380,6 +385,7 @@ const LobbyPage: React.FC = () => {
                   <option value="heist-city">Heist City</option>
                   <option value="kill-team-draft">Kill Team Draft</option>
                   <option value="baduk-analysis">Baduk Analysis</option>
+                  <option value="lodden-thinks">Lodden Thinks</option>
                 </select>
                 <img
                   src={`/assets/icon-${lobby.gameType}.jpg`}
@@ -439,6 +445,13 @@ const LobbyPage: React.FC = () => {
               />
             )}
           </div>
+
+          {/* Lodden Thinks minimum player warning */}
+          {lobby.gameType === 'lodden-thinks' && lobby.players.filter(p => p.isConnected).length < 3 && (
+            <div className="mb-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-300 text-sm">
+              Lodden Thinks needs at least 3 players ({lobby.players.filter(p => p.isConnected).length}/3 connected).
+            </div>
+          )}
 
           {/* Start Game Button */}
           <GameStartButton

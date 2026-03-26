@@ -140,6 +140,20 @@ export const KTD_EVENTS = {
   DRAFT_AGAIN: 'ktd-draft-again',
 } as const;
 
+// ============ LODDEN THINKS ============
+export const LODDEN_EVENTS = {
+  CONFIRM_SETUP: 'lodden:confirm-setup',
+  SET_QUESTION: 'lodden:set-question',
+  DRAW_QUESTION: 'lodden:draw-question',
+  RANDOM_QUESTION: 'lodden:random-question',
+  LOCK_IN: 'lodden:lock-in',
+  BID: 'lodden:bid',
+  TAKE_UNDER: 'lodden:take-under',
+  SPECTATOR_PREDICT: 'lodden:spectator-predict',
+  ACKNOWLEDGE_REVEAL: 'lodden:acknowledge-reveal',
+  NEXT_ROUND: 'lodden:next-round',
+} as const;
+
 // ============ BADUK ANALYSIS ============
 export const BADUK_EVENTS = {
   PLACE_STONE: 'baduk:place-stone',

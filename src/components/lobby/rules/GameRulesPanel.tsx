@@ -4,6 +4,7 @@ import HenHurRules from './HenHurRules';
 import HeistCityRules from './HeistCityRules';
 import KillTeamDraftRules from './KillTeamDraftRules';
 import DiceFactoryRules from './DiceFactoryRules';
+import LoddenThinksRules from './LoddenThinksRules';
 
 interface GameRulesPanelProps {
   gameType: string;
@@ -29,6 +30,8 @@ const GameRulesPanel: React.FC<GameRulesPanelProps> = ({
       return <HeistCityRules gameColorClasses={gameColorClasses} />;
     case 'kill-team-draft':
       return <KillTeamDraftRules gameColorClasses={gameColorClasses} />;
+    case 'lodden-thinks':
+      return <LoddenThinksRules gameColorClasses={gameColorClasses} />;
     case 'dice-factory':
     default:
       return <DiceFactoryRules variant={dfVariant} gameColorClasses={gameColorClasses} />;

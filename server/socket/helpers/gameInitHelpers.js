@@ -3,11 +3,12 @@
 
 const WarGame = require('../../games/war');
 const { initializeVersioning } = require('./stateVersioning');
-const { DiceFactoryGame: DiceFactoryGameV015 } = require('../../games/dice-factory-v0.1.5');
-const { DiceFactoryGame: DiceFactoryGameV021 } = require('../../games/dice-factory-v0.2.1');
+const { DiceFactoryGame: DiceFactoryGameV015 } = require('../../games/dice-factory-legacy/v0.1.5');
+const { DiceFactoryGame: DiceFactoryGameV021 } = require('../../games/dice-factory-legacy/v0.2.1');
 const { KillTeamDraftGame } = require('../../games/kill-team-draft');
 const { HeistCityGame } = require('../../games/heist-city');
 const { BadukAnalysis } = require('../../games/baduk-analysis');
+const { LoddenThinksGame } = require('../../games/lodden-thinks');
 
 /**
  * Initialize a War game
@@ -151,6 +152,14 @@ function initializeBadukAnalysisGame(connectedPlayers, lobby) {
 }
 
 /**
+ * Initialize a Lodden Thinks game
+ */
+function initializeLoddenThinksGame(connectedPlayers, lobby) {
+  const game = new LoddenThinksGame(connectedPlayers);
+  return game;
+}
+
+/**
  * Create game based on lobby type
  */
 function createGame(lobby, connectedPlayers, clientVariantOrVersion, botSystem) {
@@ -179,6 +188,10 @@ function createGame(lobby, connectedPlayers, clientVariantOrVersion, botSystem) 
 
     case 'baduk-analysis':
       game = initializeBadukAnalysisGame(connectedPlayers, lobby);
+      break;
+
+    case 'lodden-thinks':
+      game = initializeLoddenThinksGame(connectedPlayers, lobby);
       break;
 
     default:
@@ -242,5 +255,6 @@ module.exports = {
   initializeHenHurGame,
   initializeKillTeamDraftGame,
   initializeHeistCityGame,
-  initializeBadukAnalysisGame
+  initializeBadukAnalysisGame,
+  initializeLoddenThinksGame
 };
