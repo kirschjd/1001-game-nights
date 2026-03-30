@@ -265,6 +265,7 @@ function registerLobbyEvents(io, socket, lobbies, games) {
     const allowSolo = lobby.gameType === 'henhur' ||
                       lobby.gameType === 'heist-city' ||
                       lobby.gameType === 'baduk-analysis' ||
+                      lobby.gameType === 'van-life' ||
                       (lobby.gameType === 'dice-factory' && clientVersion === 'v0.2.1');
     if (!allowSolo && connectedPlayers.length < 2) {
       socket.emit('error', { message: 'Need at least 2 players to start' });

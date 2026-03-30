@@ -9,6 +9,7 @@ const { KillTeamDraftGame } = require('../../games/kill-team-draft');
 const { HeistCityGame } = require('../../games/heist-city');
 const { BadukAnalysis } = require('../../games/baduk-analysis');
 const { LoddenThinksGame } = require('../../games/lodden-thinks');
+const { VanLifeGame } = require('../../games/van-life');
 
 /**
  * Initialize a War game
@@ -192,6 +193,10 @@ function createGame(lobby, connectedPlayers, clientVariantOrVersion, botSystem) 
 
     case 'lodden-thinks':
       game = initializeLoddenThinksGame(connectedPlayers, lobby);
+      break;
+
+    case 'van-life':
+      game = new VanLifeGame(connectedPlayers);
       break;
 
     default:

@@ -198,6 +198,11 @@ function QuestionPhase({
     socket.emit('lodden:select-question', { slug, queueItemId });
   };
 
+  const handleDrawRandom = () => {
+    socket.emit('lodden:draw-random-question', { slug });
+    setView('queue');
+  };
+
   const filteredDeckQuestions = useMemo(() => {
     if (!deck || !selectedCategoryId) return [];
     const cat = deck.categories.find(c => c.id === selectedCategoryId);
@@ -237,6 +242,14 @@ function QuestionPhase({
           + Suggest
         </button>
       </div>
+
+      {/* Random question button */}
+      <button
+        onClick={handleDrawRandom}
+        className="w-full py-2 bg-payne-grey/40 hover:bg-payne-grey/70 border border-payne-grey-light text-gray-300 hover:text-white text-sm font-medium rounded-xl transition-colors"
+      >
+        Draw Random from Deck
+      </button>
 
       {/* Tab switcher */}
       <div className="flex gap-1 bg-payne-grey/40 rounded-xl p-1 border border-payne-grey-light">

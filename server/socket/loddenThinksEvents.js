@@ -95,6 +95,23 @@ function registerLoddenThinksEvents(io, socket, lobbies, games) {
   });
 
   /**
+   * Draw a random question from the deck and add it to the queue.
+   */
+  socket.on('lodden:draw-random-question', ({ slug }) => {
+    const game = getGame(slug);
+    if (!game) return;
+    const lodden = game.state.players.find(p => p.id === game.state.currentRound.loddenId);
+    const loddenName = lodden ? lodden.name : 'Lodden';
+    const randomQ = game.getRandomDeckQuestion(loddenName);
+    const result = game.submitQuestion(socket.id, randomQ.text, randomQ.id);
+    if (result.success) {
+      broadcastState(slug, game);
+    } else {
+      socket.emit('error', { message: result.error });
+    }
+  });
+
+  /**
    * Lodden locks in their number → BIDDING phase
    */
   socket.on('lodden:lock-in', ({ slug, number }) => {

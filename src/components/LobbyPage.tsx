@@ -303,6 +303,8 @@ const LobbyPage: React.FC = () => {
       socket.emit(SOCKET_EVENTS.START_GAME, { slug });
     } else if (lobby.gameType === 'lodden-thinks') {
       socket.emit(SOCKET_EVENTS.START_GAME, { slug });
+    } else if (lobby.gameType === 'van-life') {
+      socket.emit(SOCKET_EVENTS.START_GAME, { slug });
     } else {
       socket.emit(SOCKET_EVENTS.ERROR, { message: 'Invalid game type' });
     }
@@ -386,6 +388,7 @@ const LobbyPage: React.FC = () => {
                   <option value="kill-team-draft">Kill Team Draft</option>
                   <option value="baduk-analysis">Baduk Analysis</option>
                   <option value="lodden-thinks">Lodden Thinks</option>
+                  <option value="van-life">Van Life</option>
                 </select>
                 <img
                   src={`/assets/icon-${lobby.gameType}.jpg`}

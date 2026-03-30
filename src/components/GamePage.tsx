@@ -13,6 +13,7 @@ import KillTeamDraftGame from './games/kill-team-draft/KillTeamDraftGame';
 import HeistCityGame from './games/heist-city';
 import { BadukAnalysis } from './games/baduk-analysis';
 import { LoddenThinksGame } from './games/lodden-thinks';
+import { VanLifeGame } from './games/van-life';
 import { GameHeader } from './shared';
 import {
   SOCKET_EVENTS,
@@ -387,8 +388,17 @@ useEffect(() => {
           />
         )}
 
+        {gameState.type === 'van-life' && socket && slug && (
+          <VanLifeGame
+            socket={socket}
+            gameState={gameState as any}
+            isLeader={isLeader}
+            slug={slug}
+          />
+        )}
+
         {/* Fallback for unknown game types */}
-        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && gameState.type !== 'kill-team-draft' && gameState.type !== 'heist-city' && gameState.type !== 'baduk-analysis' && gameState.type !== 'lodden-thinks' && (
+        {gameState.type !== 'war' && gameState.type !== 'dice-factory' && gameState.type !== 'henhur' && gameState.type !== 'kill-team-draft' && gameState.type !== 'heist-city' && gameState.type !== 'baduk-analysis' && gameState.type !== 'lodden-thinks' && gameState.type !== 'van-life' && (
           <div className="text-center p-8">
             <h2 className="text-2xl font-bold mb-4 text-red-400">Unknown Game Type</h2>
             <p className="text-gray-400 mb-4">Game type "{gameState.type}" is not supported.</p>

@@ -108,6 +108,27 @@ const ExplorePage: React.FC = () => {
         '💾 Real-time multiplayer sync with map editor mode'
       ],
       status: 'available'
+    },
+    {
+      id: 'van-life',
+      name: 'Van Life',
+      players: '2-5 players',
+      duration: '45-90 minutes',
+      description: 'Hit the road through Alaska\'s wilderness! Claim routes between national parks and explore the Last Frontier.',
+      rules: [
+        'Players take turns claiming routes between Alaska\'s 8 national parks',
+        'Routes are claimed by paying the required route cost',
+        'Longer routes score more points',
+        'Complete destination tickets for bonus points',
+        'Player with the most points when routes run out wins'
+      ],
+      features: [
+        '🗺️ Illustrated Alaska map with all 8 national parks',
+        '🚐 Ticket-to-Ride style route claiming',
+        '🏔️ Explore Denali, Glacier Bay, Wrangell-St. Elias, and more',
+        '🌲 2-5 player multiplayer'
+      ],
+      status: 'available'
     }
   ];
 
